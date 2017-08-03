@@ -1,0 +1,122 @@
+C51 COMPILER V9.00   HAL_RTC                                                               08/03/2017 20:37:14 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE HAL_RTC
+OBJECT MODULE PLACED IN .\Object\hal_rtc.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal\nrf24le1\hal_rtc.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nrf
+                    -24l01p;hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\hal_rtc.lst) OBJECT(.\Obje
+                    -ct\hal_rtc.obj)
+
+line level    source
+
+   1          /* Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
+   2           *
+   3           * The information contained herein is confidential property of Nordic 
+   4           * Semiconductor ASA.Terms and conditions of usage are described in detail 
+   5           * in NORDIC SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT. 
+   6           *
+   7           * Licensees are granted free, non-transferable use of the information. NO
+   8           * WARRENTY of ANY KIND is provided. This heading must NOT be removed from
+   9           * the file.
+  10           *              
+  11           * $LastChangedRevision: 133 $
+  12           */ 
+  13          
+  14          /** @file
+  15           * @brief Implementation of hal_rtc
+  16           */
+  17          
+  18          #include "nrf24le1.h"
+  19          #include "hal_rtc.h"
+  20          #include "nordic_common.h"
+  21          
+  22          void hal_rtc_capture(void)
+  23          {
+  24   1        RTC2CON |= BIT_4;                         // Set "sfrCapture" bit(Trig. sig.)
+  25   1      }
+  26          
+  27          void hal_rtc_radio_capture_enable(bool en)
+  28          {
+  29   1        if(en)
+  30   1        {
+  31   2          RTC2CON |= BIT_3;                       // Set "enableExtCapture" bit
+  32   2        }
+  33   1        else
+  34   1        {
+  35   2          RTC2CON &= ~BIT_3;                      // Clear "enableExtCapture" bit
+  36   2        }
+  37   1      }
+  38          
+  39          void hal_rtc_set_compare_mode(hal_rtc_compare_mode_t mode)
+  40          {
+  41   1        RTC2CON = (RTC2CON & 0xF9) | ((mode << 1) & ~0xF9); // Set "compareMode" bits
+  42   1      }
+  43          
+  44          void hal_rtc_start(bool en)
+  45          {
+  46   1        if(en)
+  47   1        { 
+  48   2          RTC2CON |= BIT_0;                       // Set "rtc2Enable" bit
+  49   2        }
+  50   1        else
+  51   1        {
+  52   2          RTC2CON &= ~BIT_0;                      // Clear "rtc2Enable" bit
+  53   2        }
+C51 COMPILER V9.00   HAL_RTC                                                               08/03/2017 20:37:14 PAGE 2   
+
+  54   1      }
+  55          
+  56          void hal_rtc_set_compare_value(uint16_t value)
+  57          {
+  58   1        uint8_t compare_status;                   
+  59   1        compare_status = (RTC2CON & (BIT_1 | BIT_2)); // Save "compareMode" bits
+  60   1        RTC2CON &= ~(BIT_1 | BIT_2);              // Disable compare
+  61   1        RTC2CMP0 = LSB(value);                    // Write LSB
+  62   1        RTC2CMP1 = MSB(value);                    // Write MSB
+  63   1        RTC2CON |= compare_status;                // Update compare status 
+  64   1      }
+  65          
+  66          uint16_t hal_rtc_get_compare_value(void)
+  67          {
+  68   1        uint8_t compare_status;  
+  69   1        uint16_t value;                           // Create temporary output variable
+  70   1        compare_status = (RTC2CON & (BIT_1 | BIT_2)); // Save "compareMode" bits
+  71   1        RTC2CON &= ~(BIT_1 | BIT_2);              // Disable compare
+  72   1        value = RTC2CMP1;                         // Read MSB
+  73   1        value <<= 8;                              // Shift to correct position
+  74   1        value |= RTC2CMP0;                        // Add LSB
+  75   1        RTC2CON |= compare_status;                // Update compare status 
+  76   1        return value;                             // Return compare value
+  77   1      }
+  78          
+  79          uint16_t hal_rtc_get_capture_value(void)
+  80          {
+  81   1        uint8_t capture_status;                 
+  82   1        uint16_t value;                           // Create temporary output variable
+  83   1        capture_status = (RTC2CON & BIT_3);       // Save "compareMode" bits
+  84   1        RTC2CON &= ~BIT_3;                        // Disable compare
+  85   1        value = RTC2CPT01;                        // Read MSB
+  86   1        value <<= 8;                              // Shift to correct position
+  87   1        value |= RTC2CPT00;                       // Add LSB
+  88   1        RTC2CON |= capture_status;                // Update external capture status
+  89   1        return value;                             // Return timer value
+  90   1      }
+  91          
+  92          uint8_t hal_rtc_get_capture_clock_cycles(void)
+  93          {
+  94   1        return RTC2CPT10;                         // Return register
+  95   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    123    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
