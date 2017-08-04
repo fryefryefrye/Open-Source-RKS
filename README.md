@@ -36,6 +36,7 @@ It's not a good way showing on the picture, I have order the PCB for TAG. and it
 ### Make the Controller/Recover
 
 You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino via SPI port.<br>
+
 | PIN  | NRF24L01|Arduino UNO|
 | ---------- | -----------| -----------|
 |  1  |  GND  |  GND  |
@@ -46,6 +47,7 @@ You can build the Arduino based Controller what ever you like. Just connect nRF2
 |  6  |  SCK  |  digIO 11  |
 |  7  |  MOSI  | digIO 12  |
 |  8  |  MISO  |  -  |
+
 <br>
 This is combination I used in debug stage.<br> 
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg).<br> 
