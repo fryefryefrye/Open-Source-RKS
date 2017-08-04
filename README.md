@@ -37,7 +37,7 @@ It's not a good way showing on the picture, I have order the PCB for TAG. and it
 
 You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino via SPI port.<br>
 
-| PIN  | NRF24L01|Arduino UNO|Mega1280 or Mega2560|
+| PIN  | NRF24L01|Arduino UNO/NANO|Mega1280/2560|
 | ---------- | -----------| -----------| -----------|
 |  1  |  GND  |  GND  |  GND  |
 |  2  |  VCC  |  3.3V  |  3.3V  |
@@ -53,9 +53,11 @@ This is combination I used in debug stage.<br>
 
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg)
 <br> 
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/nRF24L01_leg.png)
+<br>
 The PCB for Controller is on the way, I will update soon.<br>
 
-### Communication parameters of nRF modules
+### Technical details
 
 #### Frequency hopping
 
@@ -65,9 +67,22 @@ This will make the system more anti-interference.<br>
 
 #### nRF setting
 
+
+
 #### Power Consumption of the Tag
 
+
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/PowerConsumption.png)<br> 
+
+The above picture is sampling with a 47 Ohm resistor.<br> 
+
+For every time of transmit. Power consumption can be estimated as:  <br> 
+0.7v*47Ohm = 32.9mA    Duration for 0.3ms <br> <br> 
+Capacity of a CR2032 battery is 200 mAh.<br> 
+In This example, data was transmit 3 tims in every second. <br> 
+Estimated life days = (200/(32.9*(0.0003/3600)))/3/3600/24 = 281 days <br> 
+
+
 
 ## Hardware used in this project
 
