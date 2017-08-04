@@ -37,20 +37,22 @@ It's not a good way showing on the picture, I have order the PCB for TAG. and it
 
 You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino via SPI port.<br>
 
-| PIN  | NRF24L01|Arduino UNO|
-| ---------- | -----------| -----------|
-|  1  |  GND  |  GND  |
-|  2  |  VCC  |  3.3V  |
-|  3  |  CE   |  digIO 7  |
-|  4  |  CSN  |  digIO 8  |
-|  5  |  CSN  |  digIO 13  |
-|  6  |  SCK  |  digIO 11  |
-|  7  |  MOSI  | digIO 12  |
-|  8  |  MISO  |  -  |
+| PIN  | NRF24L01|Arduino UNO|Mega1280 or Mega2560|
+| ---------- | -----------| -----------| -----------|
+|  1  |  GND  |  GND  |  GND  |
+|  2  |  VCC  |  3.3V  |  3.3V  |
+|  3  |  CE   |  digIO 7  |  digIO 7  |
+|  4  |  CSN  |  digIO 8  |  digIO 8  |
+|  5  |  SCK   |  digIO 13  |  digIO 52  |
+|  6  |  MOSI  |  digIO 11  |  digIO 51  |
+|  7  |  MISO  | digIO 12  |  digIO 50  |
+|  8  |  IRQ  |  -  |-|
 
 <br>
 This is combination I used in debug stage.<br> 
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg).<br> 
+
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg)
+<br> 
 The PCB for Controller is on the way, I will update soon.<br>
 
 ### Communication parameters of nRF modules
