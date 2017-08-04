@@ -35,7 +35,7 @@ It's not a good way showing on the picture, I have order the PCB for TAG. and it
 
 ### Make the Controller/Recover
 
-You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino via SPI port.<br>
+You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino follow the table.<br>
 
 | PIN  | NRF24L01|Arduino UNO/NANO|Mega1280/2560|
 | ---------- | -----------| -----------| -----------|
@@ -57,30 +57,31 @@ This is combination I used in debug stage.<br>
 <br>
 The PCB for Controller is on the way, I will update soon.<br>
 
-### Technical details
+## Technical details
 
-#### Frequency hopping
+### Frequency hopping
 
 The key, as an Active RFID Tag, will transmit its ID and the volt of the battery 3 times every second in 3 different channels.<br> 
 The Controller, as the receiver, will listening on these 3 different channels every second.<br> 
 This will make the system more anti-interference.<br> 
 
-#### nRF setting
+### nRF setting
 
 
 
-#### Power Consumption of the Tag
+### Power Consumption of the Tag
 
 
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/PowerConsumption.png)<br> 
 
-The above picture is sampling with a 47 Ohm resistor.<br> 
+The above picture is Current sampling with a 47 Ohm resistor.<br> 
 
 For every time of transmit. Power consumption can be estimated as:  <br> 
-0.7v*47Ohm = 32.9mA    Duration for 0.3ms <br> <br> 
+0.7v\*47Ohm = 32.9mA<br> 
+Duration for 0.3ms <br> <br> 
 Capacity of a CR2032 battery is 200 mAh.<br> 
 In This example, data was transmit 3 tims in every second. <br> 
-Estimated life days = (200/(32.9*(0.0003/3600)))/3/3600/24 = 281 days <br> 
+Estimated life days = (200/(32.9\*(0.0003/3600)))/3/3600/24 = 281 days <br> 
 
 
 
