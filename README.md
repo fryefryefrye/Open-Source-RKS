@@ -9,7 +9,7 @@ Let's make your own PKE system for your home or other application if you like.<b
 nRF24LE1 module and CR2032 battery are the only thing to make a key for PKE system. <br>
 nRF24LE1 is Ultra-low Power Wireless System On-Chip Solution.<br>
 An 8051 compatible MCU is attached in it. So one chip is enouogh.<br>
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/tag.jpg)
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/tag_simple.jpg)
 
 
 ## Arduino based controler
@@ -28,7 +28,7 @@ When key get far away, the relay will be open.<br>
 First you need program the nRF24LE1 use a prgramer.
 Just connect 2 cables from battery to power on the nRF24LE1 module is OK.<br>
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/nRF24LE1_back.jpg)
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/tag_simple.jpg).<br>
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/tag.jpg).<br>
 It's not a good way showing on the picture, I have order the PCB for TAG. and it is on the way, I will update soon.
 
 
@@ -36,7 +36,7 @@ It's not a good way showing on the picture, I have order the PCB for TAG. and it
 
 You can build the Arduino based controler what ever you like. Just connect nRF24L01 module with Arduino via SPI port.<br>
 RF24 table.<br>
-This is combination I used in debug stage.
+This is combination I used in debug stage.<br> 
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg).<br> 
 The PCB for Controler is on the way, I will update soon.<br>
 
@@ -52,6 +52,8 @@ This will make the system more anti-interference.<br>
 
 #### Power Consumption of the Tag
 
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/PowerConsumption.png)<br> 
+
 ## Hardware used in this project
 
 ### nRF24LE1 module
@@ -64,10 +66,10 @@ Price € 4.00<br>
 Price € 2.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/nRF24L01.jpg)<br> 
 
-### nRF24LE1 use a prgramer.
+### Programer for nRF24LE1
 
 Price € 15.00<br> 
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/prgramer.jpg)<br> 
+![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/programer.jpg)<br> 
 
 ### nRF24LE1 adapter.
 
@@ -79,16 +81,10 @@ Price € 5.00<br>
 
 ## Video
 
-## Title
+## Draft
+
+Title
 
 after check the ID of the key, it will driver the relay to Unlock the door for you.<br> 
 When the key is get a little far away, the relay will release and the door will be locked.<br> 
 You can also equipment with some power system to open the door automaticly.<br> 
-
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/nRF24LE1.jpg).<br> 
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/nRF24LE1_back.jpg)
-![](https://github.com/fryefryefrye/Open-Source-PKE/raw/master/img/rx_2560.jpg)
-
-
-picture_back+-
-2560+module
