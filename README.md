@@ -23,7 +23,7 @@ When key goes far away, the relay will be disconnect.<br>
 
 
 ## How them made?
-### Make the Tag/Key
+### Make the Tag/Key/Transmiter
 
 First you need program the nRF24LE1 use a Programmer.<br>
 After that, just connect 2 cables from battery to power on the nRF24LE1 module is OK.<br>
@@ -33,7 +33,7 @@ All the needles on the module can be cut to short to fit in the thin case.<br>
 It's not a good way showing on the picture, I have order the PCB for TAG. and it is on the way, I will update soon.
 
 
-### Make the Controller/Recover
+### Make the Controller/Receiver
 
 You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino follow the table.<br>
 
