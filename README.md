@@ -3,7 +3,7 @@
 ## What is a RKS system
 RKS as the Remote keyless system. It's a proximity system that is triggered if a key is within a certain distance. <br> 
 Widely used in modern vehicles. It's very convenient to Entry your car when you have RKS system. <br> 
-You do not need take out of your key, just walk to you car with the key in your pocket, then you can open the door.<br>  
+You do not need take out of your key, just walk to your car with the key in your pocket, then you can open the door.<br>  
 <br> But do you want open the door of your home without take out your keys? Or equipment RKS to your old car?<br> 
 I've found a solution that every electronic fans can make a RKS system at home in a very cheap price.<br> 
 Cost of materials are Less than € 10 for a key and € 25 for the Controller in my area.<br> 
@@ -18,9 +18,9 @@ An 8051 compatible MCU is attached in it. So one chip is enough.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_simple.jpg)
 
 
-## Arduino based 
+## Arduino based Controller
 
-An Arduino equipment with nRF24L01 module, can received the data from the key nearby.<br> 
+An Arduino equipment with a nRF24L01 module, can receive the data from the key nearby.<br> 
 Arduino based Controller is very easy to program, and you can make any application if you wish base on this RKS system.<br> 
 In This example, a relay will be used as the output. <br> 
 When key goes close in about 2 meters, the relay closed.<br> 
@@ -28,20 +28,20 @@ When key goes far away, the relay will be disconnect.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/rx_simple.jpg).
 
 
-## How them made?
-* Make the Tag/Key/Transmiter
+## How they made?
+* Make the Tag/Key/Transmitter
 
 First you need program the nRF24LE1 use a Programmer.<br>
 After that, just connect 2 cables from battery to power on the nRF24LE1 module is OK.<br>
 All the needles on the module can be cut to short to fit in the thin case.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24LE1_back.jpg)
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag.jpg).<br>
-It's not a good way showing on the picture, I have order the PCB for TAG. and it is on the way, I will update soon.
+It's not a good way showing on the picture, I have order the PCB for TAG. And it is on the way, I will update soon.
 
 
 * Make the Controller/Receiver
 
-You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino follow the table.<br>
+You can build the Arduino based Controller whatever you like. Just connect nRF24L01 module with Arduino follow the table.<br>
 
 | PIN  | NRF24L01|Arduino UNO/NANO|Mega1280/2560|
 | ---------- | -----------| -----------| -----------|
@@ -86,14 +86,14 @@ For every time of transmit. Power consumption can be estimated as:  <br>
 0.7v\*47Ohm = 32.9mA<br> 
 Duration for 0.3ms <br> <br> 
 Capacity of a CR2032 battery is 200 mAh.<br> 
-In This example, data was transmit 3 tims in every second. <br> 
+In This example, data was transmit 3 times in every second. <br> 
 Estimated life days = (200/(32.9\*(0.0003/3600)))/3/3600/24 = 281 days <br> 
 
 
 
 ## Hardware used in this project
 
-* Tag/Key/Transmiter
+* Tag/Key/Transmitter
 
 ### nRF24LE1 module
 Reference price € 4.00<br> 
@@ -158,12 +158,17 @@ Reference price € 4.00<br>
 A more powerful nRF24L01+PA module can get longer range and has External antenna interface. It has a compatible interface with nRF24L01 module<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01_PA.jpg)<br> 
 
+
+### DC-DC Converter
+Reference price € 1.00<br> 
+Most of cars, door locking system are using 12v. So a DC-DC Converter is needed here to power the Arduino with 5v. <br>
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/dcdc.jpg)<br> 
+
 ## Video
 
 ## Draft
 
-Title
 
-after check the ID of the key, it will drive the relay to Unlock the door for you.<br> 
+After check the ID of the key, it will drive the relay to Unlock the door for you.<br> 
 When the key is get a little far away, the relay will release and the door will be locked.<br> 
 You can also equipment with some power system to open the door automatically.<br>
