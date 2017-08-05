@@ -93,15 +93,11 @@ Estimated life days = (200/(32.9\*(0.0003/3600)))/3/3600/24 = 281 days <br>
 
 ## Hardware used in this project
 
+* Tag/Key/Transmiter
+
 ### nRF24LE1 module
 Reference price € 4.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24LE1.jpg)<br> 
-
-
-### nRF24L01 module
-Reference price € 2.00<br> 
-![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01.jpg)<br> 
-
 
 ### Programmer for nRF24LE1
 Reference price € 15.00<br> 
@@ -128,14 +124,19 @@ Reference price € 1.00<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_pcb.jpg)<br> 
 
 
-### Battery case of the key
+### Battery holder in the key
 Reference price € 1.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/battery_hold.jpg)<br> 
 
+* Controller/Receiver
 
 ### Arduino
 Reference price € 5.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/arduinos.jpg)<br> 
+
+### nRF24L01 module
+Reference price € 2.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01.jpg)<br> 
 
 
 
