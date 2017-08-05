@@ -121,6 +121,8 @@ Reference price € 1.00<br>
 
 ### PCB of the key
 Reference price € 1.00<br> 
+Send the file PCB\Files_for_Factory_made\tag.cam to PCB factory, they can make it for you.
+Or you can use any method you can do to connect the module with battery.
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_pcb.jpg)<br> 
 
 
@@ -138,7 +140,17 @@ Reference price € 5.00<br>
 Reference price € 2.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01.jpg)<br> 
 
+### Integrated PCB of Controller
+Reference price € 2.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/rx_pcb.jpg)<br> 
 
+### Buzz module
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/buzz.jpg)<br> 
+
+### Relay module
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/relay.jpg)<br> 
 
 ## Video
 
