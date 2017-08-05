@@ -68,11 +68,8 @@ The PCB for Controller is on the way, I will update soon.<br>
 ### Frequency hopping
 
 The key, as an Active RFID Tag, will transmit its ID and the volt of the battery 3 times every second in 3 different channels.<br> 
-The Controller, as the receiver, will listening on these 3 different channels every second.<br> 
+The Controller, as the receiver, will listening on these 3 different channels, one channel for one second.<br> 
 This will make the system more anti-interference.<br> 
-
-### nRF setting
-
 
 
 ### Power Consumption of the Tag
