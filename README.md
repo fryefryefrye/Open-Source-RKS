@@ -153,6 +153,7 @@ Reference price € 1.00<br>
 ### nRF24L01+PA module
 Reference price € 4.00<br> 
 A more powerful nRF24L01+PA module can get longer range and has External antenna interface. It has a compatible interface with nRF24L01 module<br> 
+But it need more power on 3.3v, so a AMS1117-3.3v can be used to power this module.<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01_PA.jpg)<br> 
 
 
