@@ -4,8 +4,9 @@
 RKS as the Remote keyless system. It's a proximity system that is triggered if a key is within a certain distance. <br> 
 Widely used in modern vehicles. It's very convenient to Entry your car when you have RKS system. <br> 
 You do not need take out of your key, just walk to you car with the key in your pocket, then you can open the door.<br>  
-<br> But do you want open the door of your home without take out your keys?<br> 
+<br> But do you want open the door of your home without take out your keys? Or equipment RKS to your old car?<br> 
 I've found a solution that every electronic fans can make a RKS system at home in a very cheap price.<br> 
+Cost of materials are Less than € 10 for a key and € 25 for the Controller in my area.<br> 
 Arduino based Controller can make you to use this system in any application if you like.<br>  
 You can submit a issue or mail to me if you have any question.<br> 
 
@@ -17,7 +18,7 @@ An 8051 compatible MCU is attached in it. So one chip is enough.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_simple.jpg)
 
 
-## Arduino based Controller
+## Arduino based 
 
 An Arduino equipment with nRF24L01 module, can received the data from the key nearby.<br> 
 Arduino based Controller is very easy to program, and you can make any application if you wish base on this RKS system.<br> 
@@ -93,27 +94,50 @@ Estimated life days = (200/(32.9\*(0.0003/3600)))/3/3600/24 = 281 days <br>
 ## Hardware used in this project
 
 ### nRF24LE1 module
-
-Price € 4.00<br> 
+Reference price € 4.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24LE1.jpg)<br> 
 
-### nRF24L01 module
 
-Price € 2.00<br> 
+### nRF24L01 module
+Reference price € 2.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01.jpg)<br> 
 
-### Programmer for nRF24LE1
 
-Price € 15.00<br> 
+### Programmer for nRF24LE1
+Reference price € 15.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/programer.jpg)<br> 
 
-### nRF24LE1 adapter.
 
-Price € 5.00<br> 
+### nRF24LE1 adapter.
+Reference price € 5.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/adapter.jpg)<br> 
 
+
 ### CR2032 battery
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/battery.jpg)<br> 
+
+
+### Plastic case of the key
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_case.jpg)<br> 
+
+
+### PCB of the key
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_pcb.jpg)<br> 
+
+
+### Battery case of the key
+Reference price € 1.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/battery_hold.jpg)<br> 
+
+
 ### Arduino
+Reference price € 5.00<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/arduinos.jpg)<br> 
+
+
 
 ## Video
 
