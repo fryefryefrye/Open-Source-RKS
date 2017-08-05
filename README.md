@@ -2,7 +2,9 @@
 
 It's very convenient to Entry your car when you have PKE system.<br>  
 Do you want open the door of your home without take out your keys.<br> 
-Let's make your own PKE system for your home or other application if you like.<br>  
+I've found a solution that every electronic fans can make a PKE system at home in a very cheap price.<br> 
+Arduino based Controller can make you to use this system in any application if you like.<br>  
+You can make a issue or mail to me if you have any question.<br> 
 
 ## A very simple wireless Key. 
 
@@ -23,7 +25,7 @@ When key goes far away, the relay will be disconnect.<br>
 
 
 ## How them made?
-### Make the Tag/Key/Transmiter
+* Make the Tag/Key/Transmiter
 
 First you need program the nRF24LE1 use a Programmer.<br>
 After that, just connect 2 cables from battery to power on the nRF24LE1 module is OK.<br>
@@ -33,7 +35,7 @@ All the needles on the module can be cut to short to fit in the thin case.<br>
 It's not a good way showing on the picture, I have order the PCB for TAG. and it is on the way, I will update soon.
 
 
-### Make the Controller/Receiver
+* Make the Controller/Receiver
 
 You can build the Arduino based Controller what ever you like. Just connect nRF24L01 module with Arduino follow the table.<br>
 
