@@ -121,8 +121,9 @@ Reference price € 1.00<br>
 
 ### PCB of the key
 Reference price € 1.00<br> 
-Send the file PCB\Files_for_Factory_made\tag.cam to PCB factory, they can make it for you.
-Or you can use any method you can do to connect the module with battery.
+Send the file PCB\Files_for_Factory_made\tag.cam to PCB factory, they can make it for you.<br> 
+A programmer interface is placed on the PCB, you can also program the nRF24LE1 with this port after the module have been soldered on the PCB.<br> 
+Or you can use any method you can do to connect the module with battery.<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_pcb.jpg)<br> 
 
 
@@ -151,6 +152,11 @@ Reference price € 1.00<br>
 ### Relay module
 Reference price € 1.00<br> 
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/relay.jpg)<br> 
+
+### nRF24L01+PA module
+Reference price € 4.00<br> 
+A more powerful nRF24L01+PA module can get longer range and has External antenna interface. It has a compatible interface with nRF24L01 module<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24L01_PA.jpg)<br> 
 
 ## Video
 
