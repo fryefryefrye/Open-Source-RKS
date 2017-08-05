@@ -1,25 +1,25 @@
 EAGLE AutoRouter Statistics:
 
-Job           : D:/temp/rfid/PCB/rx.brd
+Job           : D:/GitHub/Open-Source-RKS/PCB/rx.brd
 
-Start at      : 21:46:41 (2017/8/1)
-End at        : 21:46:57 (2017/8/1)
-Elapsed time  : 00:00:15
+Start at      : 11:48:21 (2017/8/5)
+End at        : 11:48:34 (2017/8/5)
+Elapsed time  : 00:00:12
 
-Signals       :    36   RoutingGrid: 30 mil  Layers: 2
-Connections   :    29   predefined:  0 ( 0 Vias )
+Signals       :    32   RoutingGrid: 30 mil  Layers: 2
+Connections   :    29   predefined:  0 ( 18 Vias )
 
 Router memory :   54800
 
 Passname          : TopRouter     Route Optimize1 Optimize2 Optimize3 Optimize4
 
-Time per pass     :  00:00:14  00:00:00  00:00:00  00:00:00  00:00:00  00:00:01
-Number of Ripups  :         0         5         0         0         0         0
+Time per pass     :  00:00:12  00:00:00  00:00:00  00:00:00  00:00:00  00:00:00
+Number of Ripups  :         0         7         0         0         0         0
 max. Level        :         0         2         0         0         0         0
-max. Total        :         0         4         0         0         0         0
+max. Total        :         0         9         0         0         0         0
 
-Routed            :        25        29        29        29        29        29
-Vias              :         0         1         1         2         2         2
-Resolution        :    86.2 %   100.0 %   100.0 %   100.0 %   100.0 %   100.0 %
+Routed            :        25        28        28        28        28        28
+Vias              :         0         5         5         2         2         1
+Resolution        :    86.2 %    96.6 %    96.6 %    96.6 %    96.6 %    96.6 %
 
-Final             : 已完成 100.0%
+Final             : 已完成 96.6%

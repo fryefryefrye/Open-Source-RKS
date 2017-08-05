@@ -963,6 +963,27 @@ by exp-lbrs.ulp</description>
 <wire x1="13" y1="-32" x2="0" y2="-32" width="0.127" layer="21"/>
 <wire x1="0" y1="-32" x2="0" y2="0" width="0.127" layer="21"/>
 </package>
+<package name="SOT223">
+<description>&lt;b&gt;SOT-223&lt;/b&gt;</description>
+<wire x1="3.2766" y1="1.651" x2="3.2766" y2="-1.651" width="0.2032" layer="21"/>
+<wire x1="3.2766" y1="-1.651" x2="-3.2766" y2="-1.651" width="0.2032" layer="21"/>
+<wire x1="-3.2766" y1="-1.651" x2="-3.2766" y2="1.651" width="0.2032" layer="21"/>
+<wire x1="-3.2766" y1="1.651" x2="3.2766" y2="1.651" width="0.2032" layer="21"/>
+<rectangle x1="-1.6002" y1="1.8034" x2="1.6002" y2="3.6576" layer="51"/>
+<rectangle x1="-0.4318" y1="-3.6576" x2="0.4318" y2="-1.8034" layer="51"/>
+<rectangle x1="-2.7432" y1="-3.6576" x2="-1.8796" y2="-1.8034" layer="51"/>
+<rectangle x1="1.8796" y1="-3.6576" x2="2.7432" y2="-1.8034" layer="51"/>
+<rectangle x1="-1.6002" y1="1.8034" x2="1.6002" y2="3.6576" layer="51"/>
+<rectangle x1="-0.4318" y1="-3.6576" x2="0.4318" y2="-1.8034" layer="51"/>
+<rectangle x1="-2.7432" y1="-3.6576" x2="-1.8796" y2="-1.8034" layer="51"/>
+<rectangle x1="1.8796" y1="-3.6576" x2="2.7432" y2="-1.8034" layer="51"/>
+<smd name="1" x="-2.3114" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
+<smd name="2" x="0" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
+<smd name="3" x="2.3114" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
+<smd name="4" x="0" y="3.099" dx="3.6" dy="2.2" layer="1"/>
+<text x="-0.8255" y="4.5085" size="0.4064" layer="25">&gt;NAME</text>
+<text x="-1.0795" y="-0.1905" size="0.4064" layer="27">&gt;VALUE</text>
+</package>
 </packages>
 <symbols>
 <symbol name="ESP8266">
@@ -1094,6 +1115,22 @@ by exp-lbrs.ulp</description>
 <pin name="VCC" x="2.54" y="5.08" length="middle" rot="R180"/>
 <text x="-9.144" y="8.128" size="1.778" layer="95" font="vector">&gt;NAME</text>
 <text x="-9.144" y="8.128" size="1.778" layer="95" font="vector">&gt;NAME</text>
+</symbol>
+<symbol name="78ADJ">
+<wire x1="-5.08" y1="-5.08" x2="5.08" y2="-5.08" width="0.4064" layer="94"/>
+<wire x1="5.08" y1="-5.08" x2="5.08" y2="2.54" width="0.4064" layer="94"/>
+<wire x1="5.08" y1="2.54" x2="-5.08" y2="2.54" width="0.4064" layer="94"/>
+<wire x1="-5.08" y1="2.54" x2="-5.08" y2="-5.08" width="0.4064" layer="94"/>
+<pin name="ADJ" x="0" y="-7.62" visible="off" length="short" direction="in" rot="R90"/>
+<pin name="IN" x="-7.62" y="0" visible="off" length="short" direction="in"/>
+<pin name="OUT" x="7.62" y="0" visible="off" length="short" direction="out" rot="R180"/>
+<pin name="OUT@1" x="7.62" y="-2.54" visible="off" length="short" direction="out" rot="R180"/>
+<text x="2.54" y="-7.62" size="1.778" layer="95" font="vector">&gt;NAME</text>
+<text x="2.54" y="-10.16" size="1.778" layer="96" font="vector">&gt;VALUE</text>
+<text x="-2.032" y="-4.318" size="1.524" layer="95" font="vector">ADJ</text>
+<text x="-4.445" y="-0.635" size="1.524" layer="95" font="vector">IN</text>
+<text x="0.889" y="-2.667" size="1.524" layer="95" font="vector">OUT</text>
+<text x="0.889" y="-0.889" size="1.524" layer="95" font="vector">OUT</text>
 </symbol>
 </symbols>
 <devicesets>
@@ -1381,70 +1418,6 @@ This footprint was designed to help hold the alignment of a through-hole compone
 </device>
 </devices>
 </deviceset>
-</devicesets>
-</library>
-<library name="SparkFun-IC-Power">
-<description>&lt;h3&gt;SparkFun Power Driver and Management ICs&lt;/h3&gt;
-In this library you'll find anything that has to do with power delivery, or making power supplies.
-&lt;p&gt;Contents:
-&lt;ul&gt;&lt;li&gt;LDOs&lt;/li&gt;
-&lt;li&gt;Boost/Buck controllers&lt;/li&gt;
-&lt;li&gt;Charge pump controllers&lt;/li&gt;
-&lt;li&gt;Power sequencers&lt;/li&gt;
-&lt;li&gt;Power switches&lt;/li&gt;
-&lt;/ul&gt;&lt;/p&gt;
-&lt;br&gt;
-We've spent an enormous amount of time creating and checking these footprints and parts, but it is &lt;b&gt; the end user's responsibility&lt;/b&gt; to ensure correctness and suitablity for a given componet or application. 
-&lt;br&gt;
-&lt;br&gt;If you enjoy using this library, please buy one of our products at &lt;a href=" www.sparkfun.com"&gt;SparkFun.com&lt;/a&gt;.
-&lt;br&gt;
-&lt;br&gt;
-&lt;b&gt;Licensing:&lt;/b&gt; Creative Commons ShareAlike 4.0 International - https://creativecommons.org/licenses/by-sa/4.0/ 
-&lt;br&gt;
-&lt;br&gt;
-You are welcome to use this library for commercial purposes. For attribution, we ask that when you begin to sell your device using our footprint, you email us with a link to the product being sold. We want bragging rights that we helped (in a very small part) to create your 8th world wonder. We would like the opportunity to feature your device on our homepage.</description>
-<packages>
-<package name="SOT223">
-<description>&lt;b&gt;SOT-223&lt;/b&gt;</description>
-<wire x1="3.2766" y1="1.651" x2="3.2766" y2="-1.651" width="0.2032" layer="21"/>
-<wire x1="3.2766" y1="-1.651" x2="-3.2766" y2="-1.651" width="0.2032" layer="21"/>
-<wire x1="-3.2766" y1="-1.651" x2="-3.2766" y2="1.651" width="0.2032" layer="21"/>
-<wire x1="-3.2766" y1="1.651" x2="3.2766" y2="1.651" width="0.2032" layer="21"/>
-<smd name="1" x="-2.3114" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
-<smd name="2" x="0" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
-<smd name="3" x="2.3114" y="-3.0988" dx="1.2192" dy="2.2352" layer="1"/>
-<smd name="4" x="0" y="3.099" dx="3.6" dy="2.2" layer="1"/>
-<text x="-0.8255" y="4.5085" size="0.4064" layer="25">&gt;NAME</text>
-<text x="-1.0795" y="-0.1905" size="0.4064" layer="27">&gt;VALUE</text>
-<rectangle x1="-1.6002" y1="1.8034" x2="1.6002" y2="3.6576" layer="51"/>
-<rectangle x1="-0.4318" y1="-3.6576" x2="0.4318" y2="-1.8034" layer="51"/>
-<rectangle x1="-2.7432" y1="-3.6576" x2="-1.8796" y2="-1.8034" layer="51"/>
-<rectangle x1="1.8796" y1="-3.6576" x2="2.7432" y2="-1.8034" layer="51"/>
-<rectangle x1="-1.6002" y1="1.8034" x2="1.6002" y2="3.6576" layer="51"/>
-<rectangle x1="-0.4318" y1="-3.6576" x2="0.4318" y2="-1.8034" layer="51"/>
-<rectangle x1="-2.7432" y1="-3.6576" x2="-1.8796" y2="-1.8034" layer="51"/>
-<rectangle x1="1.8796" y1="-3.6576" x2="2.7432" y2="-1.8034" layer="51"/>
-</package>
-</packages>
-<symbols>
-<symbol name="78ADJ">
-<wire x1="-5.08" y1="-5.08" x2="5.08" y2="-5.08" width="0.4064" layer="94"/>
-<wire x1="5.08" y1="-5.08" x2="5.08" y2="2.54" width="0.4064" layer="94"/>
-<wire x1="5.08" y1="2.54" x2="-5.08" y2="2.54" width="0.4064" layer="94"/>
-<wire x1="-5.08" y1="2.54" x2="-5.08" y2="-5.08" width="0.4064" layer="94"/>
-<text x="2.54" y="-7.62" size="1.778" layer="95" font="vector">&gt;NAME</text>
-<text x="2.54" y="-10.16" size="1.778" layer="96" font="vector">&gt;VALUE</text>
-<text x="-2.032" y="-4.318" size="1.524" layer="95" font="vector">ADJ</text>
-<text x="-4.445" y="-0.635" size="1.524" layer="95" font="vector">IN</text>
-<text x="0.889" y="-2.667" size="1.524" layer="95" font="vector">OUT</text>
-<pin name="IN" x="-7.62" y="0" visible="off" length="short" direction="in"/>
-<pin name="ADJ" x="0" y="-7.62" visible="off" length="short" direction="in" rot="R90"/>
-<pin name="OUT" x="7.62" y="0" visible="off" length="short" direction="out" rot="R180"/>
-<pin name="OUT@1" x="7.62" y="-2.54" visible="off" length="short" direction="out" rot="R180"/>
-<text x="0.889" y="-0.889" size="1.524" layer="95" font="vector">OUT</text>
-</symbol>
-</symbols>
-<devicesets>
 <deviceset name="V_REG_LM1117" prefix="U" uservalue="yes">
 <description>&lt;b&gt;Voltage Regulator LM1117&lt;/b&gt;
 Standard adjustable voltage regulator but in SMD form. Spark Fun Electronics SKU : COM-00595</description>
@@ -1538,12 +1511,12 @@ LETTER landscape</description>
 <part name="NANO" library="rx" deviceset="ARDUINO_NANO" device=""/>
 <part name="ESP" library="rx" deviceset="ESP8266_MODULE" device=""/>
 <part name="NRF" library="rx" deviceset="NRF24L01_MODULE" device="_PA"/>
-<part name="U1" library="SparkFun-IC-Power" deviceset="V_REG_LM1117" device="SOT223"/>
 <part name="FRAME1" library="frames" deviceset="LETTER_L" device=""/>
 <part name="POWER" library="rx" deviceset="POWER_REDUCE" device=""/>
 <part name="J1" library="rx" deviceset="OUT_HEAD_3" device="BIG"/>
 <part name="RELAY" library="rx" deviceset="RELAY_MODULE" device=""/>
 <part name="BUZZ" library="rx" deviceset="BUZZ_MODULE" device=""/>
+<part name="U1" library="rx" deviceset="V_REG_LM1117" device="SOT223"/>
 </parts>
 <sheets>
 <sheet>
@@ -1553,13 +1526,13 @@ LETTER landscape</description>
 <instance part="NANO" gate="G$1" x="162.56" y="777.24"/>
 <instance part="ESP" gate="G$1" x="104.14" y="756.92"/>
 <instance part="NRF" gate="G$1" x="104.14" y="777.24"/>
-<instance part="U1" gate="G$1" x="111.76" y="833.12"/>
 <instance part="FRAME1" gate="G$1" x="30.48" y="657.86"/>
 <instance part="FRAME1" gate="G$2" x="177.8" y="657.86"/>
 <instance part="POWER" gate="G$1" x="68.58" y="805.18"/>
 <instance part="J1" gate="G$1" x="68.58" y="822.96"/>
 <instance part="RELAY" gate="G$1" x="119.38" y="805.18" rot="R180"/>
 <instance part="BUZZ" gate="G$1" x="73.66" y="784.86"/>
+<instance part="U1" gate="G$1" x="111.76" y="833.12"/>
 </instances>
 <busses>
 </busses>
@@ -1571,9 +1544,9 @@ LETTER landscape</description>
 <label x="78.74" y="802.64" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="IN"/>
 <wire x1="104.14" y1="833.12" x2="101.6" y2="833.12" width="0.1524" layer="91"/>
 <label x="101.6" y="833.12" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="IN"/>
 </segment>
 <segment>
 <pinref part="NANO" gate="G$1" pin="5V"/>
@@ -1598,9 +1571,9 @@ LETTER landscape</description>
 <label x="78.74" y="807.72" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="ADJ"/>
 <wire x1="111.76" y1="825.5" x2="111.76" y2="822.96" width="0.1524" layer="91"/>
 <label x="109.22" y="822.96" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="ADJ"/>
 </segment>
 <segment>
 <pinref part="POWER" gate="G$1" pin="GND1"/>
@@ -1674,14 +1647,14 @@ LETTER landscape</description>
 </net>
 <net name="+3.3V" class="0">
 <segment>
-<pinref part="U1" gate="G$1" pin="OUT@1"/>
 <wire x1="119.38" y1="830.58" x2="121.92" y2="830.58" width="0.1524" layer="91"/>
 <label x="119.38" y="830.58" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="OUT@1"/>
 </segment>
 <segment>
-<pinref part="U1" gate="G$1" pin="OUT"/>
 <wire x1="119.38" y1="833.12" x2="121.92" y2="833.12" width="0.1524" layer="91"/>
 <label x="119.38" y="833.12" size="1.778" layer="95"/>
+<pinref part="U1" gate="G$1" pin="OUT"/>
 </segment>
 <segment>
 <pinref part="NRF" gate="G$1" pin="VCC"/>
