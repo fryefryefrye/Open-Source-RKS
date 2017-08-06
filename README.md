@@ -36,7 +36,7 @@ After that, just connect 2 cables from battery to power on the nRF24LE1 module i
 All the needles on the module can be cut to short to fit in the thin case.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/nRF24LE1_back.jpg)
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag.jpg).<br>
-It's not a good way showing on the picture, I have order the PCB for TAG. And it is on the way, I will update soon.
+
 
 
 * Make the Controller/Receiver

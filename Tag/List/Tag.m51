@@ -1,4 +1,4 @@
-BL51 BANKED LINKER/LOCATER V6.22                                                        08/03/2017  20:37:15  PAGE 1
+BL51 BANKED LINKER/LOCATER V6.22                                                        08/06/2017  16:55:47  PAGE 1
 
 
 BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
@@ -59,7 +59,7 @@ LINK MAP OF MODULE:  .\Object\Tag (MAIN)
             IDATA   0097H     0001H     UNIT         ?STACK
 
             * * * * * * *  X D A T A   M E M O R Y  * * * * * * *
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 2
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 2
 
 
             XDATA   0000H     0025H     UNIT         ?XD?MAIN
@@ -119,7 +119,7 @@ LINK MAP OF MODULE:  .\Object\Tag (MAIN)
             CODE    0C5AH     0012H     UNIT         ?PR?_HAL_CLK_SET_INPUT?HAL_CLK
             CODE    0C6CH     0012H     UNIT         ?PR?_HAL_RTC_SET_COMPARE_VALUE?HAL_RTC
             CODE    0C7EH     0012H     UNIT         ?PR?_HAL_NRF_CLEAR_IRQ_FLAG?HAL_NRF
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 3
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 3
 
 
             CODE    0C90H     0011H     UNIT         ?PR?ASSEMBLE_DATA?MAIN
@@ -179,7 +179,7 @@ LINK MAP OF MODULE:  .\Object\Tag (MAIN)
             CODE    0EF2H     0004H     UNIT         ?PR?HAL_RTC_CAPTURE?HAL_RTC
             CODE    0EF6H     0003H     UNIT         ?PR?HAL_RTC_GET_CAPTURE_CLOCK_CYCLES?HAL_RTC
             CODE    0EF9H     0003H     UNIT         ?PR?HAL_ADC_READ_LSB?HAL_ADC
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 4
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 4
 
 
             CODE    0EFCH     0003H     UNIT         ?PR?HAL_ADC_READ_MSB?HAL_ADC
@@ -239,7 +239,7 @@ SEGMENT                                            DATA_GROUP          XDATA_GRO
 
 ?PR?MAIN?MAIN                                    0015H    0001H      0025H    0004H
   +--> ?PR?IOINIT?MAIN
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 5
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 5
 
 
   +--> ?PR?MCU_INIT?MAIN
@@ -299,7 +299,7 @@ SEGMENT                                            DATA_GROUP          XDATA_GRO
 ?PR?_HAL_NRF_OPEN_PIPE?HAL_NRF                   0016H    0004H      -----    -----
   +--> ?PR?_HAL_NRF_READ_REG?HAL_NRF
   +--> ?PR?_HAL_NRF_WRITE_REG?HAL_NRF
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 6
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 6
 
 
 
@@ -359,7 +359,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         MODULE        MAIN
   C:0000H         SYMBOL        _ICE_DUMMY_
   D:0080H         PUBLIC        P0
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 7
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 7
 
 
   D:0090H         PUBLIC        P1
@@ -419,7 +419,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         PROC          IOINIT
   C:0EC2H         LINE#         64
   C:0EC2H         LINE#         65
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 8
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 8
 
 
   C:0EC2H         LINE#         66
@@ -479,7 +479,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:094EH         LINE#         120
   C:0953H         LINE#         121
   C:0958H         LINE#         123
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 9
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 9
 
 
   C:095DH         LINE#         125
@@ -539,7 +539,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0256H         LINE#         195
   C:025CH         LINE#         196
   C:0267H         LINE#         198
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 10
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 10
 
 
   -------         ENDPROC       MAIN
@@ -599,7 +599,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0A3AH         LINE#         57
   C:0A43H         LINE#         58
   -------         ENDPROC       _DELAY_MS
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 11
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 11
 
 
   -------         ENDMOD        HAL_DELAY
@@ -659,7 +659,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         ENDPROC       _HAL_CLK_SET_16M_SOURCE
   -------         PROC          HAL_CLK_GET_16M_SOURCE
   -------         DO            
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 12
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 12
 
 
   D:0007H         SYMBOL        clock_source
@@ -719,7 +719,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0EF2H         PUBLIC        hal_rtc_capture
   C:0003H         PUBLIC        hal_rtc_get_compare_value
   C:0C6CH         PUBLIC        _hal_rtc_set_compare_value
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 13
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 13
 
 
   C:0B4CH         PUBLIC        hal_rtc_get_capture_value
@@ -779,7 +779,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         PROC          _HAL_RTC_SET_COMPARE_VALUE
   D:0006H         SYMBOL        value
   -------         DO            
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 14
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 14
 
 
   D:0005H         SYMBOL        compare_status
@@ -839,7 +839,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   D:0090H         PUBLIC        P1
   C:0EF9H         PUBLIC        hal_adc_read_LSB
   D:00A0H         PUBLIC        P2
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 15
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 15
 
 
   C:0EFCH         PUBLIC        hal_adc_read_MSB
@@ -899,7 +899,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0CF2H         LINE#         46
   C:0D01H         LINE#         47
   -------         ENDPROC       _HAL_ADC_SET_CONVERSION_MODE
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 16
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 16
 
 
   -------         PROC          _HAL_ADC_SET_SAMPLING_RATE
@@ -959,7 +959,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0EFCH         LINE#         95
   C:0EFCH         LINE#         96
   C:0EFEH         LINE#         97
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 17
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 17
 
 
   -------         ENDPROC       HAL_ADC_READ_MSB
@@ -1019,7 +1019,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   D:00B8H         PUBLIC        IEN1
   C:0E92H         PUBLIC        hal_wdog_restart
   D:0088H         PUBLIC        TCON
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 18
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 18
 
 
   D:00AFH         PUBLIC        WDSV
@@ -1079,7 +1079,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0E9BH         PUBLIC        hal_nrf_get_irq_flags
   C:0ABBH         PUBLIC        _hal_nrf_set_power_mode
   C:0E56H         PUBLIC        hal_nrf_get_carrier_detect
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 19
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 19
 
 
   C:0EA3H         PUBLIC        _hal_nrf_set_rx_payload_width
@@ -1139,7 +1139,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0A97H         LINE#         190
   C:0A97H         LINE#         192
   C:0A9EH         LINE#         194
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 20
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 20
 
 
   C:0AA3H         LINE#         195
@@ -1199,7 +1199,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         PROC          _HAL_NRF_SET_IRQ_MODE
   D:0049H         SYMBOL        int_source
   D:004AH         SYMBOL        irq_state
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 21
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 21
 
 
   -------         DO            
@@ -1259,7 +1259,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         ENDPROC       HAL_NRF_GET_IRQ_FLAGS
   -------         PROC          _HAL_NRF_OPEN_PIPE
   D:0016H         SYMBOL        pipe_num
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 22
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 22
 
 
   D:0017H         SYMBOL        auto_ack
@@ -1319,7 +1319,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:06E0H         LINE#         356
   C:06ECH         LINE#         357
   C:06ECH         LINE#         358
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 23
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 23
 
 
   C:06ECH         LINE#         359
@@ -1379,7 +1379,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0917H         LINE#         411
   C:0923H         LINE#         412
   C:0923H         LINE#         413
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 24
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 24
 
 
   C:0935H         LINE#         414
@@ -1439,7 +1439,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0330H         LINE#         453
   C:0337H         LINE#         455
   C:034FH         LINE#         456
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 25
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 25
 
 
   C:034FH         LINE#         457
@@ -1499,7 +1499,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0736H         LINE#         507
   C:073DH         LINE#         508
   C:073FH         LINE#         509
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 26
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 26
 
 
   C:073FH         LINE#         510
@@ -1559,7 +1559,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:07CCH         LINE#         556
   C:07CCH         LINE#         557
   C:07CCH         LINE#         558
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 27
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 27
 
 
   C:07D3H         LINE#         559
@@ -1619,7 +1619,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0EE0H         LINE#         607
   C:0EE5H         LINE#         608
   -------         ENDPROC       HAL_NRF_GET_FIFO_STATUS
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 28
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 28
 
 
   -------         PROC          HAL_NRF_GET_TRANSMIT_ATTEMPTS
@@ -1679,7 +1679,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   D:004FH         SYMBOL        feature
   -------         ENDDO         
   C:0A6EH         LINE#         649
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 29
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 29
 
 
   C:0A70H         LINE#         650
@@ -1739,7 +1739,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0E62H         LINE#         691
   C:0E67H         LINE#         692
   C:0E69H         LINE#         693
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 30
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 30
 
 
   -------         ENDPROC       HAL_NRF_REUSE_TX
@@ -1799,7 +1799,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:096AH         LINE#         737
   C:0971H         LINE#         738
   C:098EH         LINE#         740
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 31
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 31
 
 
   C:0995H         LINE#         741
@@ -1859,7 +1859,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         ENDDO         
   -------         DO            
   D:0012H         SYMBOL        buf
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 32
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 32
 
 
   D:0012H         SYMBOL        buf
@@ -1919,7 +1919,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:014AH         LINE#         857
   C:014CH         LINE#         859
   C:014CH         LINE#         860
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 33
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 33
 
 
   C:0155H         LINE#         861
@@ -1979,7 +1979,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:045AH         LINE#         909
   C:0463H         LINE#         910
   C:0489H         LINE#         911
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 34
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 34
 
 
   C:0489H         LINE#         913
@@ -2039,7 +2039,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0787H         LINE#         48
   C:078EH         LINE#         49
   C:0795H         LINE#         50
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 35
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 35
 
 
   C:0797H         LINE#         51
@@ -2099,7 +2099,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   C:0B07H         LINE#         103
   C:0B07H         LINE#         105
   C:0B0EH         LINE#         107
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 36
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 36
 
 
   C:0B10H         LINE#         108
@@ -2159,7 +2159,7 @@ SYMBOL TABLE OF MODULE:  .\Object\Tag (MAIN)
   -------         ENDMOD        ?C?CLDOPTR
 
   -------         MODULE        ?C?CSTPTR
-BL51 BANKED LINKER/LOCATER V6.22                                                      08/03/2017  20:37:15  PAGE 37
+BL51 BANKED LINKER/LOCATER V6.22                                                      08/06/2017  16:55:47  PAGE 37
 
 
   C:02B1H         PUBLIC        ?C?CSTPTR
