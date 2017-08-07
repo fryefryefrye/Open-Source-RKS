@@ -39,12 +39,21 @@ unsigned char  DoorLastOnID = 0;
 bool BuzzOnOff;
 bool AlarmOnOff;
 
+#define RF_315 6
+#define RF_LENGTH 11
+unsigned char  RfCommand[3][RF_LENGTH]={//Lock,Unlock,Power
+								{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB2 ,0xDB ,0x7F},
+								{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0x5B ,0x7F},
+								{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0xCB ,0x7F}
+								};
+
 
 
 void setup()
 {
 
     pinMode(DOOR, OUTPUT);
+	pinMode(RF_315, OUTPUT);
 
     Serial.begin(9600);
     Serial.println(F("RF24_WiFi_ID_Read"));
@@ -155,10 +164,47 @@ void loop()
     {
 
     }
-    Door_task();
-    Buzz_task();
+    //Door_task();
+    //Buzz_task();
+	//RF_task();
+	
+	RF_Command(2,10);
+	delay(10000);
+	RF_Command(1,10);
 } // Loop
 
+void RF_Command(unsigned char command,unsigned char repeat)
+{
+	unsigned char k;//bit
+	unsigned char j;//repeat
+	unsigned char i;//byte
+	
+	for(j = 0;j < repeat;j++)
+	{
+		for(i = 0;i < RF_LENGTH;i++)
+		{
+			for(k = 0;k < 8;k++)
+			{
+				if((RfCommand[command][i]>>(7-k))&1)
+				{
+					digitalWrite(RF_315, LOW);
+					//Serial.print(1);
+				}
+				else
+				{
+					digitalWrite(RF_315, HIGH);
+					//Serial.print(0);
+				}
+				delayMicroseconds(514);
+			}
+		}
+		delay(12);
+		printf("\r\n");
+	}
+	
+	digitalWrite(RF_315, LOW);
+	
+}
 void Door_task()
 {
     if (DoorLastOnOff != DoorOnOff)//update relay when door status change
