@@ -99,6 +99,10 @@ void setup()
     radio.setAutoAck(0,false);
     //Start the radio listening for data
     radio.startListening();
+
+
+    CurrentRecord = FindLastRecord();
+    
 }
 
 void loop()
@@ -190,6 +194,10 @@ void loop()
     )// millis() is stored in a long. it will overflow in 49 days. so a little complex here.
 
     {
+
+
+
+
         DoorOnOff = true;
         AlarmOnOff = true;
     }
@@ -214,6 +222,11 @@ void Door_task()
         DoorLastOnOff = DoorOnOff;
         if(DoorOnOff)
         {
+           Record.tag_time=SecondsSince1970+RealTimeOffset;
+Record.code= GotData[0];
+Record.ID =  GotData[1];
+Record.volt = Volt;
+        InsertRecord(&Record);
             printf("Open door. \r\n");
             digitalWrite(DOOR, HIGH);
         }
@@ -278,7 +291,15 @@ void Buzz_task()
     }
 }
 
-
+void InsertRecord(tRecord * pRecord)
+{
+      CurrentRecord++;
+      if(CurrentRecord>=RecordCounter)
+      {
+        CurrentRecord = 0;
+      }
+      WriteRecord(CurrentRecord,pRecord);
+}
 
 
 void WriteRecord(unsigned char index,tRecord * pRecord)
@@ -286,12 +307,10 @@ void WriteRecord(unsigned char index,tRecord * pRecord)
     unsigned char i;
     for(i=0; i<RecordLength; i++)
     {
-        EEPROM.write(CurrentRecord*RecordLength+i,*(((unsigned char *)(pRecord))+i));
+        EEPROM.write(index*RecordLength+i,*(((unsigned char *)(pRecord))+i));
     }
     t = pRecord->tag_time;
-    printf("Write Record! Date Time = %d-%d-%d %d:%d:%d Code:%d. ID:%d. Volt:%d mV\r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
-
-
+    printf("Write Record! Index %d. Date Time = %d-%d-%d %d:%d:%d Code:%d. ID:%d. Volt:%d mV\r\n",index,year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
 }
 
 void ReadRecord(unsigned char index,tRecord * pRecord)
@@ -299,11 +318,34 @@ void ReadRecord(unsigned char index,tRecord * pRecord)
     unsigned char i;
     for(i=0; i<RecordLength; i++)
     {
-        *(((unsigned char *)(pRecord))+i) = EEPROM.read(CurrentRecord*RecordLength+i);
+        *(((unsigned char *)(pRecord))+i) = EEPROM.read(index*RecordLength+i);
     }
 
     t = pRecord->tag_time;
-    printf("Read Record! Date Time = %d-%d-%d %d:%d:%d Code:%d. ID:%d. Volt:%d mV\r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
+    printf("Read Record! Index %d. Date Time = %d-%d-%d %d:%d:%d Code:%d. ID:%d. Volt:%d mV\r\n",index,year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
+}
+
+unsigned char FindLastRecord()
+{
+  tRecord Record;
+    unsigned char i;
+    unsigned char MaxIndex = 0;
+    unsigned long MaxTime = 0;
+    for(i=0; i<RecordCounter; i++)
+    {
+        ReadRecord(i,&Record);
+        if(MaxTime<Record.tag_time)
+        {
+          MaxTime = Record.tag_time;
+          MaxIndex = i;          
+        }
+    }
+
+    t = MaxTime;
+    printf("Max Record index %d! Date Time = %d-%d-%d %d:%d:%d \r\n",MaxIndex,year(t) ,month(t),day(t),hour(t),minute(t),second(t));
+
+return MaxIndex;
+  
 }
 
 void SecondsSince1970Task()
