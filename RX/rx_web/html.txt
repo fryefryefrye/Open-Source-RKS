@@ -1,0 +1,24 @@
+Request
+
+GET / HTTP/1.1
+
+
+
+Response
+
+HTTP/1.1 200 OK
+Content-Type: text/html
+
+
+<html lang="zh-cn">
+<head>
+<title>HTML</title>
+</head>
+<body>
+aaa<br>
+bbb<br>
+ccc<br>
+ddd<br>
+eee<br>
+</body>
+</html>

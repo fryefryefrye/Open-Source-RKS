@@ -54,10 +54,11 @@ struct tRecord
 tRecord Record;
 unsigned char RecordLength = sizeof(Record);
 unsigned char RecordCounter = 1024/RecordLength;
-unsigned char CurrentRecord = 0;
+unsigned char NextRecord = 0;
 time_t t;
 unsigned long SecondsSince1970;
-unsigned long RealTimeOffset = 1502202450;
+//unsigned long RealTimeOffset = 1502202450;
+unsigned long RealTimeOffset = 3711269916-2208988800;
 unsigned long LastMillis = 0;
 
 
@@ -101,7 +102,7 @@ void setup()
     radio.startListening();
 
 
-    CurrentRecord = FindLastRecord();
+    NextRecord = FindLastRecord();
     
 }
 
@@ -112,9 +113,9 @@ void loop()
 //Record.code++;
 //Record.ID++;
 //Record.volt++;
-//WriteRecord(CurrentRecord,&Record);
-//ReadRecord(CurrentRecord,&Record);
-// CurrentRecord++;
+//WriteRecord(NextRecord,&Record);
+//ReadRecord(NextRecord,&Record);
+// NextRecord++;
 
 
     SecondsSince1970Task();
@@ -293,12 +294,14 @@ void Buzz_task()
 
 void InsertRecord(tRecord * pRecord)
 {
-      CurrentRecord++;
-      if(CurrentRecord>=RecordCounter)
+        WriteRecord(NextRecord,pRecord);
+        
+      NextRecord++;
+      if(NextRecord>=RecordCounter)
       {
-        CurrentRecord = 0;
+        NextRecord = 0;
       }
-      WriteRecord(CurrentRecord,pRecord);
+
 }
 
 
@@ -322,29 +325,29 @@ void ReadRecord(unsigned char index,tRecord * pRecord)
     }
 
     t = pRecord->tag_time;
-    printf("Read Record! Index %d. Date Time = %d-%d-%d %d:%d:%d Code:%d. ID:%d. Volt:%d mV\r\n",index,year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
+    printf("Read Record! Index %03d. Date Time = %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV\r\n",index,year(t) ,month(t),day(t),hour(t),minute(t),second(t),pRecord->code,pRecord->ID,pRecord->volt);
 }
 
 unsigned char FindLastRecord()
 {
   tRecord Record;
     unsigned char i;
-    unsigned char MaxIndex = 0;
-    unsigned long MaxTime = 0;
+    unsigned char MinIndex = 0;
+    unsigned long MinTime = 0xFFFFFFFF;
     for(i=0; i<RecordCounter; i++)
     {
         ReadRecord(i,&Record);
-        if(MaxTime<Record.tag_time)
+        if(MinTime>Record.tag_time)
         {
-          MaxTime = Record.tag_time;
-          MaxIndex = i;          
+          MinTime = Record.tag_time;
+          MinIndex = i;          
         }
     }
 
-    t = MaxTime;
-    printf("Max Record index %d! Date Time = %d-%d-%d %d:%d:%d \r\n",MaxIndex,year(t) ,month(t),day(t),hour(t),minute(t),second(t));
+    t = MinTime;
+    printf("Min Record index %03d! Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",MinIndex,year(t) ,month(t),day(t),hour(t),minute(t),second(t));
 
-return MaxIndex;
+return MinIndex;
   
 }
 
@@ -364,7 +367,7 @@ void SecondsSince1970Task()
         SecondsSince1970++;
 
         t=SecondsSince1970+RealTimeOffset;
-        printf("Date Time = %d-%d-%d %d:%d:%d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
+        printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
 
     }
 }
