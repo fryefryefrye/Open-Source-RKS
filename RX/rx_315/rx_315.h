@@ -7,6 +7,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define DATA_LENGTH 4					//use fixed data length 1-32
 #define BUZZON 1000				//set lenght of the buzz
 #define BUZZOFF 30000			//set interval of the buzz
+
+#define DEGBUG_OUTPUT
 /*****************************************************/
 
 
@@ -24,11 +26,15 @@ RF24 radio(7,8);
 
 unsigned long PackageCounter = 0;
 unsigned char CurrCH = 0;
-unsigned long LastChangeCHTime = 0;
-unsigned long LastGetTime = 0;
 unsigned long CurrTime = 0;
+unsigned long LastChangeCHTime = 0;
+
+unsigned long LastKeyGetTime = 0;
+unsigned long LastHomeGetTime = 0;
+
 unsigned char GotData[DATA_LENGTH];
 unsigned long Volt;   //unit: mV,
+unsigned long SecondsSinceStart;
 
 
 
@@ -43,19 +49,22 @@ unsigned char  RfCommand[3][RF_LENGTH]={//Lock,Unlock,Power
 
 
 void RF_Command(unsigned char command,unsigned char repeat);
+void SecondsSinceStartTask();
+void nRFTask();
+void ChHopTask();
 
 
 
 
 void setup()
 {
-
-	pinMode(DOOR, OUTPUT);
 	pinMode(RF_315, OUTPUT);
 
+#ifdef DEGBUG_OUTPUT
 	Serial.begin(9600);
 	Serial.println(F("RF24_WiFi_ID_Read"));
 	printf_begin();
+#endif
 
 
 
@@ -87,8 +96,20 @@ void setup()
 
 void loop()
 {
+	SecondsSinceStartTask();
+	nRFTask();
+	ChHopTask();
+
+	//RF_task();
+
+	RF_Command(2,10);
+	delay(10000);
+	RF_Command(1,20);
+} // Loop
 
 
+void nRFTask()
+{
 	if( radio.available())
 	{
 		// Variable for the received timestamp
@@ -96,12 +117,23 @@ void loop()
 		{
 			radio.read( GotData, sizeof(unsigned long) );             // Get the payload
 		}
+
+		PackageCounter++;
+
 		Volt=1.2*(GotData[DATA_LENGTH-2]*256+GotData[DATA_LENGTH-1])*3*1000/4096;
 
-		LastGetTime = millis();
-		PackageCounter ++;
+		if (GotData[0] == 0)
+		{
+			LastKeyGetTime = SecondsSinceStart;
+		}
+		else if (GotData[0] == 1)
+		{
+			LastHomeGetTime = SecondsSinceStart;
+		}
 
 
+
+#ifdef DEGBUG_OUTPUT
 		Serial.print(PackageCounter);
 		Serial.print(" ");
 		Serial.print(F("Get data "));
@@ -111,62 +143,26 @@ void loop()
 		}
 		printf("Volt:%d ",Volt);
 		printf("CH:%d\r\n",CurrCH);
+#endif
 	}
 
-
-	CurrTime = millis();
-
-
-	if (abs(CurrTime - LastChangeCHTime>1000))//RF_HOP
+}
+void ChHopTask()
+{
+	if (SecondsSinceStart - LastChangeCHTime>0)//RF_HOP every seconds
 	{
 		CurrCH++;
 		if (CurrCH>2)
 		{
 			CurrCH = 0;
 		}
-		LastChangeCHTime = millis();
+		LastChangeCHTime = SecondsSinceStart;
 		radio.stopListening();
 		radio.setChannel(HopCH[CurrCH]);
 		radio.startListening();
 	}
+}
 
-
-
-	if (
-		(
-		(
-		(CurrTime>=LastGetTime)
-		?
-		(CurrTime - LastGetTime<TIME_OUT_CLOSE_DOOR)
-		:
-	((0xFFFFFFFF-LastGetTime)+CurrTime<TIME_OUT_CLOSE_DOOR)
-		)
-		)
-		&&
-		(
-		LastGetTime!=0
-		)
-		)// millis() is stored in a long. it will overflow in 49 days. so a little complex here.
-
-	{
-
-	}
-	else
-	{
-
-	}
-
-	if ( Serial.available() )
-	{
-
-	}
-
-	//RF_task();
-
-	RF_Command(2,10);
-	delay(10000);
-	RF_Command(1,10);
-} // Loop
 
 void RF_Command(unsigned char command,unsigned char repeat)
 {
@@ -199,4 +195,26 @@ void RF_Command(unsigned char command,unsigned char repeat)
 
 	digitalWrite(RF_315, LOW);
 
+}
+
+
+unsigned long LastMillis = 0;
+void SecondsSinceStartTask()
+{
+	unsigned long CurrentMillis = millis();
+	if
+		(
+		(CurrentMillis>=LastMillis)
+		?
+		((CurrentMillis-LastMillis)> 1000)
+		:
+	((0xFFFFFFFF-LastMillis)+CurrentMillis>1000)
+		)
+	{
+		LastMillis = (CurrentMillis/1000)*1000;
+		SecondsSinceStart++;
+
+		printf("SecondsSinceStart = %d ; LastMillis = %d\r\n",SecondsSinceStart,LastMillis);
+
+	}
 }

@@ -5,11 +5,15 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define DATA_LENGTH 4                    //use fixed data length 1-32
 #define BUZZON 1000                //set lenght of the buzz
 #define BUZZOFF 30000            //set interval of the buzz
+
+
+#define DEGBUG_OUTPUT
+#define WIFI_SERIAL Serial3
 /*****************************************************/
 
 
 
-#define WIFI_SERIAL Serial3
+
 
 
 
@@ -74,6 +78,7 @@ unsigned long SecondsSinceStart = 0;
 unsigned long Start1970OffSet = 0;
 unsigned long TempSecondsSince1970 = 0;
 unsigned long LastSyncTime = 0;
+signed long LastSyncOffSet = 0;
 bool NtpWorking = false;
 bool NtpSync = false;
 unsigned char NtpDataIndex = 0;
@@ -96,8 +101,9 @@ typedef enum
 	STEP_SERVER_SET,
 	STEP_PROCESS_TIME,
 	STEP_WAIT_REQUEST,
-	STEP_WAIT_LOOK_PATH,
 	STEP_SEND_HTTP_HEAD,
+	STEP_SEND_HTTP_TITLE,
+	STEP_SEND_HTTP_TITLE_LEN,
 	STEP_SEND_HTTP_BODY_LEN,
 	STEP_SEND_HTTP_BODY,
 	STEP_SEND_HTTP_END_LEN,
@@ -106,14 +112,14 @@ typedef enum
 } eWiFiStep;
 
 
-eWiFiStep WiFiStep = STEP_WIFI_IDLE;
+eWiFiStep WiFiNextStep = STEP_WIFI_IDLE;
 bool WiFiLastReslut = false;
 bool WiFiOK = false;
 
 
 
 unsigned char TimeOut = 0;
-unsigned long SentTime = 0;
+unsigned long ActiveTime = 0;
 eWiFiStep TimeOutStep;
 
 bool bWebStarted = false;
@@ -145,7 +151,7 @@ void StartNtp();
 void ProcessNTP(unsigned long data);
 void CheckTimeOut();
 void CheckForInput();
-bool CheckRet(unsigned char data,const char * ret);
+bool CheckResponse(unsigned char data,const char * ret);
 bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara);
 void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
@@ -155,12 +161,17 @@ unsigned char CharLength(char * MyChar);
 void setup()
 {
 
-	pinMode(DOOR, OUTPUT);
 
+
+
+#ifdef DEGBUG_OUTPUT
 	Serial.begin(9600);
-	WIFI_SERIAL.begin(115200);
 	Serial.println(F("RF24_WiFi_ID_Read"));
 	printf_begin();
+#endif
+	WIFI_SERIAL.begin(115200);
+
+	pinMode(DOOR, OUTPUT);
 
 
 	radio.begin();
@@ -211,6 +222,7 @@ void loop()
 		PackageCounter ++;
 
 
+#ifdef DEGBUG_OUTPUT
 		Serial.print(PackageCounter);
 		Serial.print(" ");
 		Serial.print(F("Get data "));
@@ -220,6 +232,8 @@ void loop()
 		}
 		printf("Volt:%d ",Volt);
 		printf("CH:%d\r\n",CurrCH);
+#endif
+
 	}
 
 
@@ -277,7 +291,7 @@ void loop()
 	//}
 
 
-	if ((!WiFiOK)&&(WiFiStep == STEP_WIFI_IDLE))
+	if ((!WiFiOK)&&(WiFiNextStep == STEP_WIFI_IDLE))
 	{
 		ConnectAp();
 	}
@@ -455,7 +469,7 @@ void SecondsSinceStartTask()
 		LastMillis = (CurrentMillis/1000)*1000;
 		SecondsSinceStart++;
 
-		time_t t = SecondsSinceStart + Start1970OffSet;
+		//time_t t = SecondsSinceStart + Start1970OffSet;
 		//printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
 		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
 
@@ -471,7 +485,7 @@ void WebStart()
 	WIFI_SERIAL.print(F("AT+CIPMUX=1\r\n"));
 	//TimeOut = 1;
 	//WiFiTask = TASK_WEB_SERVER;
-	WiFiStep = STEP_SET_MUX;
+	WiFiNextStep = STEP_SET_MUX;
 }
 
 void ConnectAp()
@@ -479,13 +493,13 @@ void ConnectAp()
 	WIFI_SERIAL.print(F("+++"));
 	delay(100);
 	WIFI_SERIAL.print(F("AT+CWMODE=3\r\n"));
-	WiFiStep = STEP_RESET;
+	WiFiNextStep = STEP_RESET;
 }
 
 void StartNtp()
 {
 	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\",\"24.56.178.140\",123\r\n"));
-	WiFiStep = STEP_SEND_TIME_REQUEST_LEN;
+	WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
 	NtpDataIndex = 0;
 	TempSecondsSince1970 = 0;
 }
@@ -510,8 +524,10 @@ void ProcessNTP(unsigned long data)
 		TempSecondsSince1970 = TempSecondsSince1970 + data ;
 		LastSyncTime = TempSecondsSince1970-2208988800+8*60+8*3600-145;
 		Start1970OffSet = LastSyncTime-SecondsSinceStart;
+		LastSyncOffSet = SecondsSinceStart+Start1970OffSet-LastSyncTime;
 		NtpSync = true;
 		NtpWorking = false;
+		TimeOut = 5;
 		time_t t = LastSyncTime;
 		printf("\r\nDate Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
 	}
@@ -523,14 +539,20 @@ void CheckTimeOut()
 {
 	if (TimeOut!=0)
 	{
-		if(SecondsSinceStart - SentTime > TimeOut)
+		if(SecondsSinceStart - ActiveTime > TimeOut)
 		{
-			if (WiFiStep == STEP_GET_TIME)
+			if ((WiFiNextStep == STEP_GET_TIME) ||  (WiFiNextStep == STEP_PROCESS_TIME))
 			{
-				WiFiStep = STEP_SEND_TIME_REQUEST_LEN;
+				WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
 				OnWiFiData('O');
 				OnWiFiData('K');
 				TimeOut = 0;
+			}
+			if ((WiFiNextStep > STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
+			{
+				printf("\r\n close when time out \r\n");
+				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
+				WiFiNextStep = STEP_WAIT_REQUEST;
 			}
 
 		}
@@ -547,18 +569,21 @@ void CheckForInput()
 
 		OnWiFiData(RetData);
 
+#ifdef DEGBUG_OUTPUT
 		Serial.write(RetData);
+#endif
+
 	}
 }
 
-bool CheckRet(unsigned char data,const char * ret)
+bool CheckResponse(unsigned char GetData,const char * ExpectResponse)
 {
-	static  char OkBytePostion = -1;
-	if (data == ret[OkBytePostion+1])
+	static  char CheckedBytePostion = -1;
+	if (GetData == ExpectResponse[CheckedBytePostion+1])
 	{
-		OkBytePostion++;
+		CheckedBytePostion++;
 		//printf("One byte OK = %c ,OkBytePostion = %d\r\n",data,OkBytePostion);
-		if(ret[OkBytePostion+1] == 0)
+		if(ExpectResponse[CheckedBytePostion+1] == 0)
 		{
 			//printf("compare to end,OK \r\n",data);
 			return true;
@@ -567,25 +592,25 @@ bool CheckRet(unsigned char data,const char * ret)
 	else
 	{
 		//printf("One byte wrong,go back = %c \r\n",data);
-		OkBytePostion = -1;
+		CheckedBytePostion = -1;
 	}
 
 	return false;
 }
 
-bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara)
+bool CheckParameter(unsigned char GetData,const char * pPrefix,unsigned char * pPara)
 {
 	static bool PrefixFound = false;
 	if(!PrefixFound)
 	{
-		if (CheckRet(data,ret))
+		if (CheckResponse(GetData,pPrefix))
 		{
 			PrefixFound = true;
 		}
 	}
 	else
 	{
-		*pPara = data;
+		*pPara = GetData;
 		PrefixFound = false;
 		return true;
 	}
@@ -593,9 +618,9 @@ bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara)
 
 }
 
-void OnWiFiData(unsigned char data)
+void OnWiFiData(unsigned char GetData)
 {
-	switch  (WiFiStep)
+	switch  (WiFiNextStep)
 	{
 		//    case STEP_TRUN_OFF_TRANS:
 		//        //printf("\r\n  STEP_TRUN_OFF_TRANS time out =%d; \r\n",SecondsSinceStart - SentTime);
@@ -607,30 +632,30 @@ void OnWiFiData(unsigned char data)
 		//        break;
 
 	case STEP_RESET:
-		if (CheckRet(data,"OK"))
+		if (CheckResponse(GetData,"OK"))
 		{
 			WIFI_SERIAL.print(F("AT+RST\r\n"));
-			WiFiStep = STEP_CHECK_WIFI_GOT_IP;
+			WiFiNextStep = STEP_CHECK_WIFI_GOT_IP;
 		}
 		break;
 	case STEP_CHECK_WIFI_GOT_IP:
-		if (CheckRet(data,"WIFI GOT IP"))
+		if (CheckResponse(GetData,"WIFI GOT IP"))
 		{
-			WiFiStep = STEP_WIFI_IDLE;
+			WiFiNextStep = STEP_WIFI_IDLE;
 			WiFiOK = true;
 		}
 		break;
 
 	case STEP_SEND_TIME_REQUEST_LEN:
-		if (CheckRet(data,"OK"))
+		if (CheckResponse(GetData,"OK"))
 		{
 			WIFI_SERIAL.print(F("AT+CIPSEND=48\r\n"));
-			WiFiStep = STEP_SEND_TIME_REQUEST;
+			WiFiNextStep = STEP_SEND_TIME_REQUEST;
 		}
 		break;
 
 	case STEP_SEND_TIME_REQUEST:
-		if (CheckRet(data,">"))
+		if (CheckResponse(GetData,">"))
 		{
 			for(unsigned char i = 0; i<48 ; i++)
 			{
@@ -639,41 +664,40 @@ void OnWiFiData(unsigned char data)
 				
 			}
 
-			SentTime = SecondsSinceStart;
+			ActiveTime = SecondsSinceStart;
 			TimeOut = 5;
-			WiFiStep = STEP_GET_TIME;
+			WiFiNextStep = STEP_GET_TIME;
 			return;
 		}
 		break;
 	case STEP_GET_TIME:
-		if (CheckRet(data,"+IPD,48:"))
+		if (CheckResponse(GetData,"+IPD,48:"))
 		{
-			TimeOut = 0;
-			WiFiStep = STEP_PROCESS_TIME;
+			WiFiNextStep = STEP_PROCESS_TIME;
 		}
 		break;
 
 	case STEP_PROCESS_TIME:
-		ProcessNTP(data);
+		ProcessNTP(GetData);
 		break;
 
 	case STEP_SET_MUX:
-		if (CheckRet(data,"OK"))
+		if (CheckResponse(GetData,"OK"))
 		{
 			WIFI_SERIAL.print(F("AT+CIPSERVER=1,8081\r\n"));
-			WiFiStep = STEP_SERVER_SET;
+			WiFiNextStep = STEP_SERVER_SET;
 		}
 		break;
 	case STEP_SERVER_SET:
-		if (CheckRet(data,"OK"))
+		if (CheckResponse(GetData,"OK"))
 		{
-			WiFiStep = STEP_WAIT_REQUEST;
+			WiFiNextStep = STEP_WAIT_REQUEST;
 		}
 		break;
 
 	case STEP_WAIT_REQUEST:
 		unsigned char Para;
-		if (CheckParameter(data,"GET /",&Para))
+		if (CheckParameter(GetData,"GET /",&Para))
 		{
 			//printf("\r\n Get para = \"%c\"  value = %d \r\n",Para,Para);
 			if (Para == ' ')
@@ -683,34 +707,71 @@ void OnWiFiData(unsigned char data)
 				WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
 				WIFI_SERIAL.print(strlen_P(HttpResponseHead));
 				WIFI_SERIAL.print(F("\r\n"));
-				WiFiStep = STEP_SEND_HTTP_HEAD;
+				WiFiNextStep = STEP_SEND_HTTP_HEAD;
+
+				ActiveTime = SecondsSinceStart;
+				TimeOut = 5;
 			}
 			else
 			{
 				printf("\r\n close not request home page \r\n");
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-				WiFiStep = STEP_WAIT_REQUEST;
+				WiFiNextStep = STEP_WAIT_REQUEST;
 			}
 		}
 
 		break;
 
 	case STEP_SEND_HTTP_HEAD:
-		if (CheckRet(data,">"))
+		if (CheckResponse(GetData,">"))
 		{
 			printf("\r\n send response head \r\n");
 			for(unsigned char i = 0; i<strlen_P(HttpResponseHead) ; i++)
 			{
 				WIFI_SERIAL.print(pgm_read_byte_near(HttpResponseHead+i));
 			}
-			WiFiStep = STEP_SEND_HTTP_BODY_LEN;
+			WiFiNextStep = STEP_SEND_HTTP_TITLE_LEN;
 			ReadedRecord = 0;
 			LatestRecord = (NextRecord>0?NextRecord-1:RecordCounter-1);
+
+			ActiveTime = SecondsSinceStart;
+		}
+		break;
+
+
+	case STEP_SEND_HTTP_TITLE_LEN:
+		if (CheckResponse(GetData,"SEND OK"))
+		{
+			printf("\r\n send TITLE len \r\n");
+			t = LastSyncTime;
+			time_t t2 = SecondsSinceStart+Start1970OffSet;
+			sprintf(CharRecord,"Time: %03d %d-%02d-%02d %02d:%02d:%02d <br>\r\n Last Sync:%03d %d-%02d-%02d %02d:%02d:%02d   OffSet: %d<br>\r\n",year(t2) ,month(t2),day(t),hour(t2),minute(t2),second(t2),year(t) ,month(t),day(t),hour(t),minute(t),second(t),LastSyncOffSet);
+			CharRecordLen = CharLength(CharRecord);
+			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
+			WIFI_SERIAL.print(CharRecordLen);
+			WIFI_SERIAL.print(F("\r\n"));
+
+			WiFiNextStep = STEP_SEND_HTTP_BODY;
+			ActiveTime = SecondsSinceStart;
+		}
+		break;
+
+	case STEP_SEND_HTTP_TITLE:
+		if (CheckResponse(GetData,">"))
+		{
+			printf("\r\n send HTTP_TITLE\r\n");
+
+			for(unsigned char i = 0; i<CharRecordLen ; i++)
+			{
+				WIFI_SERIAL.print(CharRecord[i]);
+			}
+			WiFiNextStep = STEP_SEND_HTTP_BODY_LEN;
+			ActiveTime = SecondsSinceStart;
 		}
 		break;
 
 	case STEP_SEND_HTTP_BODY_LEN:
-		if (CheckRet(data,"SEND OK"))
+		if (CheckResponse(GetData,"SEND OK"))
 		{
 			printf("\r\n send body len \r\n");
 
@@ -728,13 +789,14 @@ void OnWiFiData(unsigned char data)
 			WIFI_SERIAL.print(CharRecordLen);
 			WIFI_SERIAL.print(F("\r\n"));
 
-			WiFiStep = STEP_SEND_HTTP_BODY;
+			WiFiNextStep = STEP_SEND_HTTP_BODY;
+			ActiveTime = SecondsSinceStart;
 		}
 		break;
 
 
 	case STEP_SEND_HTTP_BODY:
-		if (CheckRet(data,">"))
+		if (CheckResponse(GetData,">"))
 		{
 			printf("\r\n send body\r\n");
 
@@ -746,12 +808,13 @@ void OnWiFiData(unsigned char data)
 			if (ReadedRecord<RecordCounter-1)
 			{
 				ReadedRecord++;
-				WiFiStep = STEP_SEND_HTTP_BODY_LEN;
+				WiFiNextStep = STEP_SEND_HTTP_BODY_LEN;
 			}
 			else
 			{
-				WiFiStep = STEP_SEND_HTTP_END_LEN;
+				WiFiNextStep = STEP_SEND_HTTP_END_LEN;
 			}
+			ActiveTime = SecondsSinceStart;
 		}
 		break;
 
@@ -759,7 +822,7 @@ void OnWiFiData(unsigned char data)
 
 
 	case STEP_SEND_HTTP_END_LEN:
-		if (CheckRet(data,"SEND OK"))
+		if (CheckResponse(GetData,"SEND OK"))
 		{
 			printf("\r\n send end len \r\n");
 
@@ -767,13 +830,14 @@ void OnWiFiData(unsigned char data)
 			WIFI_SERIAL.print(sizeof(HttpResponseEnd));
 			WIFI_SERIAL.print(F("\r\n"));
 
-			WiFiStep = STEP_SEND_HTTP_END;
+			WiFiNextStep = STEP_SEND_HTTP_END;
+			ActiveTime = SecondsSinceStart;
 		}
 		break;
 
 
 	case STEP_SEND_HTTP_END:
-		if (CheckRet(data,">"))
+		if (CheckResponse(GetData,">"))
 		{
 			printf("\r\n send END \r\n");
 
@@ -781,18 +845,20 @@ void OnWiFiData(unsigned char data)
 			{
 				WIFI_SERIAL.print(HttpResponseEnd[i]);
 			}
-			WiFiStep = STEP_HTTP_CLOSE;
+			WiFiNextStep = STEP_HTTP_CLOSE;
+			ActiveTime = SecondsSinceStart;
 		}
 		break;
 
 
 	case STEP_HTTP_CLOSE:
-		if (CheckRet(data,"SEND OK"))
+		if (CheckResponse(GetData,"SEND OK"))
 		{
 
 			printf("\r\n close!!! \r\n");
 			WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-			WiFiStep = STEP_WAIT_REQUEST;
+			WiFiNextStep = STEP_WAIT_REQUEST;
+			TimeOut = 0;
 		}
 		break;
 
