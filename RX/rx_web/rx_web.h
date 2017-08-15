@@ -9,6 +9,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 
 #define DEGBUG_OUTPUT
 #define WIFI_SERIAL Serial3
+#define TIME_SYNC_TIME_OUT 43200//86400
 /*****************************************************/
 
 
@@ -65,7 +66,7 @@ tRecord Record;
 unsigned char RecordLength = sizeof(Record);
 unsigned char RecordCounter = 16;//1024/RecordLength;
 unsigned char NextRecord = 0;
-char CharRecord[60];
+char CharRecord[100];
 unsigned char CharRecordLen;
 unsigned char ReadedRecord = 0;
 unsigned char LatestRecord = 0;
@@ -130,7 +131,7 @@ const unsigned char NTP_Request[] PROGMEM = {0xdb, 0x00 ,0x0a ,0xfa ,0x00 ,0x00 
 0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0xdd ,0x35 ,0x79 ,0xb9 ,0xb7 ,0x4f ,0xa6 ,0x30
 };
 
-const char HttpResponseHead[] PROGMEM  ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<title>HTML</title>\r\n</head>\r\n<body>\r\n";
+const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<title>HTML</title>\r\n</head>\r\n<body>\r\n";
 char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
 
 /**********************************************************/
@@ -147,6 +148,7 @@ unsigned char FindLastRecord();
 void SecondsSinceStartTask();
 void WebStart();
 void ConnectAp();
+void ResetWiFi();
 void StartNtp();
 void ProcessNTP(unsigned long data);
 void CheckTimeOut();
@@ -155,6 +157,7 @@ bool CheckResponse(unsigned char data,const char * ret);
 bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara);
 void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
+
 
 
 
@@ -325,11 +328,15 @@ void Door_task()
 		DoorLastOnOff = DoorOnOff;
 		if(DoorOnOff)
 		{
-			Record.tag_time=SecondsSinceStart+Start1970OffSet;
-			Record.code= GotData[0];
-			Record.ID =  GotData[1];
-			Record.volt = Volt;
-			InsertRecord(&Record);
+			if (NtpSync)
+			{
+				Record.tag_time=SecondsSinceStart+Start1970OffSet;
+				Record.code= GotData[0];
+				Record.ID =  GotData[1];
+				Record.volt = Volt;
+				InsertRecord(&Record);
+			}
+
 			printf("Open door. \r\n");
 			digitalWrite(DOOR, HIGH);
 		}
@@ -456,29 +463,53 @@ unsigned char FindLastRecord()
 unsigned long LastMillis = 0;
 void SecondsSinceStartTask()
 {
+	//unsigned long CurrentMillis = millis();
+	//if
+	//	(
+	//	(CurrentMillis>=LastMillis)
+	//	?
+	//	((CurrentMillis-LastMillis)> 1000)
+	//	:
+	//((0xFFFFFFFF-LastMillis)+CurrentMillis>1000)
+	//	)
+	//{
+	//	LastMillis = (CurrentMillis/1000)*1000;
+
+
+	//unsigned long CurrentMillis = millis()/1000;
+	//if(CurrentMillis != LastMillis)
+	//{
+	//	LastMillis = CurrentMillis;
+
 	unsigned long CurrentMillis = millis();
-	if
-		(
-		(CurrentMillis>=LastMillis)
-		?
-		((CurrentMillis-LastMillis)> 1000)
-		:
-	((0xFFFFFFFF-LastMillis)+CurrentMillis>1000)
-		)
+	if(abs(CurrentMillis-LastMillis)> 1000-9)
 	{
-		LastMillis = (CurrentMillis/1000)*1000;
+		LastMillis = CurrentMillis;
+
+
 		SecondsSinceStart++;
 
-		//time_t t = SecondsSinceStart + Start1970OffSet;
-		//printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
-		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
+		time_t t = SecondsSinceStart + Start1970OffSet;
+		printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
+		printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
 
 	}
 }
 
 
 
+void ResetWiFi()
+{
+		WiFiOK = false;
+		NtpWorking = false;
+		NtpSync = false;
+		bWebStarted = false;
+		printf("\r\n set all to false, reset wifi \r\n");
+		WiFiNextStep = STEP_RESET;
+		OnWiFiData('O');
+		OnWiFiData('K');
 
+}
 
 void WebStart()
 {
@@ -492,7 +523,7 @@ void ConnectAp()
 {
 	WIFI_SERIAL.print(F("+++"));
 	delay(100);
-	WIFI_SERIAL.print(F("AT+CWMODE=3\r\n"));
+	WIFI_SERIAL.print(F("AT+CWMODE=1\r\n"));
 	WiFiNextStep = STEP_RESET;
 }
 
@@ -507,24 +538,29 @@ void StartNtp()
 void ProcessNTP(unsigned long data)
 {
 
-	if (NtpDataIndex==40-8)
+	if (NtpDataIndex==40)
 	{
-		TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFFFFFF;
+		//TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFFFFFF;
+		*(((unsigned char *)(&TempSecondsSince1970))+3) = data;
 	}
-	if (NtpDataIndex==41-8)
+	if (NtpDataIndex==41)
 	{
-		TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFFFF;
+		//TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFFFF;
+		*(((unsigned char *)(&TempSecondsSince1970))+2) = data;
 	}
-	if (NtpDataIndex==42-8)
+	if (NtpDataIndex==42)
 	{
-		TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFF;
+		//TempSecondsSince1970 = TempSecondsSince1970 + data * 0xFF;
+		*(((unsigned char *)(&TempSecondsSince1970))+1) = data;
 	}
-	if (NtpDataIndex==43-8)
+	if (NtpDataIndex==43)
 	{
-		TempSecondsSince1970 = TempSecondsSince1970 + data ;
-		LastSyncTime = TempSecondsSince1970-2208988800+8*60+8*3600-145;
-		Start1970OffSet = LastSyncTime-SecondsSinceStart;
+		//TempSecondsSince1970 = TempSecondsSince1970 + data ;
+		*(((unsigned char *)(&TempSecondsSince1970))) = data;
+		//LastSyncTime = TempSecondsSince1970-2208988800+8*60+8*3600;//-145;
+		LastSyncTime = TempSecondsSince1970-0x83aa7e80+8*3600;
 		LastSyncOffSet = SecondsSinceStart+Start1970OffSet-LastSyncTime;
+		Start1970OffSet = LastSyncTime-SecondsSinceStart;
 		NtpSync = true;
 		NtpWorking = false;
 		TimeOut = 5;
@@ -537,6 +573,11 @@ void ProcessNTP(unsigned long data)
 
 void CheckTimeOut()
 {
+
+	if ((SecondsSinceStart + Start1970OffSet - LastSyncTime > TIME_SYNC_TIME_OUT)&&(NtpSync))
+	{
+		ResetWiFi();
+	}
 	if (TimeOut!=0)
 	{
 		if(SecondsSinceStart - ActiveTime > TimeOut)
@@ -705,7 +746,8 @@ void OnWiFiData(unsigned char GetData)
 				//printf("\r\n request home page , send head len\r\n");
 				delay(100);
 				WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
-				WIFI_SERIAL.print(strlen_P(HttpResponseHead));
+				//WIFI_SERIAL.print(strlen_P(HttpResponseHead));
+				WIFI_SERIAL.print(sizeof(HttpResponseHead));
 				WIFI_SERIAL.print(F("\r\n"));
 				WiFiNextStep = STEP_SEND_HTTP_HEAD;
 
@@ -726,13 +768,17 @@ void OnWiFiData(unsigned char GetData)
 		if (CheckResponse(GetData,">"))
 		{
 			printf("\r\n send response head \r\n");
-			for(unsigned char i = 0; i<strlen_P(HttpResponseHead) ; i++)
+			//for(unsigned char i = 0; i<strlen_P(HttpResponseHead) ; i++)
+			for(unsigned char i = 0; i<sizeof(HttpResponseHead) ; i++)
 			{
-				WIFI_SERIAL.print(pgm_read_byte_near(HttpResponseHead+i));
+				//WIFI_SERIAL.print(pgm_read_byte_near(HttpResponseHead+i));
+				WIFI_SERIAL.print(HttpResponseHead[i]);
 			}
 			WiFiNextStep = STEP_SEND_HTTP_TITLE_LEN;
 			ReadedRecord = 0;
 			LatestRecord = (NextRecord>0?NextRecord-1:RecordCounter-1);
+
+			printf("\r\n LatestRecord = %d \r\n",LatestRecord);
 
 			ActiveTime = SecondsSinceStart;
 		}
@@ -745,13 +791,13 @@ void OnWiFiData(unsigned char GetData)
 			printf("\r\n send TITLE len \r\n");
 			t = LastSyncTime;
 			time_t t2 = SecondsSinceStart+Start1970OffSet;
-			sprintf(CharRecord,"Time: %03d %d-%02d-%02d %02d:%02d:%02d <br>\r\n Last Sync:%03d %d-%02d-%02d %02d:%02d:%02d   OffSet: %d<br>\r\n",year(t2) ,month(t2),day(t),hour(t2),minute(t2),second(t2),year(t) ,month(t),day(t),hour(t),minute(t),second(t),LastSyncOffSet);
+			sprintf(CharRecord,"Time: %d-%02d-%02d %02d:%02d:%02d <br>\r\nSync: %d-%02d-%02d %02d:%02d:%02d   OffSet: %d<br>---<br>\r\n",year(t2) ,month(t2),day(t),hour(t2),minute(t2),second(t2),year(t) ,month(t),day(t),hour(t),minute(t),second(t),LastSyncOffSet);
 			CharRecordLen = CharLength(CharRecord);
 			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
 			WIFI_SERIAL.print(CharRecordLen);
 			WIFI_SERIAL.print(F("\r\n"));
 
-			WiFiNextStep = STEP_SEND_HTTP_BODY;
+			WiFiNextStep = STEP_SEND_HTTP_TITLE;
 			ActiveTime = SecondsSinceStart;
 		}
 		break;
@@ -761,6 +807,7 @@ void OnWiFiData(unsigned char GetData)
 		{
 			printf("\r\n send HTTP_TITLE\r\n");
 
+			TimeOut = 15;
 			for(unsigned char i = 0; i<CharRecordLen ; i++)
 			{
 				WIFI_SERIAL.print(CharRecord[i]);
@@ -775,13 +822,20 @@ void OnWiFiData(unsigned char GetData)
 		{
 			printf("\r\n send body len \r\n");
 
-			ReadRecord(
-				((LatestRecord>=ReadedRecord)
-				?
-				(LatestRecord-ReadedRecord)
-				:
-			(RecordCounter-(ReadedRecord-LatestRecord)))
-				,&Record);
+			printf("\r\n ReadedRecord = %d \r\n",ReadedRecord);
+
+			unsigned char ReadIndex;
+			if(LatestRecord >= ReadedRecord)
+			{
+				ReadIndex = LatestRecord-ReadedRecord;
+
+			}
+			else
+			{
+				ReadIndex = RecordCounter-(ReadedRecord-LatestRecord);
+			}
+			//ReadIndex = 
+			ReadRecord(ReadIndex,&Record);
 			t = Record.tag_time;
 			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.code,Record.ID,Record.volt);
 			CharRecordLen = CharLength(CharRecord);
