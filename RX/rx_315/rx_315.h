@@ -103,8 +103,11 @@ void loop()
 	//RF_task();
 
 	RF_Command(2,10);
+	delay(300);
+	RF_Command(2,10);
 	delay(10000);
-	RF_Command(1,20);
+	RF_Command(1,10);
+		delay(10000);
 } // Loop
 
 
@@ -115,7 +118,7 @@ void nRFTask()
 		// Variable for the received timestamp
 		while (radio.available())                                     // While there is data ready
 		{
-			radio.read( GotData, sizeof(unsigned long) );             // Get the payload
+			radio.read( GotData, DATA_LENGTH );             // Get the payload
 		}
 
 		PackageCounter++;
@@ -170,6 +173,8 @@ void RF_Command(unsigned char command,unsigned char repeat)
 	unsigned char j;//repeat
 	unsigned char i;//byte
 
+	bool LastBit;
+
 	for(j = 0;j < repeat;j++)
 	{
 		for(i = 0;i < RF_LENGTH;i++)
@@ -180,13 +185,33 @@ void RF_Command(unsigned char command,unsigned char repeat)
 				{
 					digitalWrite(RF_315, LOW);
 					//Serial.print(1);
+					if (LastBit)
+					{
+						delayMicroseconds(385*2);
+					} 
+					else
+					{
+						delayMicroseconds(385);
+					}
+
+					LastBit = true;
 				}
 				else
 				{
 					digitalWrite(RF_315, HIGH);
 					//Serial.print(0);
+					if (LastBit)
+					{
+						delayMicroseconds(385);
+					} 
+					else
+					{
+						delayMicroseconds(385*2);
+					}
+
+					LastBit = false;
 				}
-				delayMicroseconds(514);
+				//delayMicroseconds(514);
 			}
 		}
 		delay(12);
@@ -202,14 +227,7 @@ unsigned long LastMillis = 0;
 void SecondsSinceStartTask()
 {
 	unsigned long CurrentMillis = millis();
-	if
-		(
-		(CurrentMillis>=LastMillis)
-		?
-		((CurrentMillis-LastMillis)> 1000)
-		:
-	((0xFFFFFFFF-LastMillis)+CurrentMillis>1000)
-		)
+	if(abs(CurrentMillis-LastMillis)> 1000)
 	{
 		LastMillis = (CurrentMillis/1000)*1000;
 		SecondsSinceStart++;

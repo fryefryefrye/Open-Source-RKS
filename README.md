@@ -57,6 +57,8 @@ You can build the Arduino based Controller whatever you like. Just connect nRF24
 |  6  |  MOSI  |  digIO 11  |  digIO 51  |
 |  7  |  MISO  | digIO 12  |  digIO 50  |
 |  8  |  IRQ  |  -  |-|
+<br> 
+![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/uno_nrf.jpg)
 
 <br>
 This is combination I used in debug stage.<br> 

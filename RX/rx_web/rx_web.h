@@ -5,11 +5,12 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define DATA_LENGTH 4                    //use fixed data length 1-32
 #define BUZZON 1000                //set lenght of the buzz
 #define BUZZOFF 30000            //set interval of the buzz
+#define RFID_NUMBER 8
 
 
 #define DEGBUG_OUTPUT
 #define WIFI_SERIAL Serial3
-#define TIME_SYNC_TIME_OUT 43200//86400
+#define TIME_SYNC_TIME_OUT 86400
 /*****************************************************/
 
 
@@ -37,7 +38,9 @@ RF24 radio(7,8);
 unsigned long PackageCounter = 0;
 unsigned char CurrCH = 0;
 unsigned long LastChangeCHTime = 0;
-unsigned long LastGetTime = 0;
+unsigned long LastGetTime[RFID_NUMBER] = {0};
+bool RfidOnline[RFID_NUMBER] = {false};
+
 unsigned long CurrTime = 0;
 unsigned char GotData[DATA_LENGTH];
 unsigned long Volt;   //unit: mV,
@@ -45,13 +48,13 @@ unsigned long Volt;   //unit: mV,
 
 /*************************Output*******************/
 #define DOOR 10
-bool DoorOnOff = false;
-bool DoorLastOnOff = false;
-unsigned char  DoorLastOnID = 0;
+//bool DoorRelease = false;
+bool DoorLastState = false;
+//unsigned char  DoorLastOnID = 0;
 
 #define BUZZ 9
-bool BuzzOnOff;
-bool AlarmOnOff;
+bool BuzzOutputHigh;
+bool AlarmOn;
 /**********************************************************/
 
 /*************************Record*******************/
@@ -157,6 +160,7 @@ bool CheckResponse(unsigned char data,const char * ret);
 bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara);
 void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
+void OnSecond();
 
 
 
@@ -217,12 +221,18 @@ void loop()
 		// Variable for the received timestamp
 		while (radio.available())                                     // While there is data ready
 		{
-			radio.read( GotData, sizeof(unsigned long) );             // Get the payload
+			radio.read( GotData,DATA_LENGTH);             // Get the payload
 		}
 		Volt=1.2*(GotData[DATA_LENGTH-2]*256+GotData[DATA_LENGTH-1])*3*1000/4096;
 
-		LastGetTime = millis();
+		if ((GotData[0] == 0)&&(GotData[1]<RFID_NUMBER))
+		{
+			LastGetTime[GotData[1]] = SecondsSinceStart;
+		}
+
 		PackageCounter ++;
+
+		Door_task();
 
 
 #ifdef DEGBUG_OUTPUT
@@ -241,8 +251,6 @@ void loop()
 
 
 	CurrTime = millis();
-
-
 	if (abs(CurrTime - LastChangeCHTime>1000))//RF_HOP
 	{
 		CurrCH++;
@@ -256,42 +264,6 @@ void loop()
 		radio.startListening();
 	}
 
-
-
-	if (
-		(
-		(
-		(CurrTime>=LastGetTime)
-		?
-		(CurrTime - LastGetTime<TIME_OUT_CLOSE_DOOR)
-		:
-	((0xFFFFFFFF-LastGetTime)+CurrTime<TIME_OUT_CLOSE_DOOR)
-		)
-		)
-		&&
-		(
-		LastGetTime!=0
-		)
-		)// millis() is stored in a long. it will overflow in 49 days. so a little complex here.
-
-	{
-
-
-
-
-		DoorOnOff = true;
-		AlarmOnOff = true;
-	}
-	else
-	{
-		DoorOnOff = false;
-		AlarmOnOff = false;
-	}
-
-	//if ( Serial.available() )
-	//{
-
-	//}
 
 
 	if ((!WiFiOK)&&(WiFiNextStep == STEP_WIFI_IDLE))
@@ -315,34 +287,51 @@ void loop()
 
 
 	CheckForInput();
-	CheckTimeOut();
 	SecondsSinceStartTask();
-	Door_task();
 	Buzz_task();
 } // Loop
 
 void Door_task()
 {
-	if (DoorLastOnOff != DoorOnOff)//update relay when door status change
-	{
-		DoorLastOnOff = DoorOnOff;
-		if(DoorOnOff)
-		{
-			if (NtpSync)
-			{
-				Record.tag_time=SecondsSinceStart+Start1970OffSet;
-				Record.code= GotData[0];
-				Record.ID =  GotData[1];
-				Record.volt = Volt;
-				InsertRecord(&Record);
-			}
 
-			printf("Open door. \r\n");
+	bool DoorShouldOpen = false;
+	for(unsigned char i = 0;i < RFID_NUMBER;i++)
+	{
+		if ((LastGetTime[i]!=0)&&( SecondsSinceStart - LastGetTime[i] < TIME_OUT_CLOSE_DOOR))
+		{
+			if (!RfidOnline[i])//offline before
+			{
+				printf("RFID %d online. \r\n",i);
+				if (NtpSync)
+				{
+					Record.tag_time=SecondsSinceStart+Start1970OffSet;
+					Record.code= GotData[0];
+					Record.ID =  GotData[1];
+					Record.volt = Volt;
+					InsertRecord(&Record);
+				}
+			} 
+			RfidOnline[i] = true;
+			DoorShouldOpen = true;
+		}
+		else
+		{
+			if (!RfidOnline[i])//online before
+			{	
+				RfidOnline[i] = false;
+			}
+		}
+	}
+
+	if (DoorLastState != DoorShouldOpen)//update relay when door status change
+	{
+		DoorLastState = DoorShouldOpen;
+		if(DoorShouldOpen)
+		{
 			digitalWrite(DOOR, HIGH);
 		}
 		else
 		{
-
 			printf("Close door  \r\n");
 			digitalWrite(DOOR, LOW);
 		}
@@ -355,19 +344,19 @@ void Buzz_task()
 
 	static signed int BuzzOn;
 	static signed int BuzzOff;
-	if (AlarmOnOff)
+	if (AlarmOn)
 	{
-		if (BuzzOnOff)
+		if (BuzzOutputHigh)
 		{
 			BuzzOn++;
 			if (BuzzOn > BUZZON)
 			{
-				BuzzOnOff = false;
+				BuzzOutputHigh = false;
 				BuzzOn = 0;
 			}
 			else
 			{
-				BuzzOnOff = true;
+				BuzzOutputHigh = true;
 			}
 		}
 		else
@@ -375,12 +364,12 @@ void Buzz_task()
 			BuzzOff++;
 			if (BuzzOff > BUZZOFF)
 			{
-				BuzzOnOff = true;
+				BuzzOutputHigh = true;
 				BuzzOff = 0;
 			}
 			else
 			{
-				BuzzOnOff = false;
+				BuzzOutputHigh = false;
 			}
 		}
 	}
@@ -388,10 +377,10 @@ void Buzz_task()
 	{
 		BuzzOn = 0;
 		BuzzOff = 0;
-		BuzzOnOff = false;
+		BuzzOutputHigh = false;
 	}
 
-	if (BuzzOnOff)
+	if (BuzzOutputHigh)
 	{
 		digitalWrite(BUZZ, HIGH);
 	}
@@ -460,6 +449,20 @@ unsigned char FindLastRecord()
 
 }
 
+void OnSecond()
+{
+	if (SecondsSinceStart%1452 == 0)
+	{
+		Start1970OffSet--;
+	}
+
+
+	Door_task();
+
+	CheckTimeOut();
+
+}
+
 unsigned long LastMillis = 0;
 void SecondsSinceStartTask()
 {
@@ -485,9 +488,8 @@ void SecondsSinceStartTask()
 	if(abs(CurrentMillis-LastMillis)> 1000-9)
 	{
 		LastMillis = CurrentMillis;
-
-
 		SecondsSinceStart++;
+		OnSecond();
 
 		time_t t = SecondsSinceStart + Start1970OffSet;
 		printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
@@ -578,6 +580,9 @@ void CheckTimeOut()
 	{
 		ResetWiFi();
 	}
+
+
+
 	if (TimeOut!=0)
 	{
 		if(SecondsSinceStart - ActiveTime > TimeOut)
@@ -791,7 +796,7 @@ void OnWiFiData(unsigned char GetData)
 			printf("\r\n send TITLE len \r\n");
 			t = LastSyncTime;
 			time_t t2 = SecondsSinceStart+Start1970OffSet;
-			sprintf(CharRecord,"Time: %d-%02d-%02d %02d:%02d:%02d <br>\r\nSync: %d-%02d-%02d %02d:%02d:%02d   OffSet: %d<br>---<br>\r\n",year(t2) ,month(t2),day(t),hour(t2),minute(t2),second(t2),year(t) ,month(t),day(t),hour(t),minute(t),second(t),LastSyncOffSet);
+			sprintf(CharRecord,"Time: %d-%02d-%02d %02d:%02d:%02d <br>\r\nSync: %d-%02d-%02d %02d:%02d:%02d   OffSet: %d<br>---<br>\r\n",year(t2) ,month(t2),day(t2),hour(t2),minute(t2),second(t2),year(t) ,month(t),day(t),hour(t),minute(t),second(t),LastSyncOffSet);
 			CharRecordLen = CharLength(CharRecord);
 			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
 			WIFI_SERIAL.print(CharRecordLen);
