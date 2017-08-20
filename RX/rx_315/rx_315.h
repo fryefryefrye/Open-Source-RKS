@@ -3,7 +3,9 @@
 /*************************user modify settings****************************/
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_CLOSE_DOOR 5000		//ms
+#define TIME_OUT_TURN_OFF_BIKE 15		//s
+#define TIME_OUT_LOCK_WAIT_HOME 60
+#define WAIT_KEY_IN_HOME 30
 #define DATA_LENGTH 4					//use fixed data length 1-32
 #define BUZZON 1000				//set lenght of the buzz
 #define BUZZOFF 30000			//set interval of the buzz
@@ -40,11 +42,14 @@ unsigned long SecondsSinceStart;
 
 #define RF_315 6
 #define RF_LENGTH 11
-unsigned char  RfCommand[3][RF_LENGTH]={//Lock,Unlock,Power
+unsigned char  RfCommand[3][RF_LENGTH]={
 	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB2 ,0xDB ,0x7F},
 	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0x5B ,0x7F},
 	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0xCB ,0x7F}
 };
+
+bool NeedSendLock = false;
+unsigned long TrunOffTime = 0;
 
 
 
@@ -52,6 +57,7 @@ void RF_Command(unsigned char command,unsigned char repeat);
 void SecondsSinceStartTask();
 void nRFTask();
 void ChHopTask();
+void RF_task();
 
 
 
@@ -61,8 +67,8 @@ void setup()
 	pinMode(RF_315, OUTPUT);
 
 #ifdef DEGBUG_OUTPUT
-	Serial.begin(9600);
-	Serial.println(F("RF24_WiFi_ID_Read"));
+	Serial.begin(115200);
+	Serial.println(F("RF24_315_ID_Read"));
 	printf_begin();
 #endif
 
@@ -96,19 +102,130 @@ void setup()
 
 void loop()
 {
+
+
+
 	SecondsSinceStartTask();
 	nRFTask();
 	ChHopTask();
+	RF_task();
 
-	//RF_task();
 
-	RF_Command(2,10);
-	delay(300);
-	RF_Command(2,10);
-	delay(10000);
-	RF_Command(1,10);
-		delay(10000);
+
+
+	//RF_Command(1,10);
+	//delay(3000);
+
+	//RF_Command(0,10);
+	//delay(3000);
+
+	//RF_Command(2,10);
+	//delay(300);
+	//RF_Command(2,10);
+	//delay(3000);
+
+
+
 } // Loop
+
+
+void RF_task()
+{
+	static bool LastOn = false;
+	static bool Home = false;
+
+	static bool HomeFirstKeyGet = false;
+	static unsigned long HomeFirstKeyGetTime = 0;
+
+	if ((SecondsSinceStart - LastHomeGetTime <TIME_OUT_LOCK_WAIT_HOME)&&(LastHomeGetTime != 0))
+	{
+		Home = true;
+	}
+	else
+	{
+		Home = false;
+	}
+
+
+	if (LastOn)
+	{
+		if ((SecondsSinceStart - LastKeyGetTime >TIME_OUT_TURN_OFF_BIKE)&&(LastKeyGetTime != 0))
+		{
+			RF_Command(1,10);
+			LastOn = false;
+			NeedSendLock = true;
+			TrunOffTime = SecondsSinceStart;
+#ifdef DEGBUG_OUTPUT
+			printf("Turn OFF \r\n");
+#endif
+		} 
+	} 
+	else// last OFF
+	{
+		if ((SecondsSinceStart - LastKeyGetTime <TIME_OUT_TURN_OFF_BIKE)&&(LastKeyGetTime != 0))
+		{
+			if (!Home)//No home,bike Off, key in
+			{
+#ifdef DEGBUG_OUTPUT
+				printf("Turn ON \r\n");
+#endif
+				RF_Command(2,10);
+				delay(300);
+				RF_Command(2,10);
+				LastOn = true;
+				NeedSendLock = false;
+			}
+			else//home,bike Off, key in
+			{
+				if (!HomeFirstKeyGet)
+				{
+					HomeFirstKeyGetTime = SecondsSinceStart;
+					HomeFirstKeyGet = true;
+				} 
+				else
+				{
+					if (SecondsSinceStart - HomeFirstKeyGetTime > WAIT_KEY_IN_HOME)
+					{
+#ifdef DEGBUG_OUTPUT
+						printf("Turn ON, in home \r\n");
+#endif
+						RF_Command(2,10);
+						delay(300);
+						RF_Command(2,10);
+						LastOn = true;
+						NeedSendLock = false;
+						HomeFirstKeyGet = true;
+						HomeFirstKeyGet = 0;
+					}
+				}
+
+			}
+
+		} 
+		else// Off,key out
+		{
+			HomeFirstKeyGet = true;
+			HomeFirstKeyGet = 0;
+		}
+	}
+
+	if ((NeedSendLock)&&(SecondsSinceStart - TrunOffTime >TIME_OUT_LOCK_WAIT_HOME)&&(TrunOffTime != 0))
+	{
+		if(LastHomeGetTime <TrunOffTime)
+		{
+			RF_Command(0,10);
+#ifdef DEGBUG_OUTPUT
+			printf("Lock \r\n");
+#endif
+		}else
+		{
+#ifdef DEGBUG_OUTPUT
+			printf("Not Lock \r\n");
+#endif
+		}
+		NeedSendLock = false;
+	}
+}
 
 
 void nRFTask()
@@ -127,10 +244,14 @@ void nRFTask()
 
 		if (GotData[0] == 0)
 		{
+
 			LastKeyGetTime = SecondsSinceStart;
 		}
 		else if (GotData[0] == 1)
 		{
+#ifdef DEGBUG_OUTPUT
+			printf("LastHomeGetTime offset = %d \r\n",SecondsSinceStart -LastHomeGetTime);
+#endif
 			LastHomeGetTime = SecondsSinceStart;
 		}
 
@@ -215,7 +336,6 @@ void RF_Command(unsigned char command,unsigned char repeat)
 			}
 		}
 		delay(12);
-		printf("\r\n");
 	}
 
 	digitalWrite(RF_315, LOW);
@@ -229,10 +349,8 @@ void SecondsSinceStartTask()
 	unsigned long CurrentMillis = millis();
 	if(abs(CurrentMillis-LastMillis)> 1000)
 	{
-		LastMillis = (CurrentMillis/1000)*1000;
+		LastMillis = CurrentMillis;
 		SecondsSinceStart++;
-
-		printf("SecondsSinceStart = %d ; LastMillis = %d\r\n",SecondsSinceStart,LastMillis);
-
+		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
 	}
 }

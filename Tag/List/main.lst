@@ -1,4 +1,4 @@
-C51 COMPILER V9.00   MAIN                                                                  08/06/2017 16:55:46 PAGE 1   
+C51 COMPILER V9.00   MAIN                                                                  08/20/2017 15:33:51 PAGE 1   
 
 
 C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
@@ -24,7 +24,7 @@ line level    source
   14          
   15          /*************************user modify settings****************************/
   16          #define  TAG_ID_HIGH 0
-  17          #define  TAG_ID_LOW 1
+  17          #define  TAG_ID_LOW 2
   18          
   19          uint8_t  TX_ADDRESS[5]  = {0x55,0x56,0x57,0x58,0x59}; // TX address
   20          uint8_t HopCH[3] = {105,76,108};
@@ -33,7 +33,7 @@ line level    source
   23          #define  TX_PAYLOAD      4              // data length
   24          #define  ADC_TIME        900            //volt of BAT,   every =   ADC_TIME*TAG_TIME     
   25          
-  26          #define  RF_POWER                HAL_NRF_0DBM
+  26          #define  RF_POWER                HAL_NRF_6DBM
   27          //HAL_NRF_18DBM,          /**< Output power set to -18dBm */
   28          //HAL_NRF_12DBM,          /**< Output power set to -12dBm */
   29          //HAL_NRF_6DBM,           /**< Output power set to -6dBm  */
@@ -62,7 +62,7 @@ line level    source
   52          
   53          
   54          void UART0_SendStr( char* str )
-C51 COMPILER V9.00   MAIN                                                                  08/06/2017 16:55:46 PAGE 2   
+C51 COMPILER V9.00   MAIN                                                                  08/20/2017 15:33:51 PAGE 2   
 
   55          {
   56   1          uint8_t i;
@@ -126,7 +126,7 @@ line level    source
  114          {
  115   1          hal_rtc_start(false);
  116   1          hal_clklf_set_source(HAL_CLKLF_RCOSC32K);           // Use 32.768KHz RC
-C51 COMPILER V9.00   MAIN                                                                  08/06/2017 16:55:46 PAGE 3   
+C51 COMPILER V9.00   MAIN                                                                  08/20/2017 15:33:51 PAGE 3   
 
  117   1      
  118   1          hal_rtc_set_compare_mode(HAL_RTC_COMPARE_MODE_0);   // Use 32 KHz timer mode 0
@@ -190,7 +190,7 @@ line level    source
  176   3                  loopCount=0;
  177   3              }
  178   2      
-C51 COMPILER V9.00   MAIN                                                                  08/06/2017 16:55:46 PAGE 4   
+C51 COMPILER V9.00   MAIN                                                                  08/20/2017 15:33:51 PAGE 4   
 
  179   2              CurrCH++;
  180   2              if (CurrCH>2)
@@ -254,7 +254,7 @@ line level    source
  238          //
  239          //    onechar = Counter/100%10+0x30;
  240          //    hal_uart_putchar(onechar);
-C51 COMPILER V9.00   MAIN                                                                  08/06/2017 16:55:46 PAGE 5   
+C51 COMPILER V9.00   MAIN                                                                  08/20/2017 15:33:51 PAGE 5   
 
  241          //
  242          //    onechar = Counter/10%10+0x30;
@@ -266,7 +266,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    620    ----
+   CODE SIZE        =    621    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     37       4
    PDATA SIZE       =   ----    ----

@@ -94,6 +94,7 @@ signed long LastSyncOffSet = 0;
 bool NtpWorking = false;
 bool NtpSync = false;
 unsigned char NtpDataIndex = 0;
+unsigned long RandDelay = 0;
 /**********************************************************/
 
 /*************************WiFi*******************/
@@ -142,7 +143,7 @@ const unsigned char NTP_Request[] PROGMEM = {0xdb, 0x00 ,0x0a ,0xfa ,0x00 ,0x00 
 0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0xdd ,0x35 ,0x79 ,0xb9 ,0xb7 ,0x4f ,0xa6 ,0x30
 };
 
-const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<title>Room</title>\r\n</head>\r\n<body>\r\n";
+const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<title>Yard</title>\r\n</head>\r\n<body>\r\n";
 char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
 
 /**********************************************************/
@@ -169,13 +170,13 @@ bool CheckParameter(unsigned char data,const char * ret,unsigned char * pPara);
 void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
 void OnSecond();
+void SendBeacon();
 
 
 
 
 void setup()
 {
-
 
 
 
@@ -262,16 +263,26 @@ void loop()
 
 
 	CurrTime = millis();
-	if (abs(CurrTime - LastChangeCHTime>1000))//RF_HOP
+	if (abs(CurrTime - LastChangeCHTime>RandDelay))//RF_HOP
 	{
+
 		CurrCH++;
 		if (CurrCH>2)
 		{
 			CurrCH = 0;
 		}
 		LastChangeCHTime = millis();
+
+
+		RandDelay = random(3000);
+
 		radio.stopListening();
 		radio.setChannel(HopCH[CurrCH]);
+
+		delay(10);
+		SendBeacon();
+		delay(10);
+
 		radio.startListening();
 	}
 
@@ -305,6 +316,17 @@ void loop()
 	SecondsSinceStartTask();
 	Buzz_task();
 } // Loop
+
+
+void SendBeacon()
+{
+	GotData[0] = 1;
+	GotData[1] = 0;
+	GotData[2] = 0;
+	GotData[3] = 0;
+	radio.write(GotData, 4);
+
+}
 
 void Door_task()
 {
@@ -498,6 +520,7 @@ void OnSecond()
 	//InsertRecord(&Record);
 
 	wdt_reset();
+
 
 	Door_task();
 
