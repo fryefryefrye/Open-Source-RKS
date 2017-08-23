@@ -194,8 +194,8 @@ void RF_task()
 						RF_Command(2,10);
 						LastOn = true;
 						NeedSendLock = false;
-						HomeFirstKeyGet = true;
-						HomeFirstKeyGet = 0;
+						HomeFirstKeyGet = false;
+						HomeFirstKeyGetTime = 0;
 					}
 				}
 
@@ -204,8 +204,8 @@ void RF_task()
 		} 
 		else// Off,key out
 		{
-			HomeFirstKeyGet = true;
-			HomeFirstKeyGet = 0;
+			HomeFirstKeyGet = false;
+			HomeFirstKeyGetTime = 0;
 		}
 	}
 
