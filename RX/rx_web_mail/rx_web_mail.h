@@ -8,8 +8,13 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define RFID_NUMBER 8
 
 
-#define DEGBUG_OUTPUT
-#define WIFI_SERIAL Serial3
+#if defined(__AVR_ATmega2560__)	
+	#define DEGBUG_OUTPUT
+	#define WIFI_SERIAL Serial3
+#else
+	#define WIFI_SERIAL Serial
+#endif
+
 #define TIME_SYNC_TIME_OUT 86400
 
 #define MAIL_TIME_OUT  10
@@ -156,7 +161,12 @@ char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
 
 
 /************************Mail**********************************/
-bool MailSending = false;
+//bool MailSending = false;
+
+#define MAIL_QUEUE_NUMBER 8
+unsigned char MailQueue[MAIL_QUEUE_NUMBER];
+unsigned char QueueNumber = 0;
+unsigned char CurrentMailMemIndex = 0;
 /**********************************************************/
 
 
@@ -183,7 +193,9 @@ void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
 void OnSecond();
 void NonStopTask();
-void SendMail();
+bool SendMail();
+void PushMailQueue(unsigned char MemIndex);
+unsigned char PopMailQueue();
 
 ///***______________________ESP module Function Declarations__________________**///
 void _esp8266_putch( char);
@@ -214,21 +226,21 @@ void _esp8266_print_nc(char*);
 bool _esp8266_waitFor(const char *);
 // Wait for any response on the input
 bool _esp8266_waitResponse(void);
-void Lcd_Set_Cursor(char , char b);
-void Lcd_Print_Char(char);
-void Lcd_Print_String(char *);
-void _esp8266_login_mail( char*,  char*);
-void _esp8266_mail_sendID( char*);
-void _esp8266_mail_recID( char*);
-void _esp8266_mail_subject( char*);
-void _esp8266_mail_body( char*);
+//void Lcd_Set_Cursor(char , char b);
+//void Lcd_Print_Char(char);
+//void Lcd_Print_String(char *);
+bool _esp8266_login_mail( char*,  char*);
+bool _esp8266_mail_sendID( char*);
+bool _esp8266_mail_recID( char*);
+bool _esp8266_mail_subject( char*);
+bool _esp8266_mail_body( char*);
 
-void _esp8266_create_server(); //Create a server on port 80
-void _esp8266_enale_MUX();
-void _esp8266_connect_SMPT2GO();
-void _esp8266_disconnect_SMPT2GO();
-void _esp8266_start_mail();
-void _esp8266_End_mail();
+bool _esp8266_create_server(); //Create a server on port 80
+bool _esp8266_enale_MUX();
+bool _esp8266_connect_SMPT2GO();
+bool _esp8266_disconnect_SMPT2GO();
+bool _esp8266_start_mail();
+bool _esp8266_End_mail();
 //********__________________End of Function Declaration_________________********///
 
 
@@ -339,20 +351,12 @@ void NonStopTask()
 }
 void Mail_task()
 {
-	static bool RfidOnlineSent[RFID_NUMBER] = {false};
+	//static bool RfidOnlineSent[RFID_NUMBER] = {false};
 
-
-	if (WebStart)
+	if (QueueNumber > 0)
 	{
-		for(unsigned char i = 0;i < RFID_NUMBER;i++)
-		{
-			if ((RfidOnline[i])&&(!RfidOnlineSent[i]))
-			{
-				RfidOnlineSent[i] = true;
-				SendMail();
-			}
-
-		}
+		CurrentMailMemIndex = PopMailQueue();
+		SendMail();
 	}
 
 
@@ -527,6 +531,8 @@ void Buzz_task()
 void InsertRecord(tRecord * pRecord)
 {
 	WriteRecord(NextRecord,pRecord);
+
+	PushMailQueue(NextRecord);
 
 	NextRecord++;
 	if(NextRecord>=RecordCounter)
@@ -1151,14 +1157,12 @@ typedef enum
 
 int len;
 
-void SendMail()
+bool SendMail()
 {
+	tRecord MailRecord;
+	ReadRecord(CurrentMailMemIndex,&MailRecord);
 
-	MailSending = true;
-
-	_esp8266_connect_SMPT2GO(); //Establish TCP connection with SMPT2GO
-
-
+	if (!_esp8266_connect_SMPT2GO()) return false; //Establish TCP connection with SMPT2GO
 	///*LOG IN with your SMPT2GO approved mail ID*/
 	///*Visit the page https://www.smtp2go.com/ and sign up using any Gmail ID
 	//* Once you gmail ID is SMPT2GO approved convert your mail ID and password in 64 base format
@@ -1166,25 +1170,29 @@ void SendMail()
 	//* FORMAT -> _esp8266_login_mail("mailID in base 64","Password in base 64");
 	//* This program uses the ID-> aswinthcd@gmail.com and password -> circuitdigest as an example
 	//*/
-	_esp8266_login_mail("YXN3aW50aGNkQGdtYWlsLmNvbQ==","Y2lyY3VpdGRpZ2VzdA==");
+	if (!_esp8266_login_mail("YXN3aW50aGNkQGdtYWlsLmNvbQ==","Y2lyY3VpdGRpZ2VzdA==")) return false;
 	///*End of Login*/
 
-	//printf("\r\n before  sendID \r\n");
-	_esp8266_mail_sendID("fryefryefrye@gmail.com"); //The sender mail ID
-	//printf("\r\n before  recID \r\n");
-	_esp8266_mail_recID("fryefryefrye@foxmail.com"); //The Receiver mail ID
+
+	if (!_esp8266_mail_sendID("Door@gmail.com")) return false; //The sender mail ID
+	if (!_esp8266_mail_recID("fryefryefrye@foxmail.com")) return false; //The Receiver mail ID
+	if (!_esp8266_start_mail()) return false;
 
 
+	t = MailRecord.tag_time;
+	sprintf(CharRecord,"ID:%d Coming. %02d:%02d:%02d",MailRecord.ID,hour(t),minute(t),second(t));
+	if (!_esp8266_mail_subject(CharRecord)) return false; //Enter the subject of your mail
 
-	//printf("\r\n before  _esp8266_start_mail \r\n");
-	_esp8266_start_mail();
-	//printf("\r\n before  _esp8266_mail_subject \r\n");
-	_esp8266_mail_subject("ID 3 is comning"); //Enter the subject of your mail
-	//printf("\r\n before  _esp8266_mail_body \r\n");
-	_esp8266_mail_body("test"); //Enter the body of your mail       
-	_esp8266_End_mail();
+	t = MailRecord.tag_time;
+	sprintf(CharRecord,"%d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",
+		year(t) ,month(t),day(t),hour(t),minute(t),second(t),MailRecord.code,MailRecord.ID,MailRecord.volt);
+	if (!_esp8266_mail_body(CharRecord)) return false; //Enter the body of your mail   
 
-	_esp8266_disconnect_SMPT2GO();
+
+	if (!_esp8266_End_mail()) return false;
+	if (!_esp8266_disconnect_SMPT2GO()) return false;
+
+	return true;
 
 }
 
@@ -1275,56 +1283,67 @@ void ESP8266_send_string(char* st_pt)
 
 
 //**Function to enable multiple connections**//
-void _esp8266_enale_MUX()
+bool _esp8266_enale_MUX()
 {
 	_esp8266_print("AT+CIPMUX=1\r\n"); //Enable Multiple Connections
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse() )return false;
+
+
+	return true;
 }
 //___________End of function______________//
 
 
 //**Function to create server on Port 80**//
-void _esp8266_create_server()
+bool _esp8266_create_server()
 {
 	_esp8266_print("AT+CIPSERVER=1,80\r\n"); //Enable Server on port 80
-	_esp8266_waitResponse(); 
+	if (!_esp8266_waitResponse())return false; 
+
+
+	return true;
 }
 //___________End of function______________//
 
 
 
 /*Enter into Start typing the mail*/
-void _esp8266_start_mail()
+bool _esp8266_start_mail()
 {
 	_esp8266_print("AT+CIPSEND=4,6\r\n");
-	if (!_esp8266_waitFor("OK\r\n>"))
-	{
-		//return false;
-	}
+	if (!_esp8266_waitFor("OK\r\n>")) return false;
+
 
 	_esp8266_print("DATA\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse())return false;
+
+	return true;
 }
 /*Entered into the typing mode*/
 
 
 /*End the Mail using a "."*/
-void _esp8266_End_mail()
+bool _esp8266_End_mail()
 {
 	_esp8266_print("AT+CIPSEND=4,3\r\n");
-	_esp8266_waitFor("OK\r\n>");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print(".\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse())return false;
+
+
+	return true;
 }
 /*End of mail*/
 
 /*Quit Connection from SMPT server*/
-void _esp8266_disconnect_SMPT2GO()
+bool _esp8266_disconnect_SMPT2GO()
 {
 	_esp8266_print("AT+CIPSEND=4,6\r\n");
-	_esp8266_waitFor("OK\r\n>");
-	_esp8266_print("QUIT\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
+	_esp8266_print("QUIT\r\n");	if (!_esp8266_waitFor("CLOSED"))return false;
+
+
+	return true;
 }
 /*Disconnected*/
 
@@ -1332,22 +1351,21 @@ void _esp8266_disconnect_SMPT2GO()
 
 
 /*Connect to SMPT2GO server*/
-void _esp8266_connect_SMPT2GO()
+bool _esp8266_connect_SMPT2GO()
 {
 	_esp8266_print("AT+CIPSTART=4,\"TCP\",\"mail.smtp2go.com\",2525\r\n");
-	//_esp8266_waitResponse();
-	_esp8266_waitFor("OK");
+	if (!_esp8266_waitFor("OK"))return false;
 	_esp8266_print("AT+CIPSEND=4,20\r\n");
-	//_esp8266_waitResponse();
-	_esp8266_waitFor("OK\r\n>");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print("EHLO 192.168.1.123\r\n");
-	_esp8266_waitResponse();
-		//_esp8266_waitFor("OK");
+	if (!_esp8266_waitResponse())return false;
 	_esp8266_print("AT+CIPSEND=4,12\r\n");
-	//_esp8266_waitResponse();
-		_esp8266_waitFor("OK\r\n>");
+		if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print("AUTH LOGIN\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse())return false;
+
+
+	return true;
 }
 /*connected to Server*/
 
@@ -1358,7 +1376,7 @@ void _esp8266_connect_SMPT2GO()
 * FORMAT -> _esp8266_login_mail("mailID in base 64","Password in base 64");
 * This program uses the ID-> aswinthcd@gmail.com and password -> circuitdigest as an example
 */
-void _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
+bool _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 	len = CharLength(mail_ID);
 	len+= 2;
 	char l2 = len%10;
@@ -1369,12 +1387,12 @@ void _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	//_esp8266_waitResponse();
-		_esp8266_waitFor("OK\r\n>");
+	//if (!_esp8266_waitResponse();
+		if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print_nc(mail_ID);
 	_esp8266_print("\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse())return false;
 
 	len = CharLength(mail_Pas);
 	len+= 2;
@@ -1386,18 +1404,21 @@ void _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	//_esp8266_waitResponse();
-		_esp8266_waitFor("OK\r\n>");
+	//if (!_esp8266_waitResponse();
+		if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 
 	_esp8266_print_nc(mail_Pas);
 	_esp8266_print("\r\n");
-	_esp8266_waitResponse();
+	if (!_esp8266_waitResponse())return false;
+
+
+	return true;
 }
 /*End of Login*/
 
 
-void _esp8266_mail_sendID( char* send_ID)
+bool _esp8266_mail_sendID( char* send_ID)
 {
 	len = CharLength(send_ID);
 	len+= 14;
@@ -1409,16 +1430,19 @@ void _esp8266_mail_sendID( char* send_ID)
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	_esp8266_waitFor("OK\r\n>");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print("MAIL FROM:<");
 	_esp8266_print_nc(send_ID);
 	_esp8266_print(">\r\n");
-	_esp8266_waitResponse();   
+	if (!_esp8266_waitResponse())return false;   
+
+
+	return true;
 } 
 
 
-void _esp8266_mail_recID( char* rec_ID)
+bool _esp8266_mail_recID( char* rec_ID)
 {
 	len = CharLength(rec_ID);
 	len+= 12;
@@ -1430,16 +1454,19 @@ void _esp8266_mail_recID( char* rec_ID)
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	//_esp8266_waitResponse();
-	_esp8266_waitFor("OK\r\n>");
+	//if (!_esp8266_waitResponse();
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print("RCPT To:<");
 	_esp8266_print_nc(rec_ID);
 	_esp8266_print(">\r\n");
-	_esp8266_waitResponse();   
+	if (!_esp8266_waitResponse())return false;   
+
+
+	return true;
 } 
 
-void _esp8266_mail_subject( char* subject)
+bool _esp8266_mail_subject( char* subject)
 {
 	len = CharLength(subject);
 	len+= 10;
@@ -1451,17 +1478,20 @@ void _esp8266_mail_subject( char* subject)
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	_esp8266_waitFor("OK\r\n>");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print("Subject:");
 	_esp8266_print_nc(subject);
 	_esp8266_print("\r\n");
-	_esp8266_waitResponse();   
+	if (!_esp8266_waitResponse())return false;   
+
+
+	return true;
 } 
 
 
 
-void _esp8266_mail_body( char* body)
+bool _esp8266_mail_body( char* body)
 {
 	len = CharLength(body);
 	len+= 2;
@@ -1473,18 +1503,15 @@ void _esp8266_mail_body( char* body)
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	_esp8266_waitFor("OK\r\n>");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print_nc(body);
 	_esp8266_print("\r\n");
-	_esp8266_waitResponse();   
+	if (!_esp8266_waitResponse())return false;   
+
+
+	return true;
 } 
-
-
-
-
-
-
 
 
 
@@ -1807,4 +1834,42 @@ bool _esp8266_waitResponse(void) {
 		}
 	}
 	return true;
+}
+
+
+
+
+
+void PushMailQueue(unsigned char MemIndex)
+{
+	if(QueueNumber < MAIL_QUEUE_NUMBER)
+	{
+		QueueNumber ++;
+	}
+#if defined(DEGBUG_OUTPUT)	
+	printf("Add queue. Then size %d. MemIndex %d \r\n",QueueNumber,MemIndex);
+#else
+#endif	
+	for(int i = 0; i < MAIL_QUEUE_NUMBER-1;i++ )
+	{
+		MailQueue[MAIL_QUEUE_NUMBER-i-1] = MailQueue[MAIL_QUEUE_NUMBER-i-2]; 
+	}
+
+	MailQueue[0] = MemIndex; 
+}
+
+unsigned char PopMailQueue()
+{
+
+	if(QueueNumber != 0)
+	{
+		QueueNumber--;
+	}
+
+#if defined(DEGBUG_OUTPUT)	
+	printf("Pop queue. Then size %d. MemIndex %d \r\n",QueueNumber,MailQueue[QueueNumber]);
+#else
+#endif
+
+	return MailQueue[QueueNumber];
 }
