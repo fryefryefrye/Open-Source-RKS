@@ -1,0 +1,87 @@
+C51 COMPILER V9.00   HAL_DELAY                                                             09/02/2017 20:45:06 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE HAL_DELAY
+OBJECT MODULE PLACED IN .\Object\hal_delay.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal\hal_delay.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nrf24l01p;
+                    -hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\hal_delay.lst) OBJECT(.\Object\ha
+                    -l_delay.obj)
+
+line level    source
+
+   1          /* Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
+   2           *
+   3           * The information contained herein is property of Nordic Semiconductor ASA.
+   4           * Terms and conditions of usage are described in detail in NORDIC
+   5           * SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT.
+   6           *
+   7           * Licensees are granted free, non-transferable use of the information. NO
+   8           * WARRENTY of ANY KIND is provided. This heading must NOT be removed from
+   9           * the file.
+  10           *
+  11           * $LastChangedRevision: 133 $
+  12           */
+  13          
+  14          /** @file
+  15           * @brief delay routine which is more or less exact within + - 2us.
+  16           * @defgroup hal_nrf24le1_hal_delay Delay routine
+  17           * @{
+  18           * @ingroup hal_nrf24le1
+  19           *
+  20           *
+  21           * Delay routine which accesses registers directly.
+  22           *
+  23          */
+  24          
+  25          #include "hal_delay.h"
+  26          #include "memdefs.h"
+  27          //#include <stdint.h>
+  28          //#include "assertions.h"
+  29          
+  30          #ifdef __C51__
+  31          #include <intrins.h>
+  32          #elif __ICC8051__
+              #include <intrinsics.h>
+              #warning Not tested properly for IAR.
+              #endif
+  36          
+  37          void delay_us(uint16_t us)
+  38          {
+  39   1        do
+  40   1        {
+  41   2          _nop_();
+  42   2          _nop_();
+  43   2          _nop_();
+  44   2          _nop_();
+  45   2          _nop_();
+  46   2        } while (--us);
+  47   1      }
+  48          
+  49          void delay_ms(uint16_t ms)
+  50          {
+  51   1        do
+  52   1        {
+  53   2          delay_us(250);
+C51 COMPILER V9.00   HAL_DELAY                                                             09/02/2017 20:45:06 PAGE 2   
+
+  54   2          delay_us(250);
+  55   2          delay_us(250);
+  56   2          delay_us(250);
+  57   2        } while (--ms);
+  58   1      }
+  59          
+  60          /** @} */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     57    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

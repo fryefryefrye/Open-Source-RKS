@@ -1,20 +1,26 @@
 /*************************user modify settings****************************/
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_CLOSE_DOOR 10        //s
+#define TIME_OUT_CLOSE_DOOR 30        //s
 #define DATA_LENGTH 4                    //use fixed data length 1-32
 #define BUZZON 100                //set lenght of the buzz
 #define BUZZOFF 30000            //set interval of the buzz
 #define RFID_NUMBER 8
 
 
-//#define DEGBUG_OUTPUT
+#if defined(__AVR_ATmega2560__)	
+#define DEGBUG_OUTPUT
+#define WIFI_SERIAL Serial3
+#else
 #define WIFI_SERIAL Serial
+#endif
+
+
 #define TIME_SYNC_TIME_OUT 86400
 
 
 #define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
-#define COMPENSATION_SECOND_IN 5775 //second			2560:1452
+#define COMPENSATION_SECOND_IN 86400//5775 //second			2560:1452
 #define COMPENSATION_SECOND_DIRECTION -- //  ++;--
 /*****************************************************/
 
@@ -121,7 +127,10 @@ typedef enum
 	STEP_SEND_HTTP_BODY,
 	STEP_SEND_HTTP_END_LEN,
 	STEP_SEND_HTTP_END,
+	STEP_SEND_ON_LINE_NOTICE_LEN,
+	STEP_SEND_ON_LINE_NOTICE,
 	STEP_HTTP_CLOSE,
+
 } eWiFiStep;
 
 
@@ -149,6 +158,14 @@ char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
 /**********************************************************/
 
 
+/***********************OnLineNotice***********************************/
+
+#define NOTICE_QUEUE_NUMBER 8
+unsigned char OnLineNoticeID[NOTICE_QUEUE_NUMBER];
+unsigned char NoticeQueueNumber = 0;
+unsigned char CurrentNoticeID = 0;
+/**********************************************************/
+
 
 
 void Door_task();
@@ -171,6 +188,9 @@ void OnWiFiData(unsigned char data);
 unsigned char CharLength(char * MyChar);
 void OnSecond();
 void SendBeacon();
+void PushNoticeQueue(unsigned char ID);
+unsigned char PopNoticeQueue();
+void CheckOnlineNotice();
 
 
 
@@ -348,6 +368,7 @@ void Door_task()
 					Record.ID =  GotData[1];
 					Record.volt = Volt;
 					InsertRecord(&Record);
+					PushNoticeQueue(Record.ID);
 				}
 			} 
 			RfidOnline[i] = true;
@@ -525,6 +546,8 @@ void OnSecond()
 	Door_task();
 
 	CheckTimeOut();
+
+	CheckOnlineNotice();
 
 }
 
@@ -1019,6 +1042,41 @@ void OnWiFiData(unsigned char GetData)
 		break;
 
 
+	case STEP_SEND_ON_LINE_NOTICE_LEN:
+		if (CheckResponse(GetData,"OK"))
+		{
+
+#ifdef DEGBUG_OUTPUT
+			printf("\r\n UP connected!!!  send len\r\n");
+#endif
+			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
+			WIFI_SERIAL.print(8);
+			WIFI_SERIAL.print(F("\r\n"));
+			WiFiNextStep = STEP_SEND_ON_LINE_NOTICE;
+
+			TimeOut = 10;
+			ActiveTime = SecondsSinceStart;
+		}
+		break;
+
+	case STEP_SEND_ON_LINE_NOTICE:
+		if (CheckResponse(GetData,">"))
+		{
+
+#ifdef DEGBUG_OUTPUT
+			printf("\r\n send notice to up \r\n");
+#endif
+			WIFI_SERIAL.print(F("GET /"));	
+			WIFI_SERIAL.print(CurrentNoticeID);	
+			WIFI_SERIAL.print(F("\r\n"));
+			WiFiNextStep = STEP_HTTP_CLOSE;
+
+			TimeOut = 10;
+			ActiveTime = SecondsSinceStart;
+		}
+		break;
+
+
 
 
 
@@ -1037,4 +1095,59 @@ unsigned char CharLength(char * MyChar)
 }
 
 
+//#define NOTICE_QUEUE_NUMBER 8
+//unsigned char OnLineNoticeID[NOTICE_QUEUE_NUMBER];
+//unsigned char NoticeQueueNumber = 0;
+void PushNoticeQueue(unsigned char ID)
+{
+	if(NoticeQueueNumber < NOTICE_QUEUE_NUMBER)
+	{
+		NoticeQueueNumber ++;
+	}
+#if defined(DEGBUG_OUTPUT)	
+	printf("Add queue. Then size %d. ID %d \r\n",NoticeQueueNumber,ID);
+#else
+#endif	
+	for(int i = 0; i < NOTICE_QUEUE_NUMBER-1;i++ )
+	{
+		OnLineNoticeID[NOTICE_QUEUE_NUMBER-i-1] = OnLineNoticeID[NOTICE_QUEUE_NUMBER-i-2]; 
+	}
 
+	OnLineNoticeID[0] = ID; 
+}
+
+unsigned char PopNoticeQueue()
+{
+
+	if(NoticeQueueNumber != 0)
+	{
+		NoticeQueueNumber--;
+	}
+
+#if defined(DEGBUG_OUTPUT)	
+	printf("Pop queue. Then size %d. MemIndex %d \r\n",NoticeQueueNumber,OnLineNoticeID[NoticeQueueNumber]);
+#else
+#endif
+
+	return OnLineNoticeID[NoticeQueueNumber];
+}
+
+void CheckOnlineNotice()
+{
+	if ((NoticeQueueNumber>0)&&(WiFiNextStep == STEP_WAIT_REQUEST))
+	{
+		CurrentNoticeID = PopNoticeQueue();
+
+#if defined(DEGBUG_OUTPUT)	
+		printf("connect to 192.168.0.12  \r\n");
+#else
+#endif
+		WIFI_SERIAL.print(F("AT+CIPSTART=1,\"TCP\",\"192.168.0.12\",8081\r\n"));
+		WiFiNextStep = STEP_SEND_ON_LINE_NOTICE_LEN;
+		TimeOut = 10;
+		ActiveTime = SecondsSinceStart;
+	} 
+	else
+	{
+	}
+}

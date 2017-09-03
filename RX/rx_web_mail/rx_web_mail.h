@@ -1,33 +1,49 @@
 /*************************user modify settings****************************/
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_CLOSE_DOOR 10        //s
-#define DATA_LENGTH 4                    //use fixed data length 1-32
-#define BUZZON 100                //set lenght of the buzz
-#define BUZZOFF 30000            //set interval of the buzz
-#define RFID_NUMBER 8
+#define TIME_OUT_CLOSE_DOOR		60        //s
+#define IN_OUT_CLEAN			50        //s
+#define DATA_LENGTH				4                    //use fixed data length 1-32
+#define BUZZON					100                //set lenght of the buzz
+#define BUZZOFF					30000            //set interval of the buzz
+#define RFID_NUMBER				8
 
 
 #if defined(__AVR_ATmega2560__)	
-	#define DEGBUG_OUTPUT
-	#define WIFI_SERIAL Serial3
+#define DEGBUG_OUTPUT
+#define WIFI_SERIAL Serial3
 #else
-	#define WIFI_SERIAL Serial
+#define WIFI_SERIAL Serial
 #endif
 
 #define TIME_SYNC_TIME_OUT 86400
 
-#define MAIL_TIME_OUT  10
+#define MAIL_TIME_OUT  30
 
 
 #define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
-#define COMPENSATION_SECOND_IN 5775 //second			2560:1452
+#define COMPENSATION_SECOND_IN 86400//05775 //second			2560:1452
 #define COMPENSATION_SECOND_DIRECTION -- //  ++;--
+
+
+
+
+
 
 
 /*****************************************************/
 
+#define USE_CONFIG_FILE
 
+#if defined USE_CONFIG_FILE
+#include "D:\GitHub\Private\config.h"
+#else
+
+char NameList[][RFID_NUMBER] = {"Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown"}; 
+
+
+
+#endif
 
 
 
@@ -58,6 +74,11 @@ unsigned long LastChangeCHTime = 0;
 unsigned long LastGetTime[RFID_NUMBER] = {0};
 bool RfidOnline[RFID_NUMBER] = {false};
 
+//Look out direction of RFID
+unsigned long LastOnlineTime[RFID_NUMBER] = {0};
+bool LastOnlineAtUp[RFID_NUMBER];
+unsigned char LastOnlineStoreID[RFID_NUMBER] = {0};
+
 unsigned long CurrTime = 0;
 unsigned char GotData[DATA_LENGTH];
 unsigned long Volt;   //unit: mV,
@@ -78,7 +99,7 @@ bool AlarmOn;
 struct tRecord
 {
 	unsigned long tag_time = 0;
-	unsigned char code = 0;
+	unsigned char code = 0; // //0 up,1 down 2 in 3 out
 	unsigned char ID = 0;
 	unsigned int volt = 0;
 };
@@ -153,7 +174,7 @@ const unsigned char NTP_Request[] PROGMEM = {0xdb, 0x00 ,0x0a ,0xfa ,0x00 ,0x00 
 0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0xdd ,0x35 ,0x79 ,0xb9 ,0xb7 ,0x4f ,0xa6 ,0x30
 };
 
-const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<title>Room</title>\r\n</head>\r\n<body>\r\n";
+const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<meta charset=\"GB2312\">\r\n<title>Room</title>\r\n</head>\r\n<body>\r\n";
 char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
 
 /**********************************************************/
@@ -196,6 +217,8 @@ void NonStopTask();
 bool SendMail();
 void PushMailQueue(unsigned char MemIndex);
 unsigned char PopMailQueue();
+void RfidOnLine(unsigned char ID,bool OnlineAtUp);
+void InOUtCleanTask();
 
 ///***______________________ESP module Function Declarations__________________**///
 void _esp8266_putch( char);
@@ -344,9 +367,9 @@ void loop()
 
 void NonStopTask()
 {
-		nRF_task();
-		SecondsSinceStartTask();
-		Buzz_task();
+	nRF_task();
+	SecondsSinceStartTask();
+	Buzz_task();
 
 }
 void Mail_task()
@@ -431,11 +454,7 @@ void Door_task()
 #endif
 				if (NtpSync)
 				{
-					Record.tag_time=SecondsSinceStart+Start1970OffSet;
-					Record.code= GotData[0];
-					Record.ID =  GotData[1];
-					Record.volt = Volt;
-					InsertRecord(&Record);
+					RfidOnLine(GotData[1],true);
 				}
 			} 
 			RfidOnline[i] = true;
@@ -530,9 +549,10 @@ void Buzz_task()
 
 void InsertRecord(tRecord * pRecord)
 {
+
+
 	WriteRecord(NextRecord,pRecord);
 
-	PushMailQueue(NextRecord);
 
 	NextRecord++;
 	if(NextRecord>=RecordCounter)
@@ -614,6 +634,8 @@ void OnSecond()
 	Door_task();
 
 	CheckTimeOut();
+
+	InOUtCleanTask();
 
 }
 
@@ -926,6 +948,15 @@ void OnWiFiData(unsigned char GetData)
 				TimeOut = 15;
 
 			}
+			else if((Para >= '0')&&(Para <= '9'))
+			{
+#ifdef DEGBUG_OUTPUT
+				printf("\r\n Got ID online from wifi \r\n");
+#endif
+				RfidOnLine(Para-'0',false);
+				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
+				WiFiNextStep = STEP_WAIT_REQUEST;
+			}
 			else
 			{
 #ifdef DEGBUG_OUTPUT
@@ -1020,7 +1051,10 @@ void OnWiFiData(unsigned char GetData)
 			//ReadIndex = 
 			ReadRecord(ReadIndex,&Record);
 			t = Record.tag_time;
-			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.code,Record.ID,Record.volt);
+			//sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.code,Record.ID,Record.volt);
+			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d ID:%d. %s %dmV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.ID,NameList[Record.ID],Record.volt);
+
+
 			CharRecordLen = CharLength(CharRecord);
 			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
 			WIFI_SERIAL.print(CharRecordLen);
@@ -1180,11 +1214,33 @@ bool SendMail()
 
 
 	t = MailRecord.tag_time;
-	sprintf(CharRecord,"ID:%d Coming. %02d:%02d:%02d",MailRecord.ID,hour(t),minute(t),second(t));
+	char * Direction;
+
+	//0 up,1 down 2 in 3 out
+	if (MailRecord.code == 0)
+	{
+		Direction = "上";
+	}
+	if (MailRecord.code == 1)
+	{
+		Direction = "下";
+	}
+	if (MailRecord.code == 2)
+	{
+		Direction = "进";
+	}
+	if (MailRecord.code == 3)
+	{
+		Direction = "出";
+	}
+
+	//sprintf(CharRecord,"ID:%d Coming. %02d:%02d:%02d",MailRecord.ID,hour(t),minute(t),second(t));
+	sprintf(CharRecord,"ID:%d. %s %s %02d:%02d:%02d",MailRecord.ID,NameList[MailRecord.ID],Direction,hour(t),minute(t),second(t));
+
 	if (!_esp8266_mail_subject(CharRecord)) return false; //Enter the subject of your mail
 
 	t = MailRecord.tag_time;
-	sprintf(CharRecord,"%d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",
+	sprintf(CharRecord,"%d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV\r\n",
 		year(t) ,month(t),day(t),hour(t),minute(t),second(t),MailRecord.code,MailRecord.ID,MailRecord.volt);
 	if (!_esp8266_mail_body(CharRecord)) return false; //Enter the body of your mail   
 
@@ -1217,6 +1273,19 @@ bool _esp8266_getch(char * RetData)
 		if (WIFI_SERIAL.available() > 0)
 		{
 			*RetData = WIFI_SERIAL.read();
+
+
+			unsigned char Para;
+			if (CheckParameter(*RetData,"GET /",&Para))
+			{
+				if((Para >= '0')&&(Para <= '9'))
+				{
+#ifdef DEGBUG_OUTPUT
+					printf("\r\n Got ID online from wifi \r\n");
+#endif
+					RfidOnLine(Para-'0',false);
+				}
+			}
 #ifdef DEGBUG_OUTPUT
 			Serial.write(*RetData);
 #endif
@@ -1360,7 +1429,7 @@ bool _esp8266_connect_SMPT2GO()
 	_esp8266_print("EHLO 192.168.1.123\r\n");
 	if (!_esp8266_waitResponse())return false;
 	_esp8266_print("AT+CIPSEND=4,12\r\n");
-		if (!_esp8266_waitFor("OK\r\n>"))return false;
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print("AUTH LOGIN\r\n");
 	if (!_esp8266_waitResponse())return false;
 
@@ -1388,7 +1457,7 @@ bool _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
 	//if (!_esp8266_waitResponse();
-		if (!_esp8266_waitFor("OK\r\n>"))return false;
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 	_esp8266_print_nc(mail_ID);
 	_esp8266_print("\r\n");
@@ -1405,7 +1474,7 @@ bool _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
 	//if (!_esp8266_waitResponse();
-		if (!_esp8266_waitFor("OK\r\n>"))return false;
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 
 	_esp8266_print_nc(mail_Pas);
@@ -1820,7 +1889,7 @@ bool _esp8266_waitResponse(void) {
 		{
 			return false;
 		}
-		
+
 		for ( char i = 0; i < 6; i++) {
 			if (strings[i][so_far[i]] == received) {
 				so_far[i]++;
@@ -1872,4 +1941,54 @@ unsigned char PopMailQueue()
 #endif
 
 	return MailQueue[QueueNumber];
+}
+
+
+void RfidOnLine(unsigned char ID,bool OnlineAtUp)
+{
+
+	if (LastOnlineTime[ID] == 0)
+	{
+#if defined(DEGBUG_OUTPUT)	
+		printf("Direction, first  ID = %d,Record index = %d  up = %d \r\n",ID,NextRecord,OnlineAtUp);
+#endif
+		LastOnlineTime[ID] = SecondsSinceStart;
+		LastOnlineStoreID[ID] = NextRecord;
+
+		//add record
+		Record.tag_time=SecondsSinceStart+Start1970OffSet;
+		Record.code= (OnlineAtUp?0:1);//0 up,1 down 2 in 3 out
+		Record.ID =  ID;
+		Record.volt =(OnlineAtUp?Volt:0) ;
+		InsertRecord(&Record); 
+	}
+	else
+	{
+#if defined(DEGBUG_OUTPUT)	
+		printf("Direction, 2ed  ID = %d,Record index = %d  up = %d \r\n",ID,NextRecord,OnlineAtUp);
+#endif
+
+		LastOnlineTime[ID] = 0;
+
+		ReadRecord(LastOnlineStoreID[ID],&Record);
+		Record.code = (OnlineAtUp?2:3);//0 up,1 down 2 in 3 out
+		if (OnlineAtUp)
+		{
+			Record.volt =Volt;
+		}
+		WriteRecord(LastOnlineStoreID[ID],&Record);
+		PushMailQueue(LastOnlineStoreID[ID]);
+	}
+}
+
+void InOUtCleanTask()
+{
+	for(unsigned char i = 0;i < RFID_NUMBER;i++)
+	{
+		if (( SecondsSinceStart - LastOnlineTime[i] > IN_OUT_CLEAN )&&(LastOnlineTime[i] != 0))
+		{
+			LastOnlineTime[i] = 0;
+			PushMailQueue(LastOnlineStoreID[i]);
+		}
+	}
 }

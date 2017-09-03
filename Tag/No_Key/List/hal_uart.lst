@@ -1,0 +1,185 @@
+C51 COMPILER V9.00   HAL_UART                                                              09/01/2017 17:57:06 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE HAL_UART
+OBJECT MODULE PLACED IN .\Object\hal_uart.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal\nrf24le1\hal_uart.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nr
+                    -f24l01p;hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\hal_uart.lst) OBJECT(.\Ob
+                    -ject\hal_uart.obj)
+
+line level    source
+
+   1          /* Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
+   2           *
+   3           * The information contained herein is confidential property of Nordic 
+   4           * Semiconductor ASA.Terms and conditions of usage are described in detail 
+   5           * in NORDIC SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT. 
+   6           *
+   7           * Licensees are granted free, non-transferable use of the information. NO
+   8           * WARRENTY of ANY KIND is provided. This heading must NOT be removed from
+   9           * the file.
+  10           *              
+  11           * $LastChangedRevision: 133 $
+  12           */
+  13          
+  14          /** @file
+  15           * @brief Implementation of hal_uart
+  16           */
+  17          
+  18          //lint -e788
+  19          //lint -e714
+  20          
+  21          #include "nrf24le1.h"
+  22          #include <stdint.h>
+  23          #include <stdbool.h>
+  24          #include "hal_uart.h"
+  25          
+  26          #ifndef UART_NBUF
+  27          #define UART_NBUF   32
+  28          #endif
+  29          
+  30          #define BAUD_57K6   1015  // = Round(1024 - (2*16e6)/(64*57600))
+  31          #define BAUD_38K4   1011  // = Round(1024 - (2*16e6)/(64*38400))
+  32          #define BAUD_19K2    998  // = Round(1024 - (2*16e6)/(64*19200))
+  33          #define BAUD_9K6     972  // = Round(1024 - (2*16e6)/(64*9600))
+  34          
+  35          static uint8_t uart_tx_wp, uart_tx_rp, uart_tx_cnt;
+  36          static uint8_t idata uart_tx[UART_NBUF];
+  37          
+  38          static uint8_t uart_rx_wp, uart_rx_rp, uart_rx_cnt;
+  39          static uint8_t idata uart_rx[UART_NBUF];
+  40          
+  41          UART0_ISR()
+  42          {
+  43   1        if (RI0 == 1)
+  44   1        {
+  45   2          RI0 = 0;
+  46   2          if (uart_rx_cnt < UART_NBUF)
+  47   2          {
+  48   3            uart_rx[uart_rx_wp] = S0BUF;
+  49   3            uart_rx_wp = (uart_rx_wp + 1) % UART_NBUF;
+  50   3            uart_rx_cnt++;
+  51   3          }
+  52   2        }
+  53   1        if (TI0 == 1)
+C51 COMPILER V9.00   HAL_UART                                                              09/01/2017 17:57:06 PAGE 2   
+
+  54   1        {
+  55   2          TI0 = 0;
+  56   2          if (uart_tx_cnt > 1)
+  57   2          {
+  58   3            S0BUF = uart_tx[uart_tx_rp];
+  59   3            uart_tx_rp = (uart_tx_rp + 1) % UART_NBUF;
+  60   3          }
+  61   2          uart_tx_cnt--;
+  62   2        }
+  63   1      }
+  64          
+  65          void hal_uart_init(hal_uart_baudrate_t baud)
+  66          {
+  67   1        uint16_t temp;
+  68   1      
+  69   1        ES0 = 0;                      // Disable UART0 interrupt while initializing
+  70   1        uart_tx_wp = uart_tx_rp = 0;
+  71   1        uart_tx_cnt = 0;
+  72   1        uart_rx_wp = uart_rx_rp = 0;
+  73   1        uart_rx_cnt = 0;
+  74   1        REN0 = 1;                     // Enable receiver
+  75   1        SM0 = 0;                      // Mode 1..
+  76   1        SM1 = 1;                      // ..8 bit variable baud rate
+  77   1        PCON |= 0x80;                 // SMOD = 1
+  78   1        ADCON |= 0x80;                // Select internal baud rate generator
+  79   1        switch(baud)
+  80   1        {
+  81   2          case UART_BAUD_57K6:
+  82   2            temp = BAUD_57K6;
+  83   2            break;
+  84   2          case UART_BAUD_38K4:
+  85   2            temp = BAUD_38K4;
+  86   2            break;
+  87   2          case UART_BAUD_9K6:
+  88   2            temp = BAUD_9K6;
+  89   2            break;
+  90   2          case UART_BAUD_19K2:
+  91   2          default:
+  92   2            temp = BAUD_19K2;
+  93   2            break;
+  94   2        }
+  95   1        S0RELL = (uint8_t)temp;
+  96   1        S0RELH = (uint8_t)(temp >> 8);
+  97   1      
+  98   1        //TI0 = 0;
+  99   1       // ES0 = 0;                      // Enable UART0 interrupt
+ 100   1      }
+ 101          
+ 102          void hal_uart_putchar(uint8_t ch)
+ 103          {
+ 104   1        // Wait until there is space in the TX buffer:
+ 105   1        while(uart_tx_cnt > UART_NBUF)
+ 106   1          ;
+ 107   1        ES0 = 0;
+ 108   1        if (uart_tx_cnt == 0)
+ 109   1        {
+ 110   2          S0BUF = ch;                 // Write first char directly to the UART SFR
+ 111   2        }
+ 112   1        else
+ 113   1        {
+ 114   2          uart_tx[uart_tx_wp] = ch;
+ 115   2          uart_tx_wp = (uart_tx_wp + 1) % UART_NBUF;
+C51 COMPILER V9.00   HAL_UART                                                              09/01/2017 17:57:06 PAGE 3   
+
+ 116   2        }
+ 117   1        uart_tx_cnt++;
+ 118   1        ES0 = 1;
+ 119   1      }
+ 120          
+ 121          
+ 122          uint8_t hal_uart_chars_available(void)
+ 123          {
+ 124   1        return uart_rx_cnt;
+ 125   1      }
+ 126          
+ 127          bool hal_uart_tx_complete()
+ 128          {
+ 129   1        if(uart_tx_cnt == 0)
+ 130   1        {
+ 131   2          return true;
+ 132   2        }
+ 133   1        else
+ 134   1        {
+ 135   2          return false;
+ 136   2        }
+ 137   1      }
+ 138          uint8_t hal_uart_getchar(void)
+ 139          {
+ 140   1        uint8_t ch;
+ 141   1      
+ 142   1        // Wait until a character is available:
+ 143   1      
+ 144   1        while(uart_rx_cnt == 0)
+ 145   1        {}
+ 146   1        ES0 = 0;
+ 147   1        ch = uart_rx[uart_rx_rp];
+ 148   1        uart_rx_rp = (uart_rx_rp + 1) % UART_NBUF;
+ 149   1        uart_rx_cnt--;
+ 150   1        ES0 = 1;
+ 151   1        return ch;
+ 152   1      }
+ 153          
+ 154          /**
+ 155           * @}     
+ 156           */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    214    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      6    ----
+   IDATA SIZE       =     64    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

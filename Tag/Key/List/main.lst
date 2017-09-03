@@ -1,0 +1,306 @@
+C51 COMPILER V9.00   MAIN                                                                  09/02/2017 20:45:06 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Object\main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nrf24l01p;hal;compi
+                    -ler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\main.lst) OBJECT(.\Object\main.obj)
+
+line level    source
+
+   1          #include <reg24le1.h>
+   2          #include <stdint.h>
+   3          #include <stdbool.h>
+   4          #include "hal_nrf.h"
+   5          #include "hal_nrf_hw.h"
+   6          #include "hal_clk.h"
+   7          #include "hal_rtc.h"
+   8          #include "hal_delay.h"
+   9          #include "hal_adc.h"
+  10          #include "hal_wdog.h"
+  11          #include "hal_uart.h"
+  12          #include "string.h"
+  13          
+  14          
+  15          /*************************user modify settings****************************/
+  16          #define  FUNCTION_CODE 0
+  17          #define  TAG_ID 0
+  18          
+  19          uint8_t  TX_ADDRESS[5]  = {0x55,0x56,0x57,0x58,0x59}; // TX address
+  20          uint8_t HopCH[3] = {105,76,108};
+  21          
+  22          #define  TAG_TIME        10530          //sleep time£º10530=0.3s;       32768=1s
+  23          #define  TX_PAYLOAD      4              // data length
+  24          #define  ADC_TIME        10800          //volt of BAT,   every =   ADC_TIME*TAG_TIME     
+  25          
+  26          #define  RF_POWER                HAL_NRF_0DBM
+  27          //HAL_NRF_18DBM,          /**< Output power set to -18dBm */
+  28          //HAL_NRF_12DBM,          /**< Output power set to -12dBm */
+  29          //HAL_NRF_6DBM,           /**< Output power set to -6dBm  */
+  30          //HAL_NRF_0DBM            /**< Output power set to 0dBm   */
+  31          
+  32          /******************************************************************************/
+  33          
+  34          
+  35          #define  S1    P15  // Key S1
+  36          #define  S2    P16  // Key S2
+  37          
+  38          
+  39          
+  40          /* Watchdog*/
+  41          #define USE_WDT   1
+  42          #define WDT_TIME  256  //2S
+  43          
+  44          
+  45          
+  46          uint8_t   CellVoltageH;
+  47          uint8_t   CellVoltageL;
+  48          xdata bool  radio_busy;
+  49          xdata uint8_t  TxPayload[TX_PAYLOAD];
+  50          xdata uint8_t  RxPayload[32];
+  51          uint16_t PipeAndLen;
+  52          uint8_t CurrCH = 0;
+  53          
+  54          
+C51 COMPILER V9.00   MAIN                                                                  09/02/2017 20:45:06 PAGE 2   
+
+  55          void PrintInt16(uint16_t Counter);
+  56          
+  57          
+  58          void UART0_SendStr( char* str )
+  59          {
+  60   1          uint8_t i;
+  61   1          uint8_t size = strlen(str);
+  62   1          for(i=0; i<size; i++)
+  63   1          {
+  64   2              hal_uart_putchar(*(str+i));
+  65   2          }
+  66   1      }
+  67          
+  68          void IoInit(void)
+  69          {
+  70   1          //P0DIR = 0x00;
+  71   1          //P1DIR = 0x00;
+  72   1      
+  73   1              P1DIR = ( 1<<5 ) | ( 1<<6 );    //p0.0 p0.1  input£¬others output
+  74   1              P0DIR = 0;
+  75   1              P1 = 0xff;
+  76   1              P1CON = 0xD5;                   //Enable pull up for P0.0
+  77   1              P1CON = 0xD6;                   //Enable pull up for P0.1
+  78   1              P0 &= ~( 1<<2 );
+  79   1              P0 &= ~( 1<<1 );  
+  80   1      
+  81   1      }
+  82          
+  83          
+  84          void adc_init(void)              //get volt of BAT
+  85          {
+  86   1          hal_adc_set_input_channel(HAL_INP_VDD1_3);          //1/3 VDD
+  87   1          hal_adc_set_reference(HAL_ADC_REF_INT);             //set REF int 1.2V
+  88   1          hal_adc_set_input_mode(HAL_ADC_SINGLE);
+  89   1          hal_adc_set_conversion_mode(HAL_ADC_SINGLE_STEP);
+  90   1          hal_adc_set_sampling_rate(HAL_ADC_2KSPS);
+  91   1          hal_adc_set_resolution(HAL_ADC_RES_12BIT);          //12 bit ADC
+  92   1          hal_adc_set_data_just(HAL_ADC_JUST_RIGHT);
+  93   1      }
+  94          
+  95          void set_timer_period(uint16_t period)
+  96          {
+  97   1          if((period<10) && (period>65536))period = 32768;
+  98   1          hal_rtc_start(false);
+  99   1          hal_rtc_start(true);
+ 100   1          hal_rtc_set_compare_value(period - 1);
+ 101   1      }
+ 102          
+ 103          
+ 104          void RfCofig(void)
+ 105          {
+ 106   1          RFCKEN = 1;
+ 107   1      
+ 108   1          hal_nrf_close_pipe(HAL_NRF_ALL);
+ 109   1          hal_nrf_open_pipe(HAL_NRF_PIPE0,false);
+ 110   1      
+ 111   1          hal_nrf_set_operation_mode(HAL_NRF_PTX);
+ 112   1          hal_nrf_set_rf_channel(HopCH[0]);
+ 113   1          hal_nrf_set_datarate(HAL_NRF_2MBPS);
+ 114   1          hal_nrf_set_output_power(RF_POWER);
+ 115   1          hal_nrf_set_crc_mode(HAL_NRF_CRC_8BIT);
+ 116   1          hal_nrf_set_address_width(HAL_NRF_AW_5BYTES);
+C51 COMPILER V9.00   MAIN                                                                  09/02/2017 20:45:06 PAGE 3   
+
+ 117   1          hal_nrf_enable_dynamic_payload(false);
+ 118   1          hal_nrf_set_rx_payload_width(0,TX_PAYLOAD);
+ 119   1          hal_nrf_set_address(HAL_NRF_TX,TX_ADDRESS);
+ 120   1          hal_nrf_set_auto_retr(0,1500);
+ 121   1          hal_nrf_set_power_mode(HAL_NRF_PWR_UP);
+ 122   1          RF = 1;
+ 123   1          EA = 1;
+ 124   1      }
+ 125          
+ 126          void mcu_init(void)
+ 127          {
+ 128   1          hal_rtc_start(false);
+ 129   1          hal_clklf_set_source(HAL_CLKLF_RCOSC32K);           // Use 32.768KHz RC
+ 130   1      
+ 131   1          hal_rtc_set_compare_mode(HAL_RTC_COMPARE_MODE_0);   // Use 32 KHz timer mode 0
+ 132   1          set_timer_period(TAG_TIME);                         // Set the RTC2 time£¬card sleep time
+ 133   1          hal_clk_set_16m_source(HAL_CLK_XOSC16M);            // Always run on 16MHz crystal oscillator
+ 134   1          hal_clk_regret_xosc16m_on(0);                       // Keep XOSC16M off in register retention
+ 135   1      
+ 136   1          hal_rtc_start(true);
+ 137   1      
+ 138   1          while((CLKLFCTRL&0x80)==0x80);                          // Wait for the 32kHz to startup (change phase)
+ 139   1          while((CLKLFCTRL&0x80)!=0x80);
+ 140   1      }
+ 141          
+ 142          void Assemble_Data(void)
+ 143          {
+ 144   1      
+ 145   1              P1 |= ( 1<<5 ) | ( 1<<6 );  //P0.0 = 1; P0.1 = 1
+ 146   1              if( !( P1 & ( 1<<5 ) ) )    //check P0.1
+ 147   1              {
+ 148   2                      TxPayload[0] = 2;
+ 149   2              }
+ 150   1              else if( !( P1 & ( 1<<6 ) ) )    //Check P0.0
+ 151   1              {
+ 152   2                      TxPayload[0] = 3;
+ 153   2              }
+ 154   1              else
+ 155   1              {
+ 156   2                      TxPayload[0] = 0;
+ 157   2              }
+ 158   1      
+ 159   1          TxPayload[1] = TAG_ID;
+ 160   1          TxPayload[2] = CellVoltageH;
+ 161   1          TxPayload[3] = CellVoltageL;
+ 162   1      }
+ 163          
+ 164          void main()
+ 165          {
+ 166   1      
+ 167   1          xdata   uint32_t  loopCount = ADC_TIME-1;
+ 168   1      
+ 169   1          IoInit();
+ 170   1          mcu_init();
+ 171   1      
+ 172   1          //hal_uart_init(UART_BAUD_9K6);  //UART£¬bps9600
+ 173   1          while(hal_clk_get_16m_source() != HAL_CLK_XOSC16M)
+ 174   1          {
+ 175   2          }
+ 176   1      
+ 177   1          //hal_uart_putchar('a');
+ 178   1      
+C51 COMPILER V9.00   MAIN                                                                  09/02/2017 20:45:06 PAGE 4   
+
+ 179   1          adc_init();
+ 180   1          RfCofig();
+ 181   1      
+ 182   1      #ifdef  USE_WDT
+ 183   1          hal_wdog_init(WDT_TIME);//watch dog 2s
+ 184   1      #endif
+ 185   1      
+ 186   1          while(1)
+ 187   1          {
+ 188   2              loopCount++;
+ 189   2              //PrintInt16(loopCount);
+ 190   2              //UART0_SendStr("\r\n");
+ 191   2      
+ 192   2      #ifdef  USE_WDT
+ 193   2              hal_wdog_restart(); //feed dog
+ 194   2      #endif
+ 195   2      
+ 196   2              if(loopCount == ADC_TIME)    //Get volt of BAT every 5mins
+ 197   2              {
+ 198   3                  hal_adc_start();           //ADC
+ 199   3                  while( hal_adc_busy())     //wait ADC finish
+ 200   3                      ;
+ 201   3                  CellVoltageH = hal_adc_read_MSB(); //get ADC
+ 202   3                  CellVoltageL = hal_adc_read_LSB();
+ 203   3                  loopCount=0;
+ 204   3              }
+ 205   2      
+ 206   2              CurrCH++;
+ 207   2              if (CurrCH>2)
+ 208   2              {
+ 209   3                  CurrCH = 0;
+ 210   3              }
+ 211   2              hal_nrf_set_rf_channel(HopCH[CurrCH]);    //sent in 3 channels in one senconds
+ 212   2      
+ 213   2      
+ 214   2      
+ 215   2              PWRDWN = 0x04;    // power down
+ 216   2              PWRDWN = 0x00;
+ 217   2      
+ 218   2              Assemble_Data();
+ 219   2              hal_nrf_write_tx_payload_noack(TxPayload,TX_PAYLOAD);
+ 220   2      
+ 221   2              CE_PULSE();                 //RF send
+ 222   2              radio_busy = true;
+ 223   2              while(radio_busy)                   //wait RF finish
+ 224   2                  ;
+ 225   2          }
+ 226   1      }
+ 227          
+ 228          void rf_irq() interrupt INTERRUPT_RFIRQ
+ 229          {
+ 230   1          uint8_t  irq_flags;
+ 231   1      
+ 232   1          irq_flags = hal_nrf_get_clear_irq_flags();
+ 233   1      
+ 234   1          if(irq_flags & (1<<HAL_NRF_RX_DR))
+ 235   1          {
+ 236   2      
+ 237   2              while(!hal_nrf_rx_fifo_empty())// Read payload
+ 238   2              {
+ 239   3                  PipeAndLen = hal_nrf_read_rx_payload(RxPayload);
+ 240   3              }
+C51 COMPILER V9.00   MAIN                                                                  09/02/2017 20:45:06 PAGE 5   
+
+ 241   2              radio_busy = false;
+ 242   2          }
+ 243   1      
+ 244   1          if(irq_flags & ((1<<HAL_NRF_TX_DS)))                        // transimmter finish
+ 245   1          {
+ 246   2              radio_busy = false;
+ 247   2          }
+ 248   1      
+ 249   1          if(irq_flags & ((1<<HAL_NRF_MAX_RT)))                       // re-transimmter
+ 250   1          {
+ 251   2              radio_busy = false;
+ 252   2              hal_nrf_flush_tx();
+ 253   2          }
+ 254   1      }
+ 255          
+ 256          //void PrintInt16(uint16_t Counter)
+ 257          //{
+ 258          //    uint8_t onechar;
+ 259          //
+ 260          //    onechar = Counter/10000%10+0x30;
+ 261          //    hal_uart_putchar(onechar);
+ 262          //
+ 263          //    onechar = Counter/1000%10+0x30;
+ 264          //    hal_uart_putchar(onechar);
+ 265          //
+ 266          //    onechar = Counter/100%10+0x30;
+ 267          //    hal_uart_putchar(onechar);
+ 268          //
+ 269          //    onechar = Counter/10%10+0x30;
+ 270          //    hal_uart_putchar(onechar);
+ 271          //
+ 272          //    onechar = Counter%10+0x30;
+ 273          //    hal_uart_putchar(onechar);
+ 274          //}
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    667    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     37       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     13       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

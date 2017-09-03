@@ -1,0 +1,12 @@
+".\Object\main.obj",
+".\Object\hal_delay.obj",
+".\Object\hal_clk.obj",
+".\Object\hal_rtc.obj",
+".\Object\hal_adc.obj",
+".\Object\hal_nrf_hw.obj",
+".\Object\hal_wdog.obj",
+".\Object\hal_nrf.obj",
+".\Object\hal_uart.obj" 
+TO ".\Object\Tag" 
+PRINT(".\List\Tag.m51") RAMSIZE(256) 
+DISABLEWARNING (15,16) 

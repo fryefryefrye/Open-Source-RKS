@@ -1,0 +1,82 @@
+C51 COMPILER V9.00   HAL_WDOG                                                              09/01/2017 17:57:05 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE HAL_WDOG
+OBJECT MODULE PLACED IN .\Object\hal_wdog.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal\nrf24le1\hal_wdog.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nr
+                    -f24l01p;hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\hal_wdog.lst) OBJECT(.\Ob
+                    -ject\hal_wdog.obj)
+
+line level    source
+
+   1          /* Copyright (c) 2009 Nordic Semiconductor. All Rights Reserved.
+   2           *
+   3           * The information contained herein is confidential property of Nordic 
+   4           * Semiconductor ASA.Terms and conditions of usage are described in detail 
+   5           * in NORDIC SEMICONDUCTOR STANDARD SOFTWARE LICENSE AGREEMENT. 
+   6           *
+   7           * Licensees are granted free, non-transferable use of the information. NO
+   8           * WARRENTY of ANY KIND is provided. This heading must NOT be removed from
+   9           * the file.
+  10           *              
+  11           * $LastChangedRevision: 133 $
+  12           */
+  13          
+  14          /** @file
+  15            * @brief Implementation of hal_wdog
+  16           */
+  17          
+  18          #include <stdint.h>
+  19          #include <stdbool.h>
+  20          
+  21          #include "nrf24le1.h"
+  22          #include "nordic_common.h"
+  23          #include "hal_wdog.h"
+  24          
+  25          void hal_wdog_init(uint16_t start_value)
+  26          {
+  27   1      #ifdef __C51__
+  28   1        WDSV = LSB(start_value);      // Write the 8 LSB to the WD counter
+  29   1        WDSV = MSB(start_value);      // Write the 8 MSB to the WD counter
+  30   1      #elif __ICC8051__
+                WDSVL = LSB(start_value); 
+                WDSVH = MSB(start_value);
+              #else
+              #error Please define watchdog registers!
+              #endif
+  36   1      }
+  37          
+  38          void hal_wdog_restart(void)
+  39          {
+  40   1        uint8_t wd_msb, wd_lsb;
+  41   1      
+  42   1        #ifdef __C51__  
+  43   1        wd_lsb = WDSV;
+  44   1        wd_msb = WDSV;
+  45   1        WDSV = wd_lsb;           // Write the 8 LSB to the WD counter
+  46   1        WDSV = wd_msb;           // Write the 8 MSB to the WD counter
+  47   1      #elif __ICC8051__
+                wd_lsb = WDSVL;
+                wd_msb = WDSVH;
+                WDSVL = wd_lsb;           // Write the 8 LSB to the WD counter
+                WDSVH = wd_msb;           // Write the 8 MSB to the WD counter
+              #else
+              #error Please define watchdog restart
+C51 COMPILER V9.00   HAL_WDOG                                                              09/01/2017 17:57:05 PAGE 2   
+
+              #endif
+  55   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     16    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
