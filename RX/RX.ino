@@ -46,7 +46,7 @@ void setup()
 
     pinMode(DOOR, OUTPUT);
 
-    Serial.begin(9600);
+    Serial.begin(115200);
     Serial.println(F("RF24_WiFi_ID_Read"));
     printf_begin();
 

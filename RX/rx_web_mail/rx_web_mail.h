@@ -1,8 +1,7 @@
 /*************************user modify settings****************************/
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_CLOSE_DOOR		60        //s
-#define IN_OUT_CLEAN			50        //s
+
 #define DATA_LENGTH				4                    //use fixed data length 1-32
 #define BUZZON					100                //set lenght of the buzz
 #define BUZZOFF					30000            //set interval of the buzz
@@ -11,9 +10,13 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 
 #if defined(__AVR_ATmega2560__)	
 #define DEGBUG_OUTPUT
+#define TIME_OUT_CLOSE_DOOR		20        //s
+#define IN_OUT_CLEAN			10        //s
 #define WIFI_SERIAL Serial3
 #else
 #define WIFI_SERIAL Serial
+#define TIME_OUT_CLOSE_DOOR		60        //s
+#define IN_OUT_CLEAN			50        //s
 #endif
 
 #define TIME_SYNC_TIME_OUT 86400
@@ -77,7 +80,7 @@ bool RfidOnline[RFID_NUMBER] = {false};
 //Look out direction of RFID
 unsigned long LastOnlineTime[RFID_NUMBER] = {0};
 bool LastOnlineAtUp[RFID_NUMBER];
-unsigned char LastOnlineStoreID[RFID_NUMBER] = {0};
+unsigned char LastOnlineStoreIndex[RFID_NUMBER] = {0};
 
 unsigned long CurrTime = 0;
 unsigned char GotData[DATA_LENGTH];
@@ -152,6 +155,7 @@ typedef enum
 	STEP_SEND_HTTP_BODY,
 	STEP_SEND_HTTP_END_LEN,
 	STEP_SEND_HTTP_END,
+	STEP_WAIT_CLOSED,
 	STEP_HTTP_CLOSE,
 } eWiFiStep;
 
@@ -376,7 +380,7 @@ void Mail_task()
 {
 	//static bool RfidOnlineSent[RFID_NUMBER] = {false};
 
-	if (QueueNumber > 0)
+	if ((QueueNumber > 0)&&(WiFiNextStep == STEP_WAIT_REQUEST))
 	{
 		CurrentMailMemIndex = PopMailQueue();
 		SendMail();
@@ -781,7 +785,7 @@ void CheckForInput()
 		OnWiFiData(RetData);
 
 #ifdef DEGBUG_OUTPUT
-		Serial.write(RetData);
+		//Serial.write(RetData);
 #endif
 
 	}
@@ -955,7 +959,7 @@ void OnWiFiData(unsigned char GetData)
 #endif
 				RfidOnLine(Para-'0',false);
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-				WiFiNextStep = STEP_WAIT_REQUEST;
+				WiFiNextStep = STEP_WAIT_CLOSED;
 			}
 			else
 			{
@@ -1051,8 +1055,28 @@ void OnWiFiData(unsigned char GetData)
 			//ReadIndex = 
 			ReadRecord(ReadIndex,&Record);
 			t = Record.tag_time;
+
+			char * Direction;
+
+			//0 up,1 down 2 in 3 out
+			if (Record.code == 0)
+			{
+				Direction = "上";
+			}
+			if (Record.code == 1)
+			{
+				Direction = "下";
+			}
+			if (Record.code == 2)
+			{
+				Direction = "进";
+			}
+			if (Record.code == 3)
+			{
+				Direction = "出";
+			}
 			//sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.code,Record.ID,Record.volt);
-			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d ID:%d. %s %dmV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.ID,NameList[Record.ID],Record.volt);
+			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d ID:%d. %s %s %dmV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.ID,NameList[Record.ID],Direction,Record.volt);
 
 
 			CharRecordLen = CharLength(CharRecord);
@@ -1140,6 +1164,21 @@ void OnWiFiData(unsigned char GetData)
 			TimeOut = 0;
 		}
 		break;
+
+	case STEP_WAIT_CLOSED:
+		if (CheckResponse(GetData,"OK"))
+		{
+
+#ifdef DEGBUG_OUTPUT
+			printf("\r\n close!!! \r\n");
+#endif
+			
+			WiFiNextStep = STEP_WAIT_REQUEST;
+			TimeOut = 0;
+		}
+		break;
+
+		
 
 
 
@@ -1953,7 +1992,7 @@ void RfidOnLine(unsigned char ID,bool OnlineAtUp)
 		printf("Direction, first  ID = %d,Record index = %d  up = %d \r\n",ID,NextRecord,OnlineAtUp);
 #endif
 		LastOnlineTime[ID] = SecondsSinceStart;
-		LastOnlineStoreID[ID] = NextRecord;
+		LastOnlineStoreIndex[ID] = NextRecord;
 
 		//add record
 		Record.tag_time=SecondsSinceStart+Start1970OffSet;
@@ -1966,18 +2005,36 @@ void RfidOnLine(unsigned char ID,bool OnlineAtUp)
 	{
 #if defined(DEGBUG_OUTPUT)	
 		printf("Direction, 2ed  ID = %d,Record index = %d  up = %d \r\n",ID,NextRecord,OnlineAtUp);
+
+		printf("PushMailQueue; Direction = %d,   ID = %d, \r\n",(OnlineAtUp?2:3),ID);
 #endif
 
-		LastOnlineTime[ID] = 0;
 
-		ReadRecord(LastOnlineStoreID[ID],&Record);
-		Record.code = (OnlineAtUp?2:3);//0 up,1 down 2 in 3 out
-		if (OnlineAtUp)
+
+		ReadRecord(LastOnlineStoreIndex[ID],&Record);
+
+		if (Record.code == (OnlineAtUp?0:1))
 		{
-			Record.volt =Volt;
+#if defined(DEGBUG_OUTPUT)	
+			printf("Direction, duplicate, update time only \r\n",ID,NextRecord,OnlineAtUp);
+#endif
+			LastOnlineTime[ID] = SecondsSinceStart;
+		} 
+		else
+		{
+			LastOnlineTime[ID] = 0;
+			Record.code = (OnlineAtUp?2:3);//0 up,1 down 2 in 3 out
+			if (OnlineAtUp)
+			{
+				Record.volt =Volt;
+			}
+			WriteRecord(LastOnlineStoreIndex[ID],&Record);
+			PushMailQueue(LastOnlineStoreIndex[ID]);
 		}
-		WriteRecord(LastOnlineStoreID[ID],&Record);
-		PushMailQueue(LastOnlineStoreID[ID]);
+
+
+
+
 	}
 }
 
@@ -1988,7 +2045,10 @@ void InOUtCleanTask()
 		if (( SecondsSinceStart - LastOnlineTime[i] > IN_OUT_CLEAN )&&(LastOnlineTime[i] != 0))
 		{
 			LastOnlineTime[i] = 0;
-			PushMailQueue(LastOnlineStoreID[i]);
+#if defined(DEGBUG_OUTPUT)	
+			printf("PushMailQueue; No Direction,   ID = %d, \r\n",i);
+#endif
+			PushMailQueue(LastOnlineStoreIndex[i]);
 		}
 	}
 }

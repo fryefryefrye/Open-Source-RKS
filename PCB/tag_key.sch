@@ -1436,10 +1436,14 @@ Source: VISHAY wscwsn.pdf</description>
 <rectangle x1="7.7" y1="-3.048" x2="8.5" y2="3.048" layer="21"/>
 <rectangle x1="-1.905" y1="9.525" x2="1.905" y2="10.795" layer="21"/>
 <smd name="1" x="0" y="0" dx="15.24" dy="15.24" layer="1" roundness="100"/>
-<pad name="2" x="-10.16" y="0" drill="2.2" diameter="3.048" shape="long" rot="R90"/>
-<pad name="3" x="10.16" y="0" drill="2.2" diameter="3.048" shape="long" rot="R90"/>
-<text x="-4.445" y="11.43" size="0.889" layer="25" ratio="11">&gt;NAME</text>
-<text x="0.635" y="11.43" size="0.889" layer="27" ratio="11">&gt;VALUE</text>
+<pad name="2" x="-10.66" y="0" drill="2.2" diameter="3.048" shape="long" rot="R90"/>
+<pad name="3" x="10.66" y="0" drill="2.2" diameter="3.048" shape="long" rot="R90"/>
+<text x="-6.985" y="-8.89" size="0.889" layer="25" ratio="11">&gt;NAME</text>
+<text x="3.175" y="-8.89" size="0.889" layer="27" ratio="11">&gt;VALUE</text>
+<rectangle x1="-14.75" y1="-2.25" x2="-11.75" y2="2.25" layer="29"/>
+<rectangle x1="12" y1="-2.25" x2="14.75" y2="2.25" layer="29"/>
+<rectangle x1="-14.5" y1="-2" x2="-12" y2="2" layer="1"/>
+<rectangle x1="12" y1="-2" x2="14.5" y2="2" layer="1"/>
 </package>
 <package name="SEEED-OPL-SWITCH_SW4-SMD-4.5-6.0X6.0X7.5MM">
 <wire x1="3" y1="3" x2="-2.432121875" y2="3" width="0.127" layer="21"/>
@@ -2202,6 +2206,19 @@ Alternate pin configuration
 <wire x1="13" y1="15.7" x2="-8" y2="15.7" width="0.127" layer="21"/>
 <wire x1="-8" y1="15.7" x2="-8" y2="-1" width="0.127" layer="21"/>
 </package>
+<package name="SEEED-OPL-SWITCH_SW4-SMD-4.5-6.0X6.0_3LEG">
+<wire x1="3" y1="3" x2="-2.432121875" y2="3" width="0.127" layer="21"/>
+<wire x1="-2.432121875" y1="3" x2="-3" y2="2.432121875" width="0.127" layer="21"/>
+<wire x1="-3" y1="2.432121875" x2="-3" y2="-3" width="0.127" layer="21"/>
+<wire x1="-3" y1="-3" x2="3" y2="-3" width="0.127" layer="21"/>
+<wire x1="3" y1="-3" x2="3" y2="3" width="0.127" layer="21"/>
+<rectangle x1="-3.048" y1="-2.921" x2="3.048" y2="3.048" layer="39"/>
+<smd name="2" x="4.35" y="2.5" dx="2.5" dy="0.9" layer="1"/>
+<smd name="3" x="-4.35" y="-2.5" dx="2.5" dy="0.9" layer="1"/>
+<smd name="4" x="4.35" y="-2.5" dx="2.5" dy="0.9" layer="1"/>
+<text x="-2.413" y="3.175" size="0.889" layer="25" ratio="11">&gt;NAME</text>
+<text x="-1.905" y="0" size="0.635" layer="27" ratio="11">&gt;VALUE</text>
+</package>
 </packages>
 <symbols>
 <symbol name="RESISTOR_R-EU-1">
@@ -2269,16 +2286,13 @@ Alternate pin configuration
 <wire x1="5.08" y1="-2.54" x2="5.08" y2="-5.08" width="0.254" layer="94"/>
 <wire x1="5.08" y1="-5.08" x2="-5.08" y2="-5.08" width="0.254" layer="94"/>
 <wire x1="-5.08" y1="-5.08" x2="-5.08" y2="-2.54" width="0.254" layer="94"/>
-<wire x1="-5.08" y1="-2.54" x2="-5.08" y2="2.54" width="0.254" layer="94"/>
-<wire x1="-5.08" y1="2.54" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
-<wire x1="-5.08" y1="2.54" x2="0" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="-5.08" y1="-2.54" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
 <wire x1="0" y1="2.54" x2="5.08" y2="2.54" width="0.1524" layer="94"/>
 <wire x1="0" y1="2.54" x2="0" y2="1.27" width="0.1524" layer="94"/>
 <wire x1="0" y1="1.27" x2="-1.27" y2="-0.762" width="0.1524" layer="94"/>
 <wire x1="0" y1="-1.27" x2="0" y2="-2.54" width="0.1524" layer="94"/>
 <wire x1="0" y1="-2.54" x2="5.08" y2="-2.54" width="0.1524" layer="94"/>
 <wire x1="0" y1="-2.54" x2="-5.08" y2="-2.54" width="0.1524" layer="94"/>
-<wire x1="-6.35" y1="2.54" x2="-5.08" y2="2.54" width="0.1524" layer="94"/>
 <wire x1="-6.35" y1="-2.54" x2="-5.08" y2="-2.54" width="0.1524" layer="94"/>
 <wire x1="6.35" y1="-2.54" x2="5.08" y2="-2.54" width="0.1524" layer="94"/>
 <wire x1="6.35" y1="2.54" x2="5.08" y2="2.54" width="0.1524" layer="94"/>
@@ -2288,6 +2302,7 @@ Alternate pin configuration
 <pin name="B1" x="8.89" y="-2.54" length="short" rot="R180"/>
 <text x="-5.08" y="5.08" size="1.27" layer="95" ratio="10">&gt;NAME</text>
 <text x="-5.08" y="-6.35" size="1.27" layer="96" ratio="10">&gt;VALUE</text>
+<wire x1="-6.35" y1="2.54" x2="0" y2="2.54" width="0.127" layer="94"/>
 </symbol>
 <symbol name="SPARKFUN-CONNECTORS_CONN_08">
 <description>&lt;h3&gt; 8 Pin Connection&lt;/h3&gt;</description>
@@ -2370,6 +2385,31 @@ Alternate pin configuration
 <pin name="18" x="-5.08" y="-7.62" visible="pad" length="middle" direction="pas" swaplevel="1"/>
 <pin name="19" x="-5.08" y="-10.16" visible="pad" length="middle" direction="pas" swaplevel="1"/>
 <pin name="20" x="-5.08" y="-12.7" visible="pad" length="middle" direction="pas" swaplevel="1"/>
+</symbol>
+<symbol name="SEEED-OPL-SWITCH_BOTTON-3P">
+<circle x="-1.27" y="-0.762" radius="0.1524" width="0" layer="94"/>
+<circle x="0" y="-1.27" radius="0.1524" width="0" layer="94"/>
+<wire x1="-5.08" y1="5.08" x2="5.08" y2="5.08" width="0.254" layer="94"/>
+<wire x1="5.08" y1="5.08" x2="5.08" y2="2.54" width="0.254" layer="94"/>
+<wire x1="5.08" y1="2.54" x2="5.08" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="5.08" y1="-2.54" x2="5.08" y2="-5.08" width="0.254" layer="94"/>
+<wire x1="5.08" y1="-5.08" x2="-5.08" y2="-5.08" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="-5.08" x2="-5.08" y2="-2.54" width="0.254" layer="94"/>
+<wire x1="-5.08" y1="-2.54" x2="-5.08" y2="5.08" width="0.254" layer="94"/>
+<wire x1="0" y1="2.54" x2="5.08" y2="2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="2.54" x2="0" y2="1.27" width="0.1524" layer="94"/>
+<wire x1="0" y1="1.27" x2="-1.27" y2="-0.762" width="0.1524" layer="94"/>
+<wire x1="0" y1="-1.27" x2="0" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="-2.54" x2="5.08" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="0" y1="-2.54" x2="-5.08" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="-6.35" y1="-2.54" x2="-5.08" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="6.35" y1="-2.54" x2="5.08" y2="-2.54" width="0.1524" layer="94"/>
+<wire x1="6.35" y1="2.54" x2="5.08" y2="2.54" width="0.1524" layer="94"/>
+<pin name="A1" x="8.89" y="2.54" length="short" rot="R180"/>
+<pin name="B0" x="-8.89" y="-2.54" length="short"/>
+<pin name="B1" x="8.89" y="-2.54" length="short" rot="R180"/>
+<text x="-5.08" y="5.08" size="1.27" layer="95" ratio="10">&gt;NAME</text>
+<text x="-5.08" y="-6.35" size="1.27" layer="96" ratio="10">&gt;VALUE</text>
 </symbol>
 </symbols>
 <devicesets>
@@ -3417,6 +3457,24 @@ This footprint was designed to help hold the alignment of a through-hole compone
 </device>
 </devices>
 </deviceset>
+<deviceset name="SEEED-OPL-SWITCH_SMD-BUTTON(4P-6.0X6.0X3LEGM)" prefix="SW" uservalue="yes">
+<description>311020022</description>
+<gates>
+<gate name="G$1" symbol="SEEED-OPL-SWITCH_BOTTON-3P" x="0" y="2.54"/>
+</gates>
+<devices>
+<device name="" package="SEEED-OPL-SWITCH_SW4-SMD-4.5-6.0X6.0_3LEG">
+<connects>
+<connect gate="G$1" pin="A1" pad="2"/>
+<connect gate="G$1" pin="B0" pad="3"/>
+<connect gate="G$1" pin="B1" pad="4"/>
+</connects>
+<technologies>
+<technology name=""/>
+</technologies>
+</device>
+</devices>
+</deviceset>
 </devicesets>
 </library>
 </libraries>
@@ -3433,10 +3491,10 @@ This footprint was designed to help hold the alignment of a through-hole compone
 <part name="R2" library="tag_key" deviceset="RESISTOR_R-EU_" device="M0805"/>
 <part name="FRAME1" library="tag_key" deviceset="RX_LETTER_L" device=""/>
 <part name="BAT1" library="tag_key" deviceset="SEEED-OPL-CONNECTOR_DIP-BATTERY-CELL-HOLDER(2032)" device="" value="cr2032"/>
-<part name="SW1" library="tag_key" deviceset="SEEED-OPL-SWITCH_SMD-BUTTON(4P-6.0X6.0X7.5MM)" device=""/>
 <part name="SW2" library="tag_key" deviceset="SEEED-OPL-SWITCH_SMD-BUTTON(4P-6.0X6.0X7.5MM)" device=""/>
 <part name="J1" library="tag_key" deviceset="SPARKFUN-CONNECTORS_CONN_08" device="&quot;"/>
 <part name="J2" library="tag_key" deviceset="SPARKFUN-CONNECTORS_CONN_11" device="_1.27MM"/>
+<part name="SW3" library="tag_key" deviceset="SEEED-OPL-SWITCH_SMD-BUTTON(4P-6.0X6.0X3LEGM)" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -3448,10 +3506,10 @@ This footprint was designed to help hold the alignment of a through-hole compone
 <instance part="FRAME1" gate="G$1" x="-5.08" y="-2.54"/>
 <instance part="FRAME1" gate="G$2" x="142.24" y="-2.54"/>
 <instance part="BAT1" gate="G$1" x="81.28" y="154.94"/>
-<instance part="SW1" gate="G$1" x="35.56" y="160.02"/>
 <instance part="SW2" gate="G$1" x="35.56" y="147.32"/>
 <instance part="J1" gate="G$1" x="78.74" y="121.92"/>
 <instance part="J2" gate="G$1" x="30.48" y="121.92"/>
+<instance part="SW3" gate="G$1" x="35.56" y="160.02"/>
 </instances>
 <busses>
 </busses>
@@ -3503,9 +3561,9 @@ This footprint was designed to help hold the alignment of a through-hole compone
 <label x="40.64" y="119.38" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="SW1" gate="G$1" pin="B1"/>
+<pinref part="SW3" gate="G$1" pin="B1"/>
 <wire x1="44.45" y1="157.48" x2="54.61" y2="157.48" width="0.1524" layer="91"/>
-<label x="46.99" y="157.48" size="1.778" layer="95"/>
+<label x="48.26" y="157.48" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="P1.5" class="0">
@@ -3677,7 +3735,7 @@ This footprint was designed to help hold the alignment of a through-hole compone
 <pinref part="R1" gate="G$1" pin="2"/>
 <wire x1="21.59" y1="162.56" x2="21.59" y2="167.64" width="0.1524" layer="91"/>
 <wire x1="21.59" y1="167.64" x2="44.45" y2="167.64" width="0.1524" layer="91"/>
-<pinref part="SW1" gate="G$1" pin="A1"/>
+<pinref part="SW3" gate="G$1" pin="A1"/>
 <wire x1="44.45" y1="167.64" x2="44.45" y2="162.56" width="0.1524" layer="91"/>
 </segment>
 </net>
