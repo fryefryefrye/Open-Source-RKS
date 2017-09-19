@@ -4,8 +4,8 @@
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
 #define TIME_OUT_TURN_OFF_BIKE 15		//s
-#define TIME_OUT_LOCK_WAIT_HOME 60
-#define WAIT_KEY_IN_HOME 30
+#define LOCK_WAIT_TIME 5
+//#define WAIT_KEY_IN_HOME 30
 #define DATA_LENGTH 4					//use fixed data length 1-32
 #define BUZZON 1000				//set lenght of the buzz
 #define BUZZOFF 30000			//set interval of the buzz
@@ -42,10 +42,16 @@ unsigned long SecondsSinceStart;
 
 #define RF_315 6
 #define RF_LENGTH 11
+//unsigned char  RfCommand[3][RF_LENGTH]={
+//	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB2 ,0xDB ,0x7F},
+//	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0x5B ,0x7F},
+//	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0xCB ,0x7F}
+//};
+
 unsigned char  RfCommand[3][RF_LENGTH]={
-	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB2 ,0xDB ,0x7F},
-	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0x5B ,0x7F},
-	{0xFF ,0x25 ,0xB6 ,0x4B ,0x64 ,0x96 ,0xD9 ,0x2C ,0xB6 ,0xCB ,0x7F}
+	{0x00 ,0x9A ,0x49 ,0x36 ,0xDA ,0x4D ,0xA4 ,0x9A ,0x6D ,0x24 ,0x80},//L
+	{0x00 ,0x9A ,0x49 ,0x36 ,0xDA ,0x4D ,0xA4 ,0x9A ,0x69 ,0xA4 ,0x80},//U
+	{0x00 ,0x9A ,0x49 ,0x36 ,0xDA ,0x4D ,0xA4 ,0x9A ,0x69 ,0x26 ,0x80}//P
 };
 
 bool NeedSendLock = false;
@@ -124,27 +130,20 @@ void loop()
 	//RF_Command(2,10);
 	//delay(3000);
 
+	//delay(15000);
+
 
 
 } // Loop
 
 
+
+
 void RF_task()
 {
 	static bool LastOn = false;
-	static bool Home = false;
 
-	static bool HomeFirstKeyGet = false;
-	static unsigned long HomeFirstKeyGetTime = 0;
 
-	if ((SecondsSinceStart - LastHomeGetTime <TIME_OUT_LOCK_WAIT_HOME)&&(LastHomeGetTime != 0))
-	{
-		Home = true;
-	}
-	else
-	{
-		Home = false;
-	}
 
 
 	if (LastOn)
@@ -164,68 +163,126 @@ void RF_task()
 	{
 		if ((SecondsSinceStart - LastKeyGetTime <TIME_OUT_TURN_OFF_BIKE)&&(LastKeyGetTime != 0))
 		{
-			if (!Home)//No home,bike Off, key in
-			{
 #ifdef DEGBUG_OUTPUT
-				printf("Turn ON \r\n");
+			printf("Turn ON \r\n");
 #endif
-				RF_Command(2,10);
-				delay(300);
-				RF_Command(2,10);
-				LastOn = true;
-				NeedSendLock = false;
-			}
-			else//home,bike Off, key in
-			{
-				if (!HomeFirstKeyGet)
-				{
-					HomeFirstKeyGetTime = SecondsSinceStart;
-					HomeFirstKeyGet = true;
-				} 
-				else
-				{
-					if (SecondsSinceStart - HomeFirstKeyGetTime > WAIT_KEY_IN_HOME)
-					{
-#ifdef DEGBUG_OUTPUT
-						printf("Turn ON, in home \r\n");
-#endif
-						RF_Command(2,10);
-						delay(300);
-						RF_Command(2,10);
-						LastOn = true;
-						NeedSendLock = false;
-						HomeFirstKeyGet = false;
-						HomeFirstKeyGetTime = 0;
-					}
-				}
-
-			}
-
-		} 
-		else// Off,key out
-		{
-			HomeFirstKeyGet = false;
-			HomeFirstKeyGetTime = 0;
+			RF_Command(2,10);
+			delay(300);
+			RF_Command(2,10);
+			LastOn = true;
+			NeedSendLock = false;
 		}
 	}
 
-	if ((NeedSendLock)&&(SecondsSinceStart - TrunOffTime >TIME_OUT_LOCK_WAIT_HOME)&&(TrunOffTime != 0))
+	if ((NeedSendLock)&&(SecondsSinceStart - TrunOffTime >LOCK_WAIT_TIME)&&(TrunOffTime != 0))
 	{
-		if(LastHomeGetTime <TrunOffTime)
-		{
-			RF_Command(0,10);
+
+		RF_Command(0,10);
 #ifdef DEGBUG_OUTPUT
-			printf("Lock \r\n");
+		printf("Lock \r\n");
 #endif
-		}else
-		{
-#ifdef DEGBUG_OUTPUT
-			printf("Not Lock \r\n");
-#endif
-		}
 		NeedSendLock = false;
 	}
 }
+
+
+//void RF_task()
+//{
+//	static bool LastOn = false;
+//	static bool Home = false;
+//
+//	static bool HomeFirstKeyGet = false;
+//	static unsigned long HomeFirstKeyGetTime = 0;
+//
+//	if ((SecondsSinceStart - LastHomeGetTime <TIME_OUT_LOCK_WAIT_HOME)&&(LastHomeGetTime != 0))
+//	{
+//		Home = true;
+//	}
+//	else
+//	{
+//		Home = false;
+//	}
+//
+//
+//	if (LastOn)
+//	{
+//		if ((SecondsSinceStart - LastKeyGetTime >TIME_OUT_TURN_OFF_BIKE)&&(LastKeyGetTime != 0))
+//		{
+//			RF_Command(1,10);
+//			LastOn = false;
+//			NeedSendLock = true;
+//			TrunOffTime = SecondsSinceStart;
+//#ifdef DEGBUG_OUTPUT
+//			printf("Turn OFF \r\n");
+//#endif
+//		} 
+//	} 
+//	else// last OFF
+//	{
+//		if ((SecondsSinceStart - LastKeyGetTime <TIME_OUT_TURN_OFF_BIKE)&&(LastKeyGetTime != 0))
+//		{
+//			if (!Home)//No home,bike Off, key in
+//			{
+//#ifdef DEGBUG_OUTPUT
+//				printf("Turn ON \r\n");
+//#endif
+//				RF_Command(2,10);
+//				delay(300);
+//				RF_Command(2,10);
+//				LastOn = true;
+//				NeedSendLock = false;
+//			}
+//			else//home,bike Off, key in
+//			{
+//				if (!HomeFirstKeyGet)
+//				{
+//					HomeFirstKeyGetTime = SecondsSinceStart;
+//					HomeFirstKeyGet = true;
+//				} 
+//				else
+//				{
+//					if (SecondsSinceStart - HomeFirstKeyGetTime > WAIT_KEY_IN_HOME)
+//					{
+//#ifdef DEGBUG_OUTPUT
+//						printf("Turn ON, in home \r\n");
+//#endif
+//						RF_Command(2,10);
+//						delay(300);
+//						RF_Command(2,10);
+//						LastOn = true;
+//						NeedSendLock = false;
+//						HomeFirstKeyGet = false;
+//						HomeFirstKeyGetTime = 0;
+//					}
+//				}
+//
+//			}
+//
+//		} 
+//		else// Off,key out
+//		{
+//			HomeFirstKeyGet = false;
+//			HomeFirstKeyGetTime = 0;
+//		}
+//	}
+//
+//	if ((NeedSendLock)&&(SecondsSinceStart - TrunOffTime >TIME_OUT_LOCK_WAIT_HOME)&&(TrunOffTime != 0))
+//	{
+//		if(LastHomeGetTime <TrunOffTime)
+//		{
+//			RF_Command(0,10);
+//#ifdef DEGBUG_OUTPUT
+//			printf("Lock \r\n");
+//#endif
+//		}else
+//		{
+//#ifdef DEGBUG_OUTPUT
+//			printf("Not Lock \r\n");
+//#endif
+//		}
+//		NeedSendLock = false;
+//	}
+//}
 
 
 void nRFTask()
@@ -304,7 +361,7 @@ void RF_Command(unsigned char command,unsigned char repeat)
 			{
 				if((RfCommand[command][i]>>(7-k))&1)
 				{
-					digitalWrite(RF_315, LOW);
+					digitalWrite(RF_315, HIGH);
 					//Serial.print(1);
 					if (LastBit)
 					{
@@ -319,7 +376,7 @@ void RF_Command(unsigned char command,unsigned char repeat)
 				}
 				else
 				{
-					digitalWrite(RF_315, HIGH);
+					digitalWrite(RF_315, LOW);
 					//Serial.print(0);
 					if (LastBit)
 					{
