@@ -2,9 +2,12 @@
 /*************************user modify settings****************************/
 byte addresses[6] = { 0x55, 0x56, 0x57, 0x58, 0x59, 0x60 }; // should be same with tx
 unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_TURN_OFF_BIKE 15		//s#define TIME_OUT_LOCK_WAIT_HOME 60
+#define TIME_OUT_TURN_OFF_BIKE 15		//s
+#define TIME_OUT_LOCK_WAIT_HOME 60
 #define WAIT_KEY_IN_HOME 30
-#define DATA_LENGTH 4					//use fixed data length 1-32#define BUZZON 2000				//set lenght of the buzz#define BUZZOFF 5000			//set interval of the buzz
+#define DATA_LENGTH 4					//use fixed data length 1-32
+#define BUZZON 2000				//set lenght of the buzz
+#define BUZZOFF 5000			//set interval of the buzz
 #define DEGBUG_OUTPUT
 
 #define BUZZ 9
@@ -12,9 +15,11 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 
 /*****************************************************/
 
+
 #include <SPI.h>
 #include "RF24.h"
 #include <printf.h>
+
 
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
 RF24 radio(7, 8);
@@ -54,7 +59,7 @@ void setup()
 
 #ifdef DEGBUG_OUTPUT
     Serial.begin(115200);
-    Serial.println(F("RF24_315_ID_Read"));
+    Serial.println(F("RF24_Bike_Read"));
     printf_begin();
 #endif
 
@@ -106,14 +111,14 @@ void CheckTime_task()
 
     if (LastOn)
     {
-        if ((SecondsSinceStart - LastTagGetTime == TIME_OUT_TURN_OFF_BIKE/2) && (LastTagGetTime != 0))
+        if ((SecondsSinceStart - LastTagGetTime == TIME_OUT_TURN_OFF_BIKE/2) && (LastTagGetTime != 0)&&(Alarm == 0))
         {
-            Alarm = 2;
+            Alarm = 3;
         }
 
         if ((SecondsSinceStart - LastTagGetTime > TIME_OUT_TURN_OFF_BIKE) && (LastTagGetTime != 0))
         {
-            Alarm = 3;
+            Alarm = 2;
             digitalWrite(RELAY, LOW);
             LastOn = false;
 #ifdef DEGBUG_OUTPUT
