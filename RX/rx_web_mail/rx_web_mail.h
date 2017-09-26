@@ -25,13 +25,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 
 
 #define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
-#define COMPENSATION_SECOND_IN 86400//05775 //second			2560:1452
+#define COMPENSATION_SECOND_IN 5775//05775 //second			2560:1452
 #define COMPENSATION_SECOND_DIRECTION -- //  ++;--
-
-
-
-
-
 
 
 /*****************************************************/
@@ -41,11 +36,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #if defined USE_CONFIG_FILE
 #include "D:\GitHub\Private\config.h"
 #else
-
 char NameList[][RFID_NUMBER] = {"Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown"}; 
-
-
-
 #endif
 
 
@@ -761,7 +752,7 @@ void CheckTimeOut()
 				OnWiFiData('K');
 				TimeOut = 0;
 			}
-			if ((WiFiNextStep > STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
+			if ((WiFiNextStep >= STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
 			{
 #ifdef DEGBUG_OUTPUT
 				printf("\r\n close when time out \r\n");
@@ -910,6 +901,7 @@ void OnWiFiData(unsigned char GetData)
 
 	case STEP_WAIT_REQUEST:
 		unsigned char Para;
+		TimeOut = 15;
 		if (CheckParameter(GetData,"GET /",&Para))
 		{
 #ifdef DEGBUG_OUTPUT
@@ -931,7 +923,7 @@ void OnWiFiData(unsigned char GetData)
 				WiFiNextStep = STEP_SEND_HTTP_HEAD;
 
 				ActiveTime = SecondsSinceStart;
-				TimeOut = 15;
+				//TimeOut = 15;
 			}
 			else if(Para == 'a')
 			{
@@ -949,7 +941,7 @@ void OnWiFiData(unsigned char GetData)
 				WiFiNextStep = STEP_SEND_HTTP_HEAD;
 
 				ActiveTime = SecondsSinceStart;
-				TimeOut = 15;
+				//TimeOut = 15;
 
 			}
 			else if((Para >= '0')&&(Para <= '9'))
