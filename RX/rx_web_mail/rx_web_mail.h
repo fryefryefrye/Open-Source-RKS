@@ -759,6 +759,7 @@ void CheckTimeOut()
 #endif
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
 				WiFiNextStep = STEP_WAIT_REQUEST;
+				TimeOut = 0;
 			}
 
 		}
@@ -951,7 +952,7 @@ void OnWiFiData(unsigned char GetData)
 #endif
 				RfidOnLine(Para-'0',false);
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-				WiFiNextStep = STEP_WAIT_CLOSED;
+				WiFiNextStep = STEP_WAIT_REQUEST;
 			}
 			else
 			{
