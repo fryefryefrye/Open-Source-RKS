@@ -752,7 +752,7 @@ void CheckTimeOut()
 				OnWiFiData('K');
 				TimeOut = 0;
 			}
-			if ((WiFiNextStep >= STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
+			if ((WiFiNextStep > STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
 			{
 #ifdef DEGBUG_OUTPUT
 				printf("\r\n close when time out \r\n");
@@ -902,7 +902,6 @@ void OnWiFiData(unsigned char GetData)
 
 	case STEP_WAIT_REQUEST:
 		unsigned char Para;
-		TimeOut = 15;
 		if (CheckParameter(GetData,"GET /",&Para))
 		{
 #ifdef DEGBUG_OUTPUT
@@ -924,7 +923,7 @@ void OnWiFiData(unsigned char GetData)
 				WiFiNextStep = STEP_SEND_HTTP_HEAD;
 
 				ActiveTime = SecondsSinceStart;
-				//TimeOut = 15;
+				TimeOut = 15;
 			}
 			else if(Para == 'a')
 			{
@@ -942,7 +941,7 @@ void OnWiFiData(unsigned char GetData)
 				WiFiNextStep = STEP_SEND_HTTP_HEAD;
 
 				ActiveTime = SecondsSinceStart;
-				//TimeOut = 15;
+				TimeOut = 15;
 
 			}
 			else if((Para >= '0')&&(Para <= '9'))
@@ -952,7 +951,7 @@ void OnWiFiData(unsigned char GetData)
 #endif
 				RfidOnLine(Para-'0',false);
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-				WiFiNextStep = STEP_WAIT_REQUEST;
+				//WiFiNextStep = STEP_WAIT_REQUEST;
 			}
 			else
 			{
@@ -960,7 +959,7 @@ void OnWiFiData(unsigned char GetData)
 				printf("\r\n close not request home page \r\n");
 #endif
 				WIFI_SERIAL.print(F("AT+CIPCLOSE=1\r\n"));
-				WiFiNextStep = STEP_WAIT_REQUEST;
+				//WiFiNextStep = STEP_WAIT_REQUEST;
 			}
 		}
 
