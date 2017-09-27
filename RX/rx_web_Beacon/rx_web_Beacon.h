@@ -1,7 +1,7 @@
 /*************************user modify settings****************************/
 byte addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
 unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_CLOSE_DOOR 30        //s
+#define TIME_OUT_CLOSE_DOOR 15        //s
 #define DATA_LENGTH 4                    //use fixed data length 1-32
 #define BUZZON 100                //set lenght of the buzz
 #define BUZZOFF 30000            //set interval of the buzz
@@ -19,8 +19,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define TIME_SYNC_TIME_OUT 86400
 
 
-#define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
-#define COMPENSATION_SECOND_IN 86400//5775 //second			2560:1452
+#define COMPENSATION_MS_IN_ONE_SECOND -1 //+9;-10;...    2560:-9
+#define COMPENSATION_SECOND_IN 4800//5775 //second			2560:1452
 #define COMPENSATION_SECOND_DIRECTION -- //  ++;--
 /*****************************************************/
 
@@ -50,8 +50,9 @@ RF24 radio(7,8);
 unsigned long PackageCounter = 0;
 unsigned char CurrCH = 0;
 unsigned long LastChangeCHTime = 0;
-unsigned long LastGetTime[RFID_NUMBER] = {0};
+unsigned long LastTagGetTime[RFID_NUMBER] = {0};
 bool RfidOnline[RFID_NUMBER] = {false};
+unsigned long LastKeyGetTime = 0;//unit: ms
 
 unsigned long CurrTime = 0;
 unsigned char GotData[DATA_LENGTH];
@@ -191,6 +192,7 @@ void SendBeacon();
 void PushNoticeQueue(unsigned char ID);
 unsigned char PopNoticeQueue();
 void CheckOnlineNotice();
+void OnKeyPress();
 
 
 
@@ -259,8 +261,16 @@ void loop()
 
 		if ((GotData[0] == 0)&&(GotData[1]<RFID_NUMBER))
 		{
-			LastGetTime[GotData[1]] = SecondsSinceStart;
+			LastTagGetTime[GotData[1]] = SecondsSinceStart;
 		}
+		else if (GotData[0] == 2)
+        {
+            if (millis() - LastKeyGetTime > 500)
+            {
+                LastKeyGetTime = millis();
+                OnKeyPress();
+            }
+        }
 
 		PackageCounter ++;
 
@@ -354,7 +364,7 @@ void Door_task()
 	bool DoorShouldOpen = false;
 	for(unsigned char i = 0;i < RFID_NUMBER;i++)
 	{
-		if ((LastGetTime[i]!=0)&&( SecondsSinceStart - LastGetTime[i] < TIME_OUT_CLOSE_DOOR))
+		if ((LastTagGetTime[i]!=0)&&( SecondsSinceStart - LastTagGetTime[i] < TIME_OUT_CLOSE_DOOR))
 		{
 			if (!RfidOnline[i])//offline before
 			{
@@ -634,7 +644,7 @@ void ProcessNTP(unsigned long data)
 		*(((unsigned char *)(&TempSecondsSince1970))) = data;
 		//LastSyncTime = TempSecondsSince1970-2208988800+8*60+8*3600;//-145;
 		LastSyncTime = TempSecondsSince1970-0x83aa7e80+8*3600;
-		LastSyncOffSet = SecondsSinceStart+Start1970OffSet-LastSyncTime;
+		LastSyncOffSet = SecondsSinceStart+Start1970OffSet-LastSyncTime;//now - new_get
 		Start1970OffSet = LastSyncTime-SecondsSinceStart;
 		NtpSync = true;
 		NtpWorking = false;
@@ -1150,4 +1160,15 @@ void CheckOnlineNotice()
 	else
 	{
 	}
+}
+
+void OnKeyPress()
+{
+#if defined(DEGBUG_OUTPUT)	
+		printf("manual off for 100ms  \r\n");
+#else
+#endif
+	digitalWrite(DOOR, LOW);
+	DoorLastState = false;
+	delay(100);
 }

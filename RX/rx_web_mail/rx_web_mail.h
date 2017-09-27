@@ -15,8 +15,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define WIFI_SERIAL Serial3
 #else
 #define WIFI_SERIAL Serial
-#define TIME_OUT_CLOSE_DOOR		60        //s
-#define IN_OUT_CLEAN			50        //s
+#define TIME_OUT_CLOSE_DOOR		15        //s
+#define IN_OUT_CLEAN			180        //s
 #endif
 
 #define TIME_SYNC_TIME_OUT 86400
