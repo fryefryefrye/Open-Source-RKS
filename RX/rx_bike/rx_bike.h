@@ -2,7 +2,7 @@
 /*************************user modify settings****************************/
 byte addresses[6] = { 0x55, 0x56, 0x57, 0x58, 0x59, 0x60 }; // should be same with tx
 unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
-#define TIME_OUT_TURN_OFF_BIKE 15		//s
+#define TIME_OUT_TURN_OFF_BIKE 30		//s
 #define TIME_OUT_LOCK_WAIT_HOME 60
 #define WAIT_KEY_IN_HOME 30
 #define DATA_LENGTH 4					//use fixed data length 1-32
