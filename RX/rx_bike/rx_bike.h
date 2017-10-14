@@ -6,8 +6,8 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 #define TIME_OUT_LOCK_WAIT_HOME 60
 #define WAIT_KEY_IN_HOME 30
 #define DATA_LENGTH 4					//use fixed data length 1-32
-#define BUZZON 2000				//set lenght of the buzz
-#define BUZZOFF 5000			//set interval of the buzz
+#define BUZZON 4000				//set lenght of the buzz 2000
+#define BUZZOFF 7000			//set interval of the buzz 5000
 #define DEGBUG_OUTPUT
 
 #define BUZZ 9
@@ -26,6 +26,7 @@ RF24 radio(7, 8);
 /**********************************************************/
 
 unsigned char Alarm = 0;
+bool Alarmed = false;
 
 unsigned long PackageCounter = 0;
 unsigned char CurrCH = 0;
@@ -104,6 +105,8 @@ void loop()
 void CheckTime_task()
 {
 
+
+
     if (!Auto)
     {
         return;
@@ -114,11 +117,32 @@ void CheckTime_task()
         if ((SecondsSinceStart - LastTagGetTime == TIME_OUT_TURN_OFF_BIKE/2) && (LastTagGetTime != 0)&&(Alarm == 0))
         {
             Alarm = 3;
+			Alarmed = true;
+#ifdef DEGBUG_OUTPUT
+			printf("Power off warning \r\n");
+#endif
         }
+
+		if ((SecondsSinceStart - LastTagGetTime < TIME_OUT_TURN_OFF_BIKE/2) && (LastTagGetTime != 0)&&(Alarm == 0)&&Alarmed)
+		{
+			Alarm = 1;
+			Alarmed = false;
+#ifdef DEGBUG_OUTPUT
+			printf("Power off warning clear \r\n");
+#endif
+		}
+
+		if ((SecondsSinceStart - LastTagGetTime == TIME_OUT_TURN_OFF_BIKE) && (LastTagGetTime != 0)&&(Alarm == 0))
+		{
+			Alarm = 2;
+#ifdef DEGBUG_OUTPUT
+			printf("Power off soon \r\n");
+#endif
+		}
 
         if ((SecondsSinceStart - LastTagGetTime > TIME_OUT_TURN_OFF_BIKE) && (LastTagGetTime != 0))
         {
-            Alarm = 2;
+
             digitalWrite(RELAY, LOW);
             LastOn = false;
 #ifdef DEGBUG_OUTPUT
@@ -137,6 +161,7 @@ void CheckTime_task()
 #endif
             digitalWrite(RELAY, HIGH);
             LastOn = true;
+			Alarmed = false;
         }
     }
 }
@@ -186,6 +211,11 @@ void nRFTask()
         {
 
             LastTagGetTime = SecondsSinceStart;
+			//if (Alarmed)
+			//{
+			//	Alarm = 1;
+			//}
+			
         }
         else if (GotData[0] == 1)
         {

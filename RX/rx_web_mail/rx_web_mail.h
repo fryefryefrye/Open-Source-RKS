@@ -11,12 +11,21 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #if defined(__AVR_ATmega2560__)	
 #define DEGBUG_OUTPUT
 #define TIME_OUT_CLOSE_DOOR		20        //s
-#define IN_OUT_CLEAN			10        //s
+#define IN_OUT_CLEAN			180        //s
 #define WIFI_SERIAL Serial3
+
+#define COMPENSATION_MS_IN_ONE_SECOND -9
+#define COMPENSATION_SECOND_IN 1452
+#define COMPENSATION_SECOND_DIRECTION --
+
 #else
 #define WIFI_SERIAL Serial
 #define TIME_OUT_CLOSE_DOOR		15        //s
 #define IN_OUT_CLEAN			180        //s
+
+#define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
+#define COMPENSATION_SECOND_IN 5775//05775 //second			2560:1452
+#define COMPENSATION_SECOND_DIRECTION -- //  ++;--
 #endif
 
 #define TIME_SYNC_TIME_OUT 86400
@@ -24,9 +33,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define MAIL_TIME_OUT  30
 
 
-#define COMPENSATION_MS_IN_ONE_SECOND 0 //+9;-10;...    2560:-9
-#define COMPENSATION_SECOND_IN 5775//05775 //second			2560:1452
-#define COMPENSATION_SECOND_DIRECTION -- //  ++;--
+
 
 
 /*****************************************************/
@@ -219,23 +226,23 @@ void InOUtCleanTask();
 void _esp8266_putch( char);
 bool _esp8266_getch(char * RetData);   
 /** Function prototypes **/
-bool esp8266_isStarted(void);        // Check if the module is started (AT)
-bool esp8266_restart(void);          // Restart module (AT+RST)
-void esp8266_echoCmds(bool);        // Enabled/disable command echoing (ATE)
+//bool esp8266_isStarted(void);        // Check if the module is started (AT)
+//bool esp8266_restart(void);          // Restart module (AT+RST)
+//void esp8266_echoCmds(bool);        // Enabled/disable command echoing (ATE)
 // WIFI Mode (station/softAP/station+softAP) (AT+CWMODE)
-void esp8266_mode( char);
+//void esp8266_mode( char);
 // Connect to AP (AT+CWJAP)
-void esp8266_connect( char*,  char*);
+//void esp8266_connect( char*,  char*);
 // Disconnect from AP (AT+CWQAP)
-void esp8266_disconnect(void);
+//void esp8266_disconnect(void);
 // Local IP (AT+CIFSR)
-void esp8266_ip(char*);
+//void esp8266_ip(char*);
 // Create connection (AT+CIPSTART)
-bool esp8266_start( char protocol, char* ip,  char port);
+//bool esp8266_start( char protocol, char* ip,  char port);
 // Send data (AT+CIPSEND)
-bool esp8266_send( char*);
+//bool esp8266_send( char*);
 // Receive data (+IPD)
-void esp8266_receive( char*, uint16_t, bool);
+//void esp8266_receive( char*, uint16_t, bool);
 /** Functions for internal use only **/
 // Print a string to the output
 void _esp8266_print(const char*);
@@ -243,7 +250,7 @@ void _esp8266_print_nc(char*);
 // Wait for a certain string on the input
 bool _esp8266_waitFor(const char *);
 // Wait for any response on the input
-bool _esp8266_waitResponse(void);
+//bool _esp8266_waitResponse(void);
 //void Lcd_Set_Cursor(char , char b);
 //void Lcd_Print_Char(char);
 //void Lcd_Print_String(char *);
@@ -253,8 +260,8 @@ bool _esp8266_mail_recID( char*);
 bool _esp8266_mail_subject( char*);
 bool _esp8266_mail_body( char*);
 
-bool _esp8266_create_server(); //Create a server on port 80
-bool _esp8266_enale_MUX();
+//bool _esp8266_create_server(); //Create a server on port 80
+//bool _esp8266_enale_MUX();
 bool _esp8266_connect_SMPT2GO();
 bool _esp8266_disconnect_SMPT2GO();
 bool _esp8266_start_mail();
@@ -777,7 +784,7 @@ void CheckForInput()
 		OnWiFiData(RetData);
 
 #ifdef DEGBUG_OUTPUT
-		//Serial.write(RetData);
+		Serial.write(RetData);
 #endif
 
 	}
@@ -1289,6 +1296,11 @@ bool SendMail()
 void _esp8266_putch( char bt)  
 {
 	WIFI_SERIAL.print(bt);
+
+#ifdef DEGBUG_OUTPUT
+	Serial.print(bt);
+#endif
+
 }
 //_____________End of function________________//
 
@@ -1304,6 +1316,9 @@ bool _esp8266_getch(char * RetData)
 		if (WIFI_SERIAL.available() > 0)
 		{
 			*RetData = WIFI_SERIAL.read();
+#ifdef DEGBUG_OUTPUT
+			Serial.write(*RetData);
+#endif
 
 
 			unsigned char Para;
@@ -1317,9 +1332,6 @@ bool _esp8266_getch(char * RetData)
 					RfidOnLine(Para-'0',false);
 				}
 			}
-#ifdef DEGBUG_OUTPUT
-			Serial.write(*RetData);
-#endif
 			return true;
 		}
 		if (SecondsSinceStart - RecvStartTime > MAIL_TIME_OUT)
@@ -1383,26 +1395,26 @@ void ESP8266_send_string(char* st_pt)
 
 
 //**Function to enable multiple connections**//
-bool _esp8266_enale_MUX()
-{
-	_esp8266_print("AT+CIPMUX=1\r\n"); //Enable Multiple Connections
-	if (!_esp8266_waitResponse() )return false;
-
-
-	return true;
-}
+//bool _esp8266_enale_MUX()
+//{
+//	_esp8266_print("AT+CIPMUX=1\r\n"); //Enable Multiple Connections
+//	if (!_esp8266_waitResponse() )return false;
+//
+//
+//	return true;
+//}
 //___________End of function______________//
 
 
 //**Function to create server on Port 80**//
-bool _esp8266_create_server()
-{
-	_esp8266_print("AT+CIPSERVER=1,80\r\n"); //Enable Server on port 80
-	if (!_esp8266_waitResponse())return false; 
-
-
-	return true;
-}
+//bool _esp8266_create_server()
+//{
+//	_esp8266_print("AT+CIPSERVER=1,80\r\n"); //Enable Server on port 80
+//	if (!_esp8266_waitResponse())return false; 
+//
+//
+//	return true;
+//}
 //___________End of function______________//
 
 
@@ -1415,7 +1427,7 @@ bool _esp8266_start_mail()
 
 
 	_esp8266_print("DATA\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
 
 	return true;
 }
@@ -1428,7 +1440,7 @@ bool _esp8266_End_mail()
 	_esp8266_print("AT+CIPSEND=4,3\r\n");
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print(".\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
 
 
 	return true;
@@ -1440,7 +1452,8 @@ bool _esp8266_disconnect_SMPT2GO()
 {
 	_esp8266_print("AT+CIPSEND=4,6\r\n");
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
-	_esp8266_print("QUIT\r\n");	if (!_esp8266_waitFor("CLOSED"))return false;
+	_esp8266_print("QUIT\r\n");	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("CLOSED"))return false;
 
 
 	return true;
@@ -1455,14 +1468,17 @@ bool _esp8266_connect_SMPT2GO()
 {
 	_esp8266_print("AT+CIPSTART=4,\"TCP\",\"mail.smtp2go.com\",2525\r\n");
 	if (!_esp8266_waitFor("OK"))return false;
+	if (!_esp8266_waitFor("220"))return false;
 	_esp8266_print("AT+CIPSEND=4,20\r\n");
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print("EHLO 192.168.1.123\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("250"))return false;
 	_esp8266_print("AT+CIPSEND=4,12\r\n");
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
 	_esp8266_print("AUTH LOGIN\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("334"))return false;
 
 
 	return true;
@@ -1492,7 +1508,8 @@ bool _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 
 	_esp8266_print_nc(mail_ID);
 	_esp8266_print("\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("334"))return false;
 
 	len = CharLength(mail_Pas);
 	len+= 2;
@@ -1504,13 +1521,13 @@ bool _esp8266_login_mail( char* mail_ID,  char* mail_Pas) {
 		_esp8266_putch(l1+'0');
 	_esp8266_putch(l2+'0');
 	_esp8266_print("\r\n");
-	//if (!_esp8266_waitResponse();
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
 
 	_esp8266_print_nc(mail_Pas);
 	_esp8266_print("\r\n");
-	if (!_esp8266_waitResponse())return false;
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("235"))return false;
 
 
 	return true;
@@ -1535,7 +1552,8 @@ bool _esp8266_mail_sendID( char* send_ID)
 	_esp8266_print("MAIL FROM:<");
 	_esp8266_print_nc(send_ID);
 	_esp8266_print(">\r\n");
-	if (!_esp8266_waitResponse())return false;   
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("250"))return false;
 
 
 	return true;
@@ -1560,7 +1578,8 @@ bool _esp8266_mail_recID( char* rec_ID)
 	_esp8266_print("RCPT To:<");
 	_esp8266_print_nc(rec_ID);
 	_esp8266_print(">\r\n");
-	if (!_esp8266_waitResponse())return false;   
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+	if (!_esp8266_waitFor("250"))return false;
 
 
 	return true;
@@ -1583,7 +1602,7 @@ bool _esp8266_mail_subject( char* subject)
 	_esp8266_print("Subject:");
 	_esp8266_print_nc(subject);
 	_esp8266_print("\r\n");
-	if (!_esp8266_waitResponse())return false;   
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
 
 
 	return true;
@@ -1607,7 +1626,7 @@ bool _esp8266_mail_body( char* body)
 
 	_esp8266_print_nc(body);
 	_esp8266_print("\r\n");
-	if (!_esp8266_waitResponse())return false;   
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
 
 
 	return true;
@@ -1654,16 +1673,16 @@ bool _esp8266_mail_body( char* body)
 *
 * @param echo whether to enable command echoing or not
 */
-void esp8266_echoCmds(bool echo) {
-	_esp8266_print("ATE");
-	if (echo) {
-		_esp8266_putch('1');
-	} else {
-		_esp8266_putch('0');
-	}
-	_esp8266_print("\r\n");
-	_esp8266_waitFor("OK");
-}
+//void esp8266_echoCmds(bool echo) {
+//	_esp8266_print("ATE");
+//	if (echo) {
+//		_esp8266_putch('1');
+//	} else {
+//		_esp8266_putch('0');
+//	}
+//	_esp8266_print("\r\n");
+//	_esp8266_waitFor("OK");
+//}
 
 /**
 * Set the WiFi mode.
@@ -1675,12 +1694,12 @@ void esp8266_echoCmds(bool echo) {
 *
 * @param mode an ORed bitmask of ESP8266_STATION and ESP8266_SOFTAP
 */
-void esp8266_mode( char mode) {
-	_esp8266_print("AT+CWMODE=");
-	_esp8266_putch(mode + '0');
-	_esp8266_print("\r\n");
-	_esp8266_waitResponse();
-}
+//void esp8266_mode( char mode) {
+//	_esp8266_print("AT+CWMODE=");
+//	_esp8266_putch(mode + '0');
+//	_esp8266_print("\r\n");
+//	_esp8266_waitResponse();
+//}
 
 /**
 * Connect to an access point.
@@ -1691,14 +1710,14 @@ void esp8266_mode( char mode) {
 * @param pass The password of the network
 * @return an ESP status code, normally either ESP8266_OK or ESP8266_FAIL
 */
-void esp8266_connect( char* ssid,  char* pass) {
-	_esp8266_print("AT+CWJAP=\"");
-	_esp8266_print_nc(ssid);
-	_esp8266_print("\",\"");
-	_esp8266_print_nc(pass);
-	_esp8266_print("\"\r\n");
-	_esp8266_waitResponse();
-}
+//void esp8266_connect( char* ssid,  char* pass) {
+//	_esp8266_print("AT+CWJAP=\"");
+//	_esp8266_print_nc(ssid);
+//	_esp8266_print("\",\"");
+//	_esp8266_print_nc(pass);
+//	_esp8266_print("\"\r\n");
+//	_esp8266_waitResponse();
+//}
 
 /**
 * Disconnect from the access point.
@@ -1906,35 +1925,35 @@ bool _esp8266_waitFor(const char *string) {
 *
 * @return a constant from esp8266.h describing the status response.
 */
-bool _esp8266_waitResponse(void) {
-	char so_far[6] = {0,0,0,0,0,0};
-	const char lengths[6] = {2,5,4,9,6,6};
-	const char* strings[6] = {"OK", "ready", "FAIL", "no change", "Linked", "Unlink"};
-	const char responses[6] = {ESP8266_OK, ESP8266_READY, ESP8266_FAIL, ESP8266_NOCHANGE, ESP8266_LINKED, ESP8266_UNLINK};
-	char received;
-	char response;
-	bool continue_loop = true;
-	while (continue_loop) {
-		//received = _esp8266_getch();
-		if (!_esp8266_getch(&received))
-		{
-			return false;
-		}
-
-		for ( char i = 0; i < 6; i++) {
-			if (strings[i][so_far[i]] == received) {
-				so_far[i]++;
-				if (so_far[i] == lengths[i]) {
-					response = responses[i];
-					continue_loop = false;
-				}
-			} else {
-				so_far[i] = 0;
-			}
-		}
-	}
-	return true;
-}
+//bool _esp8266_waitResponse(void) {
+//	char so_far[6] = {0,0,0,0,0,0};
+//	const char lengths[6] = {2,5,4,9,6,6};
+//	const char* strings[6] = {"OK", "ready", "FAIL", "no change", "Linked", "Unlink"};
+//	const char responses[6] = {ESP8266_OK, ESP8266_READY, ESP8266_FAIL, ESP8266_NOCHANGE, ESP8266_LINKED, ESP8266_UNLINK};
+//	char received;
+//	char response;
+//	bool continue_loop = true;
+//	while (continue_loop) {
+//		//received = _esp8266_getch();
+//		if (!_esp8266_getch(&received))
+//		{
+//			return false;
+//		}
+//
+//		for ( char i = 0; i < 6; i++) {
+//			if (strings[i][so_far[i]] == received) {
+//				so_far[i]++;
+//				if (so_far[i] == lengths[i]) {
+//					response = responses[i];
+//					continue_loop = false;
+//				}
+//			} else {
+//				so_far[i] = 0;
+//			}
+//		}
+//	}
+//	return true;
+//}
 
 
 
@@ -2040,7 +2059,7 @@ void InOUtCleanTask()
 #if defined(DEGBUG_OUTPUT)	
 			printf("PushMailQueue; No Direction,   ID = %d, \r\n",i);
 #endif
-			PushMailQueue(LastOnlineStoreIndex[i]);
+			//PushMailQueue(LastOnlineStoreIndex[i]);
 		}
 	}
 }
