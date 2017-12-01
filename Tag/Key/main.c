@@ -13,7 +13,7 @@
 
 
 /*************************user modify settings****************************/
-#define  TAG_ID 3
+#define  TAG_ID 7
 
 uint8_t  TX_ADDRESS[5]  = {0x55,0x56,0x57,0x58,0x59}; // TX address
 uint8_t HopCH[3] = {105,76,108};
@@ -22,7 +22,7 @@ uint8_t HopCH[3] = {105,76,108};
 #define  TX_PAYLOAD  	 4        	// data length
 #define  ADC_TIME        10800		//volt of BAT,   every =   ADC_TIME*TAG_TIME     
 
-#define  RF_POWER 		 HAL_NRF_0DBM
+#define  RF_POWER 		 HAL_NRF_6DBM
 //HAL_NRF_18DBM,          /**< Output power set to -18dBm */
 //HAL_NRF_12DBM,          /**< Output power set to -12dBm */
 //HAL_NRF_6DBM,           /**< Output power set to -6dBm  */

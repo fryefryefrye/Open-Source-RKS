@@ -31,6 +31,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #define TIME_SYNC_TIME_OUT 86400
 
 #define MAIL_TIME_OUT  30
+#define MAIL_MAX_RETRY 3
 
 
 
@@ -175,6 +176,15 @@ const unsigned char NTP_Request[] PROGMEM = {0xdb, 0x00 ,0x0a ,0xfa ,0x00 ,0x00 
 0xdd ,0x35 ,0x79 ,0xb8 ,0xaf ,0xa1 ,0x91 ,0xb5 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,
 0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0xdd ,0x35 ,0x79 ,0xb9 ,0xb7 ,0x4f ,0xa6 ,0x30
 };
+
+
+
+//const unsigned char NTP_Request[] PROGMEM = { 0xdb  ,0x00  ,0x0a  ,0xfa  ,0x00  ,0x00
+// ,0x0b  ,0x15  ,0x00  ,0x08  ,0xcb  ,0x43  ,0x00  ,0x00  ,0x00 ,0x00 ,0xdd ,0xc2  ,0xb4  ,0x0a  ,0xfb  ,0xab
+// ,0x37  ,0x50  ,0x00  ,0x00  ,0x00  ,0x00  ,0x00  ,0x00  ,0x00 ,0x00 ,0x00  ,0x00  ,0x00  ,0x00  ,0x00  ,0x00
+// ,0x00  ,0x00  ,0xdd  ,0xc2  ,0xb4  ,0x4b  ,0x1d  ,0x75   ,0xf7  ,0xd3};   
+
+
 
 const char HttpResponseHead[]   ="HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html lang=\"zh-cn\">\r\n<head>\r\n<meta charset=\"GB2312\">\r\n<title>Room</title>\r\n</head>\r\n<body>\r\n";
 char HttpResponseEnd[] ="</body>\r\n</html>\r\n";
@@ -381,7 +391,19 @@ void Mail_task()
 	if ((QueueNumber > 0)&&(WiFiNextStep == STEP_WAIT_REQUEST))
 	{
 		CurrentMailMemIndex = PopMailQueue();
-		SendMail();
+		for (unsigned char i = 0; i< MAIL_MAX_RETRY;i++)
+		{
+			if (SendMail())
+			{
+				break;
+			}
+			{
+#ifdef DEGBUG_OUTPUT
+				printf("send mail failed, on %d try \r\n",i+1);
+#endif
+			}
+		}
+		
 	}
 
 
@@ -694,7 +716,13 @@ void ConnectAp()
 
 void StartNtp()
 {
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\",\"24.56.178.140\",123\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\","));
+	WIFI_SERIAL.print(F("\"192.168.0.14\""));
+	WIFI_SERIAL.print(F(",123\r\n"));
+
+
+
+
 	WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
 	NtpDataIndex = 0;
 	TempSecondsSince1970 = 0;
@@ -754,12 +782,21 @@ void CheckTimeOut()
 		{
 			if ((WiFiNextStep == STEP_GET_TIME) ||  (WiFiNextStep == STEP_PROCESS_TIME))
 			{
-				WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
-				OnWiFiData('O');
-				OnWiFiData('K');
+
+				WIFI_SERIAL.print(F("AT+CIPCLOSE\r\n"));
+
+				_esp8266_waitFor("OK");
+
+
+				StartNtp();
+
+
+				//WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
+				//OnWiFiData('O');
+				//OnWiFiData('K');
 				TimeOut = 0;
 			}
-			if ((WiFiNextStep > STEP_WAIT_REQUEST)&&(WiFiNextStep < STEP_HTTP_CLOSE))
+			if ((WiFiNextStep > STEP_WAIT_REQUEST)&&(WiFiNextStep <= STEP_HTTP_CLOSE))
 			{
 #ifdef DEGBUG_OUTPUT
 				printf("\r\n close when time out \r\n");
@@ -877,7 +914,7 @@ void OnWiFiData(unsigned char GetData)
 			}
 
 			ActiveTime = SecondsSinceStart;
-			TimeOut = 5;
+			TimeOut = 15;
 			WiFiNextStep = STEP_GET_TIME;
 			return;
 		}
@@ -1075,7 +1112,7 @@ void OnWiFiData(unsigned char GetData)
 				Direction = "³ö";
 			}
 			//sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d Code:%d. ID:%d. Volt:%d mV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.code,Record.ID,Record.volt);
-			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d ID:%d. %s %s %dmV<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.ID,NameList[Record.ID],Direction,Record.volt);
+			sprintf(CharRecord,"%03d %d-%02d-%02d %02d:%02d:%02d ID:%d %dmV %s %s<br>\r\n",ReadedRecord,year(t) ,month(t),day(t),hour(t),minute(t),second(t),Record.ID,Record.volt,Direction,NameList[Record.ID]);
 
 
 			CharRecordLen = CharLength(CharRecord);

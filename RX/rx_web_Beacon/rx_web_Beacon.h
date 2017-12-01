@@ -614,7 +614,7 @@ void ConnectAp()
 
 void StartNtp()
 {
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\",\"24.56.178.140\",123\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\",\"192.168.0.14\",123\r\n"));
 	WiFiNextStep = STEP_SEND_TIME_REQUEST_LEN;
 	NtpDataIndex = 0;
 	TempSecondsSince1970 = 0;
