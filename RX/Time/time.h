@@ -14,8 +14,22 @@ void PmUpdateChart();
 
 bool _esp8266_waitFor(const char *string);
 bool _esp8266_getch(char * RetData);
-bool _esp8266_getValue(const char *string,char * Value,unsigned char * Len) ;
+bool _esp8266_getValue(const char *string,unsigned char  * Value,unsigned char * Len,unsigned char Start,unsigned char Max) ;
 bool TimeRequest(unsigned char k);
+void HourlyUpdate();
+void OnSeconds();
+void NonStopTask();
+
+void StartNTP();
+void CheckNTP();
+bool bNTPRunning = false;
+
+
+bool GetNow();
+bool GetForcast(unsigned char Day,unsigned char Postion);
+
+#define TIME_OUT 10
+
 
 #define WIFI_SERIAL Serial3
 
@@ -38,10 +52,17 @@ bool TimeRequest(unsigned char k);
 unsigned char row=0;
 unsigned char ASCII816Buf[16] = {0};
 unsigned char DispBuf[16][32] = {0};
-//unsigned char FirstLine[8]= {32,32,32,32,32,32,32,32};
+unsigned char TimeLine[8]= {32,32,32,32,32,32,32,32};
 //unsigned char SecondLine[8]= {32,32,32,32,32,32,32,32};//{'A','B','C','D','H','I','O','P'};
-unsigned char FirstLine[16]= {'A','B','C','D','H','I','O','P','P','P','P','P','P','P','P','P'};
-unsigned char SecondLine[16]= {'1','2','3','4','5','6','7','8','8','8','8','8','8','8','8','8'};//{'A','B','C','D','H','I','O','P'};
+//unsigned char FirstLine[16]= {'A','B','C','D','H','I','O','P','P','P','P','P','P','P','P','P'};
+unsigned char DateLine[10]= {32,32,32,32,32,32,32,32,32,32};//{'1','2','3','4','5','6','7','8','8',' '};//{'A','B','C','D','H','I','O','P'};
+unsigned char WeatherNow[10] = {32,32,32,32,32,32,32,32,32,32};//{'w','e','a','t','h','e','r','n','o','w'};
+
+unsigned char WeatherDay[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'d','a','y','1',' ',' ','T','e','m','p'};
+unsigned char Weather[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'w','e','a','t','h','e','r','n','T','p'};
+
+//unsigned char WeatherDay[10] = {32,32,32,32,32,32,32,32,32,32};//{'d','a','y','2',' ',' ','T','e','m','p'};
+//unsigned char Weather[10] = {32,32,32,32,32,32,32,32,32,32};//{'w','e','a','t','h','e','r','n','T','p'};
 
 //Serial data
 int comdata ;
@@ -66,16 +87,16 @@ bool bGPS_Valid;
 
 //const char Http[]   ="GET /Aqi/LookUp?key=7e24c5e18e054287907124acf2b1aa9f&city=%E5%8D%97%E4%BA%AC HTTP/1.1\r\nHost: api.avatardata.cn\r\n\r\n";
 
-const char Http[]   ="GET /Weather/Query?key=ed1055e2f14c4ba08a11dc4e941f7180&cityname=%E5%8D%97%E4%BA%AC&format=true HTTP/1.1\r\nHost: api.avatardata.cn\r\n\r\n";
+//const char Http[]   ="GET /Weather/Query?key=ed1055e2f14c4ba08a11dc4e941f7180&cityname=%E5%8D%97%E4%BA%AC&format=true HTTP/1.1\r\nHost: api.avatardata.cn\r\n\r\n";
 
 
+const char HttpNow[]   ="GET /v3/weather/now.json?key=sxegxyiedpdmhqhl&location=nanjing&language=en&unit=c HTTP/1.1\r\nHost: api.seniverse.com\r\n\r\n";
+char HttpForcast[]   ="GET /v3/weather/daily.json?key=sxegxyiedpdmhqhl&location=nanjing&language=en&unit=c&start=0&days=1 HTTP/1.1\r\nHost: api.seniverse.com\r\n\r\n";
+
+unsigned char InfoLen;
 
 
-//String Post1 = "POST /v1
-
-//http://api.avatardata.cn/Weather/Query?key=ed1055e2f14c4ba08a11dc4e941f7180&cityname=南京&format=true
-
-//http://api.avatardata.cn/Aqi/LookUp?key=7e24c5e18e054287907124acf2b1aa9f&city=%E5%8D%97%E4%BA%AC
+unsigned long SecondsSinceStart = 0;
 
 
 
@@ -410,11 +431,24 @@ void setup()
 
 
 	Hdot();//字库取模改成横向
+
+	WIFI_SERIAL.print(F("AT+RST\r\n"));
+	_esp8266_waitFor("GOT IP\r\n");
+
+
+
+	WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+
+	StartNTP();
+
+	HourlyUpdate();
+
 }
 
 void loop()
 {
-
 	//while (1)
 	//{
 	//	if (Serial3.available() > 0)
@@ -430,87 +464,11 @@ void loop()
 	//	}
 	//}
 
-	//WIFI_SERIAL.print(F("AT+RST\r\n"));
-	//
-	//_esp8266_waitFor("GOT IP\r\n");
+
+	//HourlyUpdate();
 
 
-
-	//Serial3.print(F("AT+CIPMUX=1\r\n"));
-	//_esp8266_waitFor("OK\r\n");
-
-	//Serial3.print(F("AT+CIPCLOSE=1\r\n"));
-	//_esp8266_waitFor("\r\n");
-
-
-	//WIFI_SERIAL.print(F("AT+CIPSTART=1,\"TCP\","));
-	//WIFI_SERIAL.print(F("\"api.avatardata.cn\""));
-	//WIFI_SERIAL.print(F(",80\r\n"));
-
-	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
-	//_esp8266_waitFor("OK\r\n");
-
-
-	//WIFI_SERIAL.print(F("AT+CIPSTART=1,\"SSL\","));
-	//WIFI_SERIAL.print(F("\"api.seniverse.com\""));
-	//WIFI_SERIAL.print(F(",433\r\n"));
-	//_esp8266_waitFor("OK\r\n");
-
-
-	//WIFI_SERIAL.print(F("AT+CIPSTART=,\"SSL\","));
-	//WIFI_SERIAL.print(F("\"api.seniverse.com\""));
-	//WIFI_SERIAL.print(F(",433\r\n"));
-
-	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
-	//_esp8266_waitFor("OK\r\n");
-
-
-	//WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
-	//WIFI_SERIAL.print(sizeof(Http));
-	//WIFI_SERIAL.print(F("\r\n"));
-
-	//_esp8266_waitFor("OK\r\n>");
-
-	//for(unsigned char i = 0; i<sizeof(Http) ; i++)
-	//{
-	//	WIFI_SERIAL.print(Http[i]);
-	//}
-
-	//if (_esp8266_waitFor("200 OK"))
-	//{
-	//	printf("Response OK!!!!!!!!!!\r\n");
-	//}
-	//
-
-
-
-
-	//char InfoValue[10];
-	//unsigned char InfoLen;
-
-
-
-
-	//_esp8266_getValue("\"info\": \"",InfoValue,&InfoLen); 
-
-	//printf("\r\nGet info. Len = %d :\r\n",InfoLen);
-	//for(unsigned char i = 0; i<InfoLen ; i++)
-	//{
-	//	Serial.write(InfoValue[i]);
-	//}
-	//printf("\r\nGet info End :\r\n");
-
-
-
-
-	//_esp8266_getValue("ure\": \"",InfoValue,&InfoLen); 
-
-	//printf("\r\nGet temp. Len = %d :\r\n",InfoLen);
-	//for(unsigned char i = 0; i<InfoLen ; i++)
-	//{
-	//	Serial.write(InfoValue[i]);
-	//}
-	//printf("\r\nGet temp End :\r\n");
+	NonStopTask();
 
 
 
@@ -518,121 +476,304 @@ void loop()
 
 
 
-
-	//Serial3.print(F("AT+CIPCLOSE=1\r\n"));
-	//_esp8266_waitFor("\r\n");
-	//	_esp8266_waitFor("\r\n");
-	//	_esp8266_waitFor("\r\n");
-	//WIFI_SERIAL.print(F("AT+CIPSTART=1,\"UDP\",\"192.168.0.12\",123,123,2\r\n"));
-	//_esp8266_waitFor("OK\r\n");
+}
 
 
-	//while(1)
-	//{
-	//	if (Serial3.available() > 0)
-	//	{
-	//		comdata = Serial3.read();
-	//		Serial.write(comdata);
+void NonStopTask()
+{
+	//显示缓存扫描
+	for(row=0; row<16; row++)
+	{
 
-
-
-	//		if(TimeRequest(comdata)&&bGPS_Valid)
-	//		{
-	//			time_t t1900 = t+0x83aa7e80;
-	//			unsigned char * pT = (unsigned char *)&t1900;
-	//			WIFI_SERIAL.print(F("AT+CIPSEND=1,"));
-	//			WIFI_SERIAL.print(48);
-	//			WIFI_SERIAL.print(F("\r\n"));
-
-	//			_esp8266_waitFor("OK\r\n>");
-
-	//			for(unsigned char i = 0; i<40 ; i++)
-	//			{
-	//				WIFI_SERIAL.write(0);
-	//			}
-	//			for(unsigned char i = 0; i<4 ; i++)
-	//			{
-	//				WIFI_SERIAL.write(*(pT+3-i));
-	//			}
-	//			for(unsigned char i = 0; i<4 ; i++)
-	//			{
-	//				WIFI_SERIAL.write(0);
-	//			}
-	//		}
-
-	//	}
-	//	DataUpdate();
-	//}
+		for (int i=0; i<8; i++)
+		{
+			hc595senddata(DispBuf[i][row],DispBuf[i][row+16],DispBuf[i+8][row],DispBuf[i+8][row+16]);//发送列数据，上16行与下16行同时发送。
+		}
+		digitalWrite(OE, 1);  //关闭显示
+		hc138sacn(row);            //选行
+		digitalWrite(STB, 1);      //数据确认
+		digitalWrite(STB, 0);
+		DataUpdate();
+		CheckNTP();
+		digitalWrite(OE, 0);  //开启显示
+	}
+}
 
 
 
-
-while(1)
+void StartNTP()
 {
 
+	//WIFI_SERIAL.print(F("AT+CIPSTART=1,\"UDP\",\"192.168.0.12\",123,123,2\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\",\"192.168.0.12\",123,123,2\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+	bNTPRunning = true;
+}
 
 
+void CheckNTP()
+{
 
-	//字符串->显示缓存
-	for (int j=0; j<16; j++)
+	if ((Serial3.available() > 0)&&(bNTPRunning))
 	{
-	  for (int i=0; i<16; i++)
-	  {
-	    DispBuf[j][i] = ASCII816[FirstLine[j]-32][i];
+		comdata = Serial3.read();
+		Serial.write(comdata);
 
-	  }
+		if(TimeRequest(comdata)&&bGPS_Valid)
+		{
+			time_t t1900 = t+0x83aa7e80;
+			unsigned char * pT = (unsigned char *)&t1900;
+			WIFI_SERIAL.print(F("AT+CIPSEND="));
+			WIFI_SERIAL.print(48);
+			WIFI_SERIAL.print(F("\r\n"));
+
+			_esp8266_waitFor("OK\r\n>");
+
+			for(unsigned char i = 0; i<40 ; i++)
+			{
+				WIFI_SERIAL.write(0);
+			}
+			for(unsigned char i = 0; i<4 ; i++)
+			{
+				WIFI_SERIAL.write(*(pT+3-i));
+			}
+			for(unsigned char i = 0; i<4 ; i++)
+			{
+				WIFI_SERIAL.write(0);
+			}
+		}
+	}
+}
+
+bool GetNow()
+{
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+
+	WIFI_SERIAL.print(F("AT+CIPSEND="));
+	WIFI_SERIAL.print(sizeof(HttpNow));
+	WIFI_SERIAL.print(F("\r\n"));
+
+	_esp8266_waitFor("OK\r\n>");
+
+	for(unsigned char i = 0; i<sizeof(HttpNow) ; i++)
+	{
+		WIFI_SERIAL.print(HttpNow[i]);
 	}
 
-	for (int j=0; j<16; j++)
+	_esp8266_waitFor("200 OK");
+
+
+
+
+	_esp8266_getValue("text\":\"",WeatherNow,&InfoLen,0,7); 
+	_esp8266_getValue("ture\":\"",WeatherNow+8,&InfoLen,0,2); 
+
+
+	_esp8266_waitFor("CLOSED\r\n");
+
+}
+bool GetForcast(unsigned char Day,unsigned char Postion)
+{
+
+	HttpForcast[90]=Day+0x30;
+
+
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+	WIFI_SERIAL.print(F("AT+CIPSEND="));
+	WIFI_SERIAL.print(sizeof(HttpForcast));
+	WIFI_SERIAL.print(F("\r\n"));
+
+	_esp8266_waitFor("OK\r\n>");
+
+	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
+	{
+		WIFI_SERIAL.print(HttpForcast[i]);
+	}
+
+	_esp8266_waitFor("200 OK");
+
+	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+	_esp8266_getValue("t_day\":\"",&Weather[Postion][0],&InfoLen,0,7); 
+	_esp8266_getValue("high\":\"",&Weather[Postion][8],&InfoLen,0,2); 
+	_esp8266_getValue("low\":\"",&WeatherDay[Postion][8],&InfoLen,0,2); 
+
+	_esp8266_waitFor("CLOSED\r\n");
+
+}
+
+void HourlyUpdate()
+{
+
+	bNTPRunning = false;
+
+	WIFI_SERIAL.print(F("AT+CIPCLOSE\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+	GetNow();
+
+	if (hour(t+8*3600)<18)
+	{
+		GetForcast(0,0);
+		GetForcast(1,1);
+	} 
+	else
+	{
+		GetForcast(1,0);
+		GetForcast(2,1);
+	}
+
+
+
+	StartNTP();
+
+
+	//左上角  置0
+	for (int j=8; j<16; j++)
 	{
 		for (int i=0; i<16; i++)
 		{
-			DispBuf[j][i+16] = ASCII816[SecondLine[j]-32][i];
-			
+			DispBuf[j][i] = 0;
 		}
 	}
+	//日期 
 
-
-	for (int i=0; i<32; i++)
+	for (int j=8*8; j<64+60; j++)
 	{
-		DispBuf[0][i] |= 1;
-		DispBuf[7][i] |= 0x80;
-		DispBuf[8][i] |= 1;
-		DispBuf[15][i] |= 0x80;
-
-
-	}
-
-	for (int j=0; j<16; j++)
-	{
-			DispBuf[j][0] |= 0xff;
-			DispBuf[j][31] |= 0xff;
-	}
-
-
-
-
-
-		//显示缓存扫描
-		for(row=0; row<16; row++)
+		for (int i=0; i<8; i++)
 		{
+			DispBuf[j/8][i] |= (
+				(
+				((j-64+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[DateLine[(j-64)/6]-32][(j-64)%6]>>i)&1)
+				) 
+				<<(j%8)
+				);
 
-				for (int i=0; i<8; i++)
-				{
-					hc595senddata(DispBuf[i][row],DispBuf[i][row+16],DispBuf[i+8][row],DispBuf[i+8][row+16]);//发送列数据，上16行与下16行同时发送。
-				}
+		}
 
-				digitalWrite(OE, 1);  //关闭显示
-				hc138sacn(row);            //选行
-				digitalWrite(STB, 1);      //数据确认
-				digitalWrite(STB, 0);
-				digitalWrite(OE, 0);  //开启显示
-
+	}
+	//当前天气
+	for (int j=8*8; j<64+60; j++)
+	{
+		for (int i=8; i<16; i++)
+		{
+			DispBuf[j/8][i] |= (
+				(
+				((j-64+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[WeatherNow[(j-64)/6]-32][(j-64)%6]>>(i-8))&1)
+				)
+				<<(j%8)
+				);
 
 		}
 	}
 
 
+	//左下角  置0
+	for (int j=8; j<16; j++)
+	{
+		for (int i=0+16; i<16+16; i++)
+		{
+			DispBuf[j][i] = 0;
+		}
+	}
+	//第一天 日期、气温
+
+	for (int j=8*8; j<64+60; j++)
+	{
+		for (int i=0+16; i<8+16; i++)
+		{
+			DispBuf[j/8][i] |= (
+				(
+				((j-64+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[WeatherDay[0][(j-64)/6]-32][(j-64)%6]>>(i-16))&1)
+				) 
+				<<(j%8)
+				);
+
+		}
+
+	}
+	//第一天 天气
+	for (int j=8*8; j<64+60; j++)
+	{
+		for (int i=8+16; i<16+16; i++)
+		{
+			DispBuf[j/8][i] |= (
+				(
+				((j-64+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[Weather[0][(j-64)/6]-32][(j-64)%6]>>(i-8-16))&1)
+				)
+				<<(j%8)
+				);
+
+		}
+	}
+
+
+	//右下角  置0
+	for (int j=0; j<8; j++)
+	{
+		for (int i=0+16; i<16+16; i++)
+		{
+			DispBuf[j][i] = 0;
+		}
+	}
+	//第二天 日期、气温
+
+	for (int j=0; j<60; j++)
+	{
+		for (int i=0+16; i<8+16; i++)
+		{
+			DispBuf[j/8][i] |= (
+				(
+				((j+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[WeatherDay[1][(j)/6]-32][(j)%6]>>(i-16))&1)
+				) 
+				<<(j%8)
+				);
+
+		}
+
+	}
+	//第二天 天气
+	for (int j=0; j<60; j++)
+	{
+		for (int i=8+16; i<16+16; i++)
+		{
+			DispBuf[j/8][i] |= (
+				(
+				((j+1)%6==0)
+				?
+				0
+				:
+			((ACSII57[Weather[1][(j)/6]-32][(j)%6]>>(i-8-16))&1)
+				)
+				<<(j%8)
+				);
+
+		}
+	}
 }
 
 void hc595senddata(byte data,byte data2,byte data3,byte data4)//发送上下半屏，各一行数据。
@@ -644,7 +785,15 @@ void hc595senddata(byte data,byte data2,byte data3,byte data4)//发送上下半屏，各
 
 
 		temp = 0;
-		temp = data&1|((data2&1)<<1)|((data3&1)<<2)|((data4&1)<<3);
+		temp = 
+			data&1 //右上
+			|
+			((data2&1)<<1)
+			|
+			((data3&1)<<2)
+			|
+			((data4&1)<<3)
+			;
 
 
 		PORTA = temp;
@@ -655,7 +804,7 @@ void hc595senddata(byte data,byte data2,byte data3,byte data4)//发送上下半屏，各
 		data4=data4>>1;
 		digitalWrite(CLK,1); 
 	}  
-	DataUpdate();
+	//DataUpdate();
 
 }
 
@@ -708,54 +857,16 @@ void hc138sacn(byte r)   //输出行线状态ABCD （A低,D高)
 
 void DataUpdate()
 {
-	//do
-	//{
-		if (Serial2.available() > 0)
+	if (Serial2.available() > 0)
+	{
+		comdata = Serial2.read();
+		//Serial.write(comdata);
+		if(GpsUpdate(comdata))
 		{
-			comdata = Serial2.read();
-			//Serial.write(comdata);
-			if(GpsUpdate(comdata))
-			{
-				//	//printf("%c%c%c%c%c%c%c%c \r\n",FirstLine[0]
-				//	//,FirstLine[1]
-				//	//,FirstLine[2]
-				//	//,FirstLine[3]
-				//	//,FirstLine[4]
-				//	//,FirstLine[5]
-				//	//,FirstLine[6]
-				//	//,FirstLine[7]);
 
-
-				//printf("Date Time = %d-%02d-%02d %02d:%02d:%02d \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t));
-				//return ;
-
-				SecondLine[0]=year(t)/1000%10+0x30;
-				SecondLine[1]=year(t)/100%10+0x30;
-				SecondLine[2]=year(t)/10%10+0x30;
-				SecondLine[3]=year(t)%10+0x30;
-
-				SecondLine[4] = '-';
-
-				SecondLine[5]=month(t)/10%10+0x30;
-				SecondLine[6]=month(t)%10+0x30;
-
-				SecondLine[7] = '-';
-
-				SecondLine[8]=day(t)/10%10+0x30;
-				SecondLine[9]=day(t)%10+0x30;
-
-				//	//printf("%d-%d-%d %d-%d-%d \r\n"
-				//	//,nGPS_Year 
-				//	//,nGPS_Month 
-				//	//,nGPS_Date
-				//	//,nGPS_Hour 
-				//	//,nGPS_Min
-				//	//,nGPS_Sec);
-
-
-			}
 		}
-	//}while (GPRMC_command ==1);
+	}
+
 
 }
 
@@ -763,6 +874,7 @@ void DataUpdate()
 bool GpsUpdate(unsigned char k)
 {
 	static unsigned char SepIndex = 0;
+	static unsigned char LastSeconds = 0;
 	if (GPRMC_command ==1)
 	{
 		if (k == ',')
@@ -803,55 +915,20 @@ bool GpsUpdate(unsigned char k)
 			SepIndex = 0;
 
 
-			tm.Hour = (GPS_Time[0]-0x30)*10+(GPS_Time[1]-0x30);
 
-			tm.Minute = (GPS_Time[2]-0x30)*10+(GPS_Time[3]-0x30);
-
-			tm.Second = (GPS_Time[4]-0x30)*10+(GPS_Time[5]-0x30);
-
-			tm.Day = (GPS_Date[0]-0x30)*10+(GPS_Date[1]-0x30);
-
-			tm.Month = (GPS_Date[2]-0x30)*10+(GPS_Date[3]-0x30);
-
-			tm.Year = (GPS_Date[4]-0x30)*10+(GPS_Date[5]-0x30)+30;
-
-			//t = makeTime(tm)+8*3600;
-			t = makeTime(tm);
-
-
-
-
-
-
-			unsigned char Hour = tm.Hour + 8;
-			if (Hour>23)
+			if (LastSeconds!=GPS_Time[5])
 			{
-				Hour = Hour - 24;
-			}
-
-
-
-			FirstLine[0]=Hour/10%10+0x30;
-			FirstLine[1]=Hour%10+0x30;
-			FirstLine[3]=GPS_Time[2];
-			FirstLine[4]=GPS_Time[3];
-			FirstLine[6]=GPS_Time[4];
-			FirstLine[7]=GPS_Time[5];
-
-			//信号接收状态
-			if (GPS_Valid[0]=='A')
-			{
-				bGPS_Valid = true;
-				FirstLine[2] = ':';
-				FirstLine[5] = ':';
-			}
+				LastSeconds=GPS_Time[5];
+				OnSeconds();
+				return true;
+			} 
 			else
 			{
-				bGPS_Valid = false;
-				FirstLine[2] = ':';
-				FirstLine[5] = '.';
+				return false;
 			}
-			return true;
+
+
+
 		}
 	}
 	else
@@ -870,6 +947,93 @@ bool GpsUpdate(unsigned char k)
 		}
 	}
 	return false;
+}
+
+void OnSeconds()
+{
+
+	SecondsSinceStart++;
+
+	//printf("SecondsSinceStart = %d\r\n",SecondsSinceStart);
+
+
+	//Update time to UTC
+	tm.Hour = (GPS_Time[0]-0x30)*10+(GPS_Time[1]-0x30);
+	tm.Minute = (GPS_Time[2]-0x30)*10+(GPS_Time[3]-0x30);
+	tm.Second = (GPS_Time[4]-0x30)*10+(GPS_Time[5]-0x30);
+	tm.Day = (GPS_Date[0]-0x30)*10+(GPS_Date[1]-0x30);
+	tm.Month = (GPS_Date[2]-0x30)*10+(GPS_Date[3]-0x30);
+	tm.Year = (GPS_Date[4]-0x30)*10+(GPS_Date[5]-0x30)+30;
+	t = makeTime(tm);
+
+	unsigned char Hour = tm.Hour + 8;
+	if (Hour>23)
+	{
+		Hour = Hour - 24;
+	}
+
+
+
+	TimeLine[0]=Hour/10%10+0x30;
+	TimeLine[1]=Hour%10+0x30;
+	TimeLine[3]=GPS_Time[2];
+	TimeLine[4]=GPS_Time[3];
+	TimeLine[6]=GPS_Time[4];
+	TimeLine[7]=GPS_Time[5];
+
+	if ((GPS_Time[2] == '0')&&(GPS_Time[3] == '0')&&(GPS_Time[4] == '0')&&(GPS_Time[5] == '0')) //(GPS_Time[3] = '0')&&
+	{
+		HourlyUpdate();
+	}
+
+	//信号接收状态
+	if (GPS_Valid[0]=='A')
+	{
+		bGPS_Valid = true;
+		TimeLine[2] = ':';
+		TimeLine[5] = ':';
+	}
+	else
+	{
+		bGPS_Valid = false;
+		TimeLine[2] = ':';
+		TimeLine[5] = '.';
+	}
+
+
+	unsigned char tempDay = day(t+8*3600);
+	unsigned char tempMonth = month(t+8*3600);
+	unsigned int tempYearh = year(t+8*3600);
+
+	DateLine[0]=tempYearh/1000%10+0x30;
+	DateLine[1]=tempYearh/100%10+0x30;
+	DateLine[2]=tempYearh/10%10+0x30;
+	DateLine[3]=tempYearh%10+0x30;
+
+	DateLine[4] = '-';
+
+	DateLine[5]=tempMonth/10%10+0x30;
+	DateLine[6]=tempMonth%10+0x30;
+
+	DateLine[7] = '-';
+
+	DateLine[8]=tempDay/10%10+0x30;
+	DateLine[9]=tempDay%10+0x30;
+
+
+	//字符串->显示缓存
+
+	//时间
+	for (int j=0; j<8; j++)
+	{
+		for (int i=0; i<16; i++)
+		{
+			DispBuf[j][i] = ASCII816[TimeLine[j]-32][i];
+
+		}
+	}
+
+
 }
 
 bool TimeRequest(unsigned char k)
@@ -916,15 +1080,22 @@ bool _esp8266_waitFor(const char *string) {
 	return true;
 }
 
-bool _esp8266_getValue(const char *string,char * Value,unsigned char * Len) 
+bool _esp8266_getValue(const char *string,unsigned char  * Value,unsigned char * Len,unsigned char Start,unsigned char Max) 
 {
 
 	char received;
 	*Len = 0;
+	unsigned char CurrentChar = 0;
+
+	for (char i=0;i< Max;i++)
+	{
+		Value[i] = ' ';
+	}
 
 
 	if(!_esp8266_waitFor(string)) return false;
 
+	unsigned long RecvStartTime = SecondsSinceStart;
 	while(1) 
 	{
 		if (!_esp8266_getch(&received))
@@ -932,14 +1103,27 @@ bool _esp8266_getValue(const char *string,char * Value,unsigned char * Len)
 			return false;
 		}
 
-		if (received == '"')
+		if ((received == '"')||((*Len)>=Max))
 		{
 			return true;
 		} 
 		else
 		{
-			*(Value+(*Len)) = received;
-			(*Len) = (*Len)+1;
+			if (CurrentChar >= Start)
+			{
+				*(Value+(*Len)) = received;
+				(*Len) = (*Len)+1;
+			} 
+			else
+			{
+				CurrentChar++;
+			}
+
+		}
+
+		if (SecondsSinceStart - RecvStartTime > TIME_OUT)
+		{
+			return false;
 		}
 	} 
 
@@ -951,10 +1135,11 @@ bool _esp8266_getValue(const char *string,char * Value,unsigned char * Len)
 //**Function to get one byte of date from UART**//
 bool _esp8266_getch(char * RetData)   
 {
-	//unsigned long RecvStartTime = SecondsSinceStart;
+	unsigned long RecvStartTime = SecondsSinceStart;
 	while (1)
 	{
 		//NonStopTask();
+		DataUpdate();
 		if (WIFI_SERIAL.available() > 0)
 		{
 			*RetData = WIFI_SERIAL.read();
@@ -962,209 +1147,11 @@ bool _esp8266_getch(char * RetData)
 			Serial.write(*RetData);
 			return true;
 		}
-		//if (SecondsSinceStart - RecvStartTime > MAIL_TIME_OUT)
-		//{
-		//	return false;
-		//}
+		if (SecondsSinceStart - RecvStartTime > TIME_OUT)
+		{
+			return false;
+		}
 	}
 }
-
-
-
-
-
-//void PmUpdate(unsigned char   k  )
-//{
-//  static unsigned char SepIndex = 0;
-//  if ((k == 0xaa)&&(PmStart == 0))
-//  {
-//    PmStart = 1	;
-//    SepIndex++;
-//    return;
-//  }
-//
-//  if(PmStart == 1)
-//  {
-//    PmData[SepIndex-1]=k;
-//    SepIndex++;
-//    if(k == 0xff)
-//    {
-//      SepIndex = 0;
-//      PmStart = 0;
-//      Pm25 = (PmData[0]*256+PmData[1])/10;
-//      Pm10 = (PmData[2]*256+PmData[3])/10;
-//
-//
-//      if(Pm25 > 99)
-//      {
-//        unsigned char BLine[2];
-//        unsigned char SLine[2];
-//        unsigned char GLine[2];
-//
-//        BLine[0]= Pm25/100%10+0x30;
-//        SLine[0]= Pm25/10%10+0x30;
-//        GLine[0]= Pm25%10+0x30 ;
-//
-//        BLine[1]= Pm10/100%10+0x30;
-//        SLine[1]= Pm10/10%10+0x30;
-//        GLine[1]= Pm10%10+0x30 ;
-//
-//        //DispBuf[8][32] ; Chart range 0-1,16-31
-//
-//
-//        for (byte i=0; i<16; i++)
-//        {
-//          unsigned char Offset = (i>7?i-8:i);
-//          DispBuf[0][i+16] = 0 ;
-//          DispBuf[1][i+16] = 0 ;
-//          for (byte j=0; j<5; j++)
-//          {
-//            DispBuf[0][i+16] = DispBuf[0][i+16] >>1;
-//            DispBuf[0][i+16] += ((ACSII57[BLine[i/8]-32][j]>>Offset)&1)*0x80;
-//          }
-//          for (byte j=0; j<3; j++)
-//          {
-//            DispBuf[0][i+16] = DispBuf[0][i+16] >>1;
-//            DispBuf[0][i+16] += ((ACSII57[SLine[i/8]-32][j]>>Offset)&1)*0x80;
-//          }
-//          for (byte j=0; j<2; j++)
-//          {
-//            DispBuf[1][i+16] = DispBuf[1][i+16] >>1;
-//            DispBuf[1][i+16] += ((ACSII57[SLine[i/8]-32][j+3]>>Offset)&1)*0x80;
-//          }
-//          for (byte j=0; j<5; j++)
-//          {
-//            DispBuf[1][i+16] = DispBuf[1][i+16] >>1;
-//            DispBuf[1][i+16] += ((ACSII57[GLine[i/8]-32][j]>>Offset)&1)*0x80;
-//          }
-//          DispBuf[1][i+16] = DispBuf[1][i+16] >>1;
-//        }
-//
-//
-//
-//
-//      }
-//      else
-//      {
-//        SecondLine[0]= Pm25/10%10+0x30;
-//        SecondLine[1]= Pm25%10+0x30 ;
-//
-//        for (int j=0; j<2; j++)//(0-1) 2 ACSII for PM, others for chart
-//        {
-//          for (int i=0; i<16; i++)
-//          {
-//            DispBuf[j][i+16] = ASCII816[SecondLine[j]-32][i];
-//          }
-//        }
-//      }
-//
-//      //PmLog();
-//
-//      /*
-//        byte i;
-//        for (i=0; i<8; i++)
-//        {
-//          if((Pm25>Cl[i])&&(Pm25<=Ch[i+1]))
-//          {
-//            break;
-//          }
-//        }
-//        if (i!=8)
-//        {
-//          AQI = (Pm25-Cl[i])*(Ih[i]-Il[i])/(Ch[i]-Cl[i])+Il[i];
-//        }
-//        else
-//        {
-//          AQI = 500;
-//        }
-//      */
-//
-//      /*
-//        SecondLine[4]= Pm10/100%10+0x30;
-//        SecondLine[5]= Pm10/10%10+0x30;
-//        SecondLine[6]= Pm10%10+0x30 ;
-//
-//        if(SecondLine[7]<'~')
-//        {
-//          SecondLine[7]++;
-//        }
-//        else
-//        {
-//          SecondLine[7]=' ';
-//        }
-//      */
-//    }
-//  }
-//}
-
-//void PmLog()//every 5 mins
-//{
-//  #define AVG 6
-//  Pm5MinLog[Pm5MinLogCounter] = (Pm25>99?99:Pm25);
-//  Pm5MinLogCounter++;
-//  if(Pm5MinLogCounter>AVG-1)
-//  {
-//    Pm5MinLogCounter = 0;
-//    unsigned int PmSum = 0;
-//    for (byte i=0; i<AVG; i++)
-//    {
-//      PmSum = PmSum +Pm5MinLog[i];
-//    }
-//    Pm30MinLog[Pm30MinLogCounter] = (0x8000>>(PmSum/AVG*16/100));//dot number of 100ug/m3 . Full 16 dots. convert to dot mode.
-//    Pm30MinLogCounter++;
-//    if(Pm30MinLogCounter>47)
-//    {
-//      Pm30MinLogCounter = 0;
-//    }
-//    PmUpdateChart();
-//  }
-//}
-//
-//void PmUpdateChart()
-//{
-////DispBuf[8][32] ; Chart range 1-7,16-31
-//
-//
-//  for (byte i=2; i<8; i++)
-//  {
-//    for (byte j=16; j<32; j++)
-//    {
-//      DispBuf[i][j] = 0;
-//    }
-//  }
-//
-//  for (byte i=0; i<48; i++)
-//  {
-//    //Pm30MinLogCounter have been ++, after set value.
-//    unsigned int * pPm30MinLog = &(Pm30MinLog[(Pm30MinLogCounter<i+1?Pm30MinLogCounter+48-1-i:Pm30MinLogCounter-1-i)]);//当前Log
-//    for (byte j=0; j<16; j++)
-//    {
-//      //byte * pDispBuf = &(DispBuf[i/8+2][j+16]);
-//      //*pDispBuf = *pDispBuf>>1;
-//      //*pDispBuf += ((*pPm30MinLog>>j)&1)*0x80;
-//
-//      byte * pDispBuf = &(DispBuf[(47-i)/8+2][j+16]);
-//      *pDispBuf = *pDispBuf<<1;
-//      *pDispBuf += ((*pPm30MinLog>>j)&1);
-//    }
-//  }
-//}
-
-
-/*
-for (byte i=0; i<8; i++)
-{
-}
-
-if()
-{
-}
-else
-{
-}
-*/
-
-
-
 
 
