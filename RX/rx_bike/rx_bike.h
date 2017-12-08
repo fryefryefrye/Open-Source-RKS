@@ -3,7 +3,7 @@
 byte addresses[6] = { 0x55, 0x56, 0x57, 0x58, 0x59, 0x60 }; // should be same with tx
 unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
 #define TIME_OUT_TURN_OFF_BIKE 30		//s
-#define TIME_OUT_LOCK_WAIT_HOME 60
+#define TIME_OUT_HOME 60
 #define WAIT_KEY_IN_HOME 30
 #define DATA_LENGTH 4					//use fixed data length 1-32
 #define BUZZON 4000				//set lenght of the buzz 2000
@@ -43,6 +43,7 @@ unsigned long SecondsSinceStart;
 
 bool LastOn = false;
 bool Auto = true;
+bool Home = false;
 
 void SecondsSinceStartTask();
 void nRFTask();
@@ -111,6 +112,16 @@ void CheckTime_task()
     {
         return;
     }
+
+	if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_HOME) && (LastHomeGetTime != 0))
+	{
+		Home = true;
+	}
+	else
+	{
+		Home = false;
+	}
+
 
     if (LastOn)
     {
@@ -306,7 +317,10 @@ void Buzz_task()
             {
                 BuzzOff = 0;
                 BuzzHigh = true;
-                digitalWrite(BUZZ, HIGH);
+				if (!Home)
+				{
+					digitalWrite(BUZZ, HIGH);
+				}
             }
         }
     }

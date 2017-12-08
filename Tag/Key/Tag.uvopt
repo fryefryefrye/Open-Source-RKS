@@ -160,9 +160,9 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>33</ColumnNumber>
+      <ColumnNumber>31</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1</TopLine>
+      <TopLine>13</TopLine>
       <CurrentLine>25</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main.c</PathWithFileName>
@@ -1634,8 +1634,8 @@
       <Documents>
         <Doc>
           <Name>.\main.c</Name>
-          <ColumnNumber>33</ColumnNumber>
-          <TopLine>1</TopLine>
+          <ColumnNumber>31</ColumnNumber>
+          <TopLine>13</TopLine>
           <CurrentLine>25</CurrentLine>
         </Doc>
       </Documents>
