@@ -741,8 +741,8 @@ bool GetNow()
 
 
 
-	_esp8266_getValue("text\":\"",DateLine2,&InfoLen,0,7); 
-	_esp8266_getValue("ture\":\"",DateLine2+8,&InfoLen,0,2); 
+	//_esp8266_getValue("text\":\"",DateLine2,&InfoLen,0,7); 
+	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
 
 
 	_esp8266_waitFor("CLOSED\r\n");
@@ -802,7 +802,7 @@ void HourlyUpdate()
 
 
 
-	//GetNow();
+	GetNow();
 
 	//GetAir();
 

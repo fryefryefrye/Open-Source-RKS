@@ -45,6 +45,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #include "D:\GitHub\Private\config.h"
 #else
 char NameList[][RFID_NUMBER] = {"Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown","Unknown"}; 
+#define MAIL_ACCOUNT	"account in base64"
+#define MAIL_PASS	"auth code in base 64"
 #endif
 
 
@@ -268,6 +270,7 @@ bool _esp8266_login_mail( char*,  char*);
 bool _esp8266_mail_sendID( char*);
 bool _esp8266_mail_recID( char*);
 bool _esp8266_mail_subject( char*);
+bool _esp8266_mail_from( char*);
 bool _esp8266_mail_body( char*);
 
 //bool _esp8266_create_server(); //Create a server on port 80
@@ -326,9 +329,30 @@ void setup()
 	radio.startListening();
 
 
-	NextRecord = FindLastRecord();
 
+	NextRecord = FindLastRecord();
 	wdt_enable(WDTO_2S);
+
+
+
+
+
+
+	//test send mail
+	//WIFI_SERIAL.print(F("AT+RST\r\n"));
+	//_esp8266_waitFor("GOT IP\r\n");
+	//WIFI_SERIAL.print(F("AT+CIPMUX=1\r\n"));
+	//_esp8266_waitFor("OK\r\n");
+	//SendMail();
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1271,6 +1295,9 @@ bool SendMail()
 	tRecord MailRecord;
 	ReadRecord(CurrentMailMemIndex,&MailRecord);
 
+	WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
+	if (!_esp8266_waitFor("OK\r\n")) return false;
+
 	if (!_esp8266_connect_SMPT2GO()) return false; //Establish TCP connection with SMPT2GO
 	///*LOG IN with your SMPT2GO approved mail ID*/
 	///*Visit the page https://www.smtp2go.com/ and sign up using any Gmail ID
@@ -1279,11 +1306,14 @@ bool SendMail()
 	//* FORMAT -> _esp8266_login_mail("mailID in base 64","Password in base 64");
 	//* This program uses the ID-> aswinthcd@gmail.com and password -> circuitdigest as an example
 	//*/
-	if (!_esp8266_login_mail("YXN3aW50aGNkQGdtYWlsLmNvbQ==","Y2lyY3VpdGRpZ2VzdA==")) return false;
+
+
+	if (!_esp8266_login_mail(MAIL_ACCOUNT,MAIL_PASS)) return false;
 	///*End of Login*/
 
 
-	if (!_esp8266_mail_sendID("Door@gmail.com")) return false; //The sender mail ID
+	if (!_esp8266_mail_sendID("3325132@qq.com")) return false; //The sender mail ID
+	//if (!_esp8266_mail_sendID("Door<3325132@qq.com>")) return false; //The sender mail ID
 	if (!_esp8266_mail_recID("fryefryefrye@foxmail.com")) return false; //The Receiver mail ID
 	if (!_esp8266_start_mail()) return false;
 
@@ -1310,7 +1340,12 @@ bool SendMail()
 	}
 
 	//sprintf(CharRecord,"ID:%d Coming. %02d:%02d:%02d",MailRecord.ID,hour(t),minute(t),second(t));
-	sprintf(CharRecord,"ID:%d. %s %s %02d:%02d:%02d",MailRecord.ID,NameList[MailRecord.ID],Direction,hour(t),minute(t),second(t));
+	sprintf(CharRecord,"%s %s %02d:%02d:%02d %dmV",NameList[MailRecord.ID],Direction,hour(t),minute(t),second(t),MailRecord.volt);
+
+
+	
+	if (!_esp8266_mail_from("Door")) return false;
+
 
 	if (!_esp8266_mail_subject(CharRecord)) return false; //Enter the subject of your mail
 
@@ -1503,7 +1538,8 @@ bool _esp8266_disconnect_SMPT2GO()
 /*Connect to SMPT2GO server*/
 bool _esp8266_connect_SMPT2GO()
 {
-	_esp8266_print("AT+CIPSTART=4,\"TCP\",\"mail.smtp2go.com\",2525\r\n");
+	//_esp8266_print("AT+CIPSTART=4,\"TCP\",\"mail.smtp2go.com\",2525\r\n");
+	_esp8266_print("AT+CIPSTART=4,\"SSL\",\"smtp.qq.com\",465\r\n");
 	if (!_esp8266_waitFor("OK"))return false;
 	if (!_esp8266_waitFor("220"))return false;
 	_esp8266_print("AT+CIPSEND=4,20\r\n");
@@ -1576,6 +1612,7 @@ bool _esp8266_mail_sendID( char* send_ID)
 {
 	len = CharLength(send_ID);
 	len+= 14;
+	len+= 4;
 	char l2 = len%10;
 	char l1 = (len/10)%10;
 
@@ -1586,7 +1623,7 @@ bool _esp8266_mail_sendID( char* send_ID)
 	_esp8266_print("\r\n");
 	if (!_esp8266_waitFor("OK\r\n>"))return false;
 
-	_esp8266_print("MAIL FROM:<");
+	_esp8266_print("MAIL FROM:Door<");
 	_esp8266_print_nc(send_ID);
 	_esp8266_print(">\r\n");
 	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
@@ -1644,6 +1681,31 @@ bool _esp8266_mail_subject( char* subject)
 
 	return true;
 } 
+
+bool _esp8266_mail_from( char* subject)
+{
+	len = CharLength(subject);
+	len+= 10-3;
+	char l2 = len%10;
+	char l1 = (len/10)%10;
+
+	_esp8266_print("AT+CIPSEND=4,");
+	if ((l1+'0')>'0')
+		_esp8266_putch(l1+'0');
+	_esp8266_putch(l2+'0');
+	_esp8266_print("\r\n");
+	if (!_esp8266_waitFor("OK\r\n>"))return false;
+
+	_esp8266_print("From:");
+	//_esp8266_print("Subject:");
+	_esp8266_print_nc(subject);
+	_esp8266_print("\r\n");
+	if (!_esp8266_waitFor("SEND OK\r\n"))return false;
+
+
+	return true;
+} 
+
 
 
 
