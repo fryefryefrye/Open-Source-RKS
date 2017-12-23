@@ -28,13 +28,16 @@ bool bNTPRunning = false;
 bool GetNow();
 bool GetAir();
 bool GetForcast(unsigned char Day,unsigned char Postion);
+bool GetAvaForcast(unsigned char StartDay);
 
 void ShowChart(unsigned char ChartIndex,unsigned char PostionX,unsigned char PostionY);
 
 void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex);
 
+void WeatherCode2ChartIndex2(unsigned char Code,unsigned char * ChartIndex);
 
-#define TIME_OUT 30
+
+
 
 
 #define WIFI_SERIAL Serial3
@@ -65,7 +68,7 @@ unsigned char DateLine[10]= {32,32,32,32,32,32,32,32,32,32};//{'1','2','3','4','
 unsigned char DateLine2[10] = {32,32,32,32,32,32,32,32,32,32};//{'w','e','a','t','h','e','r','n','o','w'};
 
 unsigned char WeatherDay[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'d','a','y','1',' ',' ','T','e','m','p'};
-unsigned char Weather[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'w','e','a','t','h','e','r','n','T','p'};
+unsigned char WeatherTemp[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'w','e','a','t','h','e','r','n','T','p'};
 
 unsigned char WeatherCode[2][3];
 
@@ -98,6 +101,7 @@ bool bGPS_Valid;
 const char HttpNow[]   ="GET /v3/weather/now.json?key=sxegxyiedpdmhqhl&location=nanjing&language=en&unit=c HTTP/1.1\r\nHost: api.seniverse.com\r\n\r\n";
 char HttpForcast[]   ="GET /v3/weather/daily.json?key=sxegxyiedpdmhqhl&location=nanjing&language=en&unit=c&start=0&days=1 HTTP/1.1\r\nHost: api.seniverse.com\r\n\r\n";
 char HttpAir[]   ="GET /s6/air/now?location=nanjing&key=71dad6c640ee40199c45d9cbe997921e&lang=en HTTP/1.1\r\nHost: free-api.heweather.com\r\n\r\n";
+char HttpAva[]   ="GET /Weather/Query?key=ed1055e2f14c4ba08a11dc4e941f7180&cityname=%E5%8D%97%E4%BA%AC HTTP/1.1\r\nHost: api.avatardata.cn\r\n\r\n";
 
 unsigned char WeekStr[] = "SunMonTueWedThuFriSat";
 
@@ -105,6 +109,8 @@ unsigned char InfoLen;
 
 
 unsigned long SecondsSinceStart = 0;
+
+unsigned char TimeOut = 30;
 
 
 //Çç¶àÔÆÒõÕóÓêÀ×Ð¡ÖÐ´ó±©Ñ©¶³¸¡³¾ÑïÉ³Îíö²·çì«Áú¾íÀäÈÈÎ´Öª
@@ -499,7 +505,7 @@ void setup()
 
 
 	Serial.begin(115200);
-	Serial.println(F("GPS_Time"));
+	Serial.println(F("GPS_Time\r\n"));
 	printf_begin();
 
 
@@ -530,12 +536,15 @@ void setup()
 	Hdot();//×Ö¿âÈ¡Ä£¸Ä³ÉºáÏò
 
 	WIFI_SERIAL.print(F("AT+RST\r\n"));
+	TimeOut = 30;
 	_esp8266_waitFor("GOT IP\r\n");
+	TimeOut = 10;
 
 
 
-	WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
-	_esp8266_waitFor("OK\r\n");
+	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
+	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4196\r\n"));
+	//_esp8266_waitFor("OK\r\n");
 
 
 	StartNTP();
@@ -721,7 +730,8 @@ bool GetAir()
 }
 bool GetNow()
 {
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
+	//	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
 	_esp8266_waitFor("OK\r\n");
 
 
@@ -768,16 +778,172 @@ bool GetForcast(unsigned char Day,unsigned char Postion)
 		WIFI_SERIAL.print(HttpForcast[i]);
 	}
 
-	_esp8266_waitFor("200 OK");
+	if(!_esp8266_waitFor("200 OK")) return false;
 
 	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
 	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-	_esp8266_getValue("high\":\"",&Weather[Postion][3],&InfoLen,0,2); 
-	_esp8266_getValue("low\":\"",&Weather[Postion][0],&InfoLen,0,3); 
+	if (InfoLen == 1)
+	{
+		WeatherCode[Postion][1] = 0;
+	}
+	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
+	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,3); 
 
 	//Weather[Postion][2] = '~';
 
 	_esp8266_waitFor("CLOSED\r\n");
+
+}
+
+
+bool GetAvaForcast(unsigned char StartDay)
+{
+
+	unsigned char Postion = 0;
+	unsigned char Temp = 0;
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"api.avatardata.cn\",80\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+	WIFI_SERIAL.print(F("AT+CIPSEND="));
+	WIFI_SERIAL.print(sizeof(HttpAva));
+	WIFI_SERIAL.print(F("\r\n"));
+
+	_esp8266_waitFor("OK\r\n>");
+
+	for(unsigned char i = 0; i<sizeof(HttpAva) ; i++)
+	{
+		WIFI_SERIAL.print(HttpAva[i]);
+	}
+
+	if(!_esp8266_waitFor("200 OK")) return false;
+
+	TimeOut = 2;
+
+
+	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		DateLine2[1] = ' ';
+	}
+
+	//_esp8266_waitFor("ture\":\""); 
+
+	_esp8266_waitFor("weather\""); 
+
+
+
+	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+	_esp8266_waitFor("dawn\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][1] = ' ';
+	}
+
+	_esp8266_waitFor("day\""); 
+	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		WeatherCode[Postion][1] = 0;
+	}
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][4] = ' ';
+	}
+
+
+	if (StartDay == 0)
+	{
+		Postion++;
+	} 
+
+	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+	_esp8266_waitFor("dawn\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][1] = ' ';
+	}
+
+	_esp8266_waitFor("day\""); 
+	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		WeatherCode[Postion][1] = 0;
+	}
+	_esp8266_waitFor("\""); 
+	_esp8266_waitFor("\""); 
+	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][4] = ' ';
+	}
+
+
+	if (StartDay == 1)
+	{
+
+		Postion++;
+
+
+
+
+		_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+		_esp8266_waitFor("dawn\""); 
+		_esp8266_waitFor("\""); 
+		_esp8266_waitFor("\""); 
+		_esp8266_waitFor("\""); 
+		_esp8266_waitFor("\""); 
+		_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+		if (InfoLen == 1)
+		{
+			WeatherTemp[Postion][1] = ' ';
+		}
+
+		_esp8266_waitFor("day\""); 
+		_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+		if (InfoLen == 1)
+		{
+			WeatherCode[Postion][1] = 0;
+		}
+		_esp8266_waitFor("\""); 
+		_esp8266_waitFor("\""); 
+		_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+		if (InfoLen == 1)
+		{
+			WeatherTemp[Postion][4] = ' ';
+		}
+
+	} 
+
+
+
+	_esp8266_getValue("pm25\":\"",DateLine2+3,&InfoLen,0,3); 
+	if (InfoLen == 1)
+	{
+		DateLine2[4] = ' ';
+		DateLine2[5] = ' ';
+	}
+	if (InfoLen == 2)
+	{
+		DateLine2[5] = ' ';
+	}
+
+
+	_esp8266_waitFor("CLOSED\r\n");
+
+	return true;
 
 }
 
@@ -788,12 +954,22 @@ void HourlyUpdate()
 
 	bNTPRunning = false;
 
-	memset(WeatherDay,32,20);
-	memset(Weather,32,20);
+	//memset(WeatherDay,32,20);
+	//memset(WeatherTemp,32,20);
 
-	memset(DateLine,32,10);
-	memset(DateLine2,32,10);
-	memset(WeatherCode,0,3);
+	//memset(DateLine,32,10);
+	//memset(DateLine2,32,10);
+	//memset(WeatherCode,32,6);
+
+
+	//WeatherCode[0][0] = '9';
+	//WeatherCode[0][1] = '8';
+	//WeatherCode[0][2] = 0;
+
+	//WeatherCode[1][0] = '9';
+	//WeatherCode[1][1] = '8';
+	//WeatherCode[1][2] = 0;
+
 
 
 
@@ -802,20 +978,83 @@ void HourlyUpdate()
 
 
 
-	GetNow();
+	//GetNow();
 
 	//GetAir();
 
 	if (hour(t+8*3600)<18)
 	{
-		GetForcast(0,0);
-		GetForcast(1,1);
+		//GetForcast(0,0);
+		//GetForcast(1,1);
+		if (!GetAvaForcast(0))
+		{
+			DateLine2[0] = '-';
+			DateLine2[1] = '-';
+		}
+
 	} 
 	else
 	{
-		GetForcast(1,0);
-		GetForcast(2,1);
+		//GetForcast(1,0);
+		//GetForcast(2,1);
+		if (!GetAvaForcast(1))
+		{
+			DateLine2[0] = '-';
+			DateLine2[1] = '-';
+		}
 	}
+
+	//GetAvaForcast(1);
+
+	printf("GetAvaForcast finished\r\n");
+
+
+	for (int i=0; i<10; i++)
+	{
+		printf("%c",DateLine2[i]);
+	}
+	printf("\r\n");
+
+
+	for (int i=0; i<10; i++)
+	{
+		printf("%c",WeatherDay[0][i]);
+	}
+	printf("\r\n");
+
+	for (int i=0; i<10; i++)
+	{
+		printf("%c",WeatherTemp[0][i]);
+	}
+	printf("\r\n");
+
+
+	for (int i=0; i<3; i++)
+	{
+		printf("%c",WeatherCode[0][i]);
+	}
+	printf("\r\n");
+
+
+
+
+	for (int i=0; i<10; i++)
+	{
+		printf("%c",WeatherDay[1][i]);
+	}
+	printf("\r\n");
+
+	for (int i=0; i<10; i++)
+	{
+		printf("%c",WeatherTemp[1][i]);
+	}
+	printf("\r\n");
+
+	for (int i=0; i<3; i++)
+	{
+		printf("%c",WeatherCode[1][i]);
+	}
+	printf("\r\n");
 
 
 
@@ -934,7 +1173,7 @@ void HourlyUpdate()
 				?
 				0
 				:
-			((ACSII57[Weather[0][(j-64)/6]-32][(j-64)%6]>>(i-8-16))&1)
+			((ACSII57[WeatherTemp[0][(j-64)/6]-32][(j-64)%6]>>(i-8-16))&1)
 				)
 				<<(j%8)
 				);
@@ -982,7 +1221,7 @@ void HourlyUpdate()
 				?
 				0
 				:
-			((ACSII57[Weather[1][(j)/6]-32][(j)%6]>>(i-8-16))&1)
+			((ACSII57[WeatherTemp[1][(j)/6]-32][(j)%6]>>(i-8-16))&1)
 				)
 				<<(j%8)
 				);
@@ -999,13 +1238,14 @@ void HourlyUpdate()
 
 
 	//WeatherCode2ChartIndex(20,ChartIndex);
-	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[0]),ChartIndex);
+
+	WeatherCode2ChartIndex2(atoi((const char*)WeatherCode[0]),ChartIndex);
 
 	ShowChart(ChartIndex[0],4+8,16);
 	ShowChart(ChartIndex[1],6+8,16);
 
 	//WeatherCode2ChartIndex(28,ChartIndex);
-	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[1]),ChartIndex);
+	WeatherCode2ChartIndex2(atoi((const char*)WeatherCode[1]),ChartIndex);
 
 	ShowChart(ChartIndex[0],4,16);
 	ShowChart(ChartIndex[1],6,16);
@@ -1161,7 +1401,7 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		ChartIndex[0] = FENG;
 		ChartIndex[1] = BAO;
 		break;
-;
+		;
 
 	case 36://	Áú¾í	Tornado	Áú¾í·ç
 		ChartIndex[0] = LONG;
@@ -1181,8 +1421,154 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		ChartIndex[0] = RE;
 		break;
 
+	case 98://	fail
+		ChartIndex[1] = KONG;
+		ChartIndex[0] = KONG;
+		break;
+
+
 
 	case 99://	Î´Öª	Unknown
+	default:
+
+		ChartIndex[0] = WEI;
+		ChartIndex[1] = ZHI;
+		break;
+
+
+
+	}
+}
+
+
+void WeatherCode2ChartIndex2(unsigned char Code,unsigned char * ChartIndex)
+{
+	unsigned char TempChat[2];
+	switch(Code)
+	{
+	case 0://	Çç
+
+		ChartIndex[1] = KONG;
+		ChartIndex[0] = QING;
+
+		break;
+
+	case 1://¶àÔÆ
+
+		ChartIndex[0] = DUO;
+		ChartIndex[1] = YUN;
+		break;
+
+	case 2://Òõ	Overcast	Òõ
+		ChartIndex[1] = KONG;
+		ChartIndex[0] = YING;
+		break;
+
+	case 3://ÕóÓê	Shower	ÕóÓê
+		ChartIndex[0] = ZHEN;
+		ChartIndex[1] = YU;
+		break;
+
+	case 4://À×Óê
+	case 5://À×Óê
+		ChartIndex[0] = LEI;
+		ChartIndex[1] = YU;
+		break;
+
+	case 6://ÓêÑ©	Sleet	Óê¼ÐÑ©
+		ChartIndex[0] = YU;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 7://Ð¡Óê	Light Rain	Ð¡Óê
+	case 21:
+		ChartIndex[0] = XIAO;
+		ChartIndex[1] = YU;
+		break;
+
+	case 8://ÖÐÓê	Moderate Rain	ÖÐÓê
+	case 22:
+		ChartIndex[0] = ZHONG;
+		ChartIndex[1] = YU;
+		break;
+
+	case 9://´óÓê	Heavy Rain	´óÓê
+	case 23:
+		ChartIndex[0] = DA;
+		ChartIndex[1] = YU;
+		break;
+
+
+	case 10://±©Óê	Storm	±©Óê
+	case 11://±©Óê	Heavy Storm	´ó±©Óê
+	case 12://±©Óê	Severe Storm	ÌØ´ó±©Óê
+	case 24:
+	case 25:
+		ChartIndex[0] = BAO;
+		ChartIndex[1] = YU;
+		break;
+
+	case 13://ÕóÑ©	Snow Flurry	ÕóÑ©
+		ChartIndex[0] = ZHEN;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 14://Ð¡Ñ©	Light Snow	Ð¡Ñ©
+	case 26:
+		ChartIndex[0] = XIAO;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 15://ÖÐÑ©	Moderate Snow	ÖÐÑ©
+	case 27:
+		ChartIndex[0] = ZHONG;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 16://´óÑ©	Heavy Snow	´óÑ©
+	case 28:
+		ChartIndex[0] = DA;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 17://	±©Ñ©	Snowstorm	±©Ñ©
+		ChartIndex[0] = BAO;
+		ChartIndex[1] = XUE;
+		break;
+
+	case 18://Îí	Foggy	Îí
+		ChartIndex[1] = KONG;
+		ChartIndex[0] = WU;
+		break;
+
+
+	case 19://¶³Óê	Ice Rain	¶³Óê
+		ChartIndex[0] = DONG;
+		ChartIndex[1] = YU;
+		break;
+
+	case 20://³¾±©	Duststorm	É³³¾±©
+	case 31:
+
+		ChartIndex[0] = CHENG;
+		ChartIndex[1] = BAO;
+		break;
+
+	case 29://¸¡³¾	Dust	¸¡³¾
+		ChartIndex[0] = FU;
+		ChartIndex[1] = CHENG;
+		break;
+
+	case 30://ÑïÉ³	Sand	ÑïÉ³
+		ChartIndex[0] = YANG;
+		ChartIndex[1] = SHA;
+		break;
+
+	case 32://ö²	Haze	ö²
+		ChartIndex[1] = KONG;
+		ChartIndex[0] = MAI;
+		break;
+
 	default:
 
 		ChartIndex[0] = WEI;
@@ -1537,7 +1923,7 @@ bool _esp8266_getValue(const char *string,unsigned char  * Value,unsigned char *
 
 		}
 
-		if (SecondsSinceStart - RecvStartTime > TIME_OUT)
+		if (SecondsSinceStart - RecvStartTime > TimeOut)
 		{
 			return false;
 		}
@@ -1567,7 +1953,7 @@ bool _esp8266_getch(char * RetData)
 			NonStopTask();
 			DataUpdate();
 		}
-		if (SecondsSinceStart - RecvStartTime > TIME_OUT)
+		if (SecondsSinceStart - RecvStartTime > TimeOut)
 		{
 			return false;
 		}
