@@ -1,0 +1,4 @@
+0 Tag without key press
+1 Home Beacon
+2 Tag with key 0 press
+3 Tag with key 1 press

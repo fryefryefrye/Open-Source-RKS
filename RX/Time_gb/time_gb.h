@@ -103,6 +103,9 @@ char HttpForcast[]   ="GET /v3/weather/daily.json?key=sxegxyiedpdmhqhl&location=
 char HttpAir[]   ="GET /s6/air/now?location=nanjing&key=71dad6c640ee40199c45d9cbe997921e&lang=en HTTP/1.1\r\nHost: free-api.heweather.com\r\n\r\n";
 char HttpAva[]   ="GET /Weather/Query?key=ed1055e2f14c4ba08a11dc4e941f7180&cityname=%E5%8D%97%E4%BA%AC HTTP/1.1\r\nHost: api.avatardata.cn\r\n\r\n";
 
+char IPD[]   ="+IPD,";
+bool OnRevicedTcpDate = false;
+
 unsigned char WeekStr[] = "SunMonTueWedThuFriSat";
 
 unsigned char InfoLen;
@@ -819,6 +822,7 @@ bool GetAvaForcast(unsigned char StartDay)
 
 	TimeOut = 2;
 
+	OnRevicedTcpDate = true;
 
 	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
 	if (InfoLen == 1)
@@ -939,6 +943,9 @@ bool GetAvaForcast(unsigned char StartDay)
 	{
 		DateLine2[5] = ' ';
 	}
+
+
+	OnRevicedTcpDate = false;
 
 
 	_esp8266_waitFor("CLOSED\r\n");
@@ -1891,6 +1898,8 @@ bool _esp8266_waitFor(const char *string) {
 bool _esp8266_getValue(const char *string,unsigned char  * Value,unsigned char * Len,unsigned char Start,unsigned char Max) 
 {
 
+
+
 	char received;
 	*Len = 0;
 	unsigned char CurrentChar = 0;
@@ -1937,6 +1946,13 @@ bool _esp8266_getValue(const char *string,unsigned char  * Value,unsigned char *
 //**Function to get one byte of date from UART**//
 bool _esp8266_getch(char * RetData)   
 {
+
+	static bool WaitFinsih = false;
+	//IPD
+	static unsigned char CompareIndex = 0;
+
+	static bool NewLine = false;
+
 	unsigned long RecvStartTime = SecondsSinceStart;
 	while (1)
 	{
@@ -1945,6 +1961,74 @@ bool _esp8266_getch(char * RetData)
 		if (WIFI_SERIAL.available() > 0)
 		{
 			*RetData = WIFI_SERIAL.read();
+
+			//if (*RetData == IPD[CompareIndex])
+			//{
+			//	//printf("found one IPD ACSII \r\n");
+			//	CompareIndex++;
+			//	if (CompareIndex >= 7)
+			//	{
+			//		printf("found IPD \r\n");
+			//		OnRevicedTcpDate = true;
+			//	} 
+			//	else
+			//	{
+			//	}
+			//} 
+			//else
+			//{
+			//	CompareIndex = 0;
+			//}
+
+			if (OnRevicedTcpDate)
+			{
+
+				if ((*RetData == '\r')||(*RetData == '\n'))
+				{
+					NewLine = true;
+					//printf("found new line in response \r\n");
+					continue;
+				} 
+
+				if (NewLine)
+				{
+					if(*RetData == IPD[CompareIndex])
+					{
+						CompareIndex++;
+						if (CompareIndex >= 5)
+						{
+							//printf("found IPD \r\n");
+							WaitFinsih = true;
+							NewLine = false;
+						}
+						continue;
+					}
+					else
+					{
+						CompareIndex = 0;
+						NewLine = false;
+					}
+				}
+
+				if (WaitFinsih)
+				{
+					if (*RetData == ':')
+					{
+						WaitFinsih=false;
+					} 
+					else
+					{
+
+					}
+					continue;
+				} 
+			}
+
+
+
+
+
+
 			Serial.write(*RetData);
 			return true;
 		}
