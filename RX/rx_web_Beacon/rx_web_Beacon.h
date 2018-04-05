@@ -355,7 +355,6 @@ void SendBeacon()
 	GotData[2] = 0;
 	GotData[3] = 0;
 	radio.write(GotData, 4);
-
 }
 
 void Door_task()
