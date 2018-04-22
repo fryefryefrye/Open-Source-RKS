@@ -402,7 +402,9 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 
 		if (LastOn)
 		{
-			RF_Command(RF_COMMAND_POWER_OFF, 10);
+			RF_Command(RF_COMMAND_POWER_OFF, 20);
+			delay(300);
+			RF_Command(RF_COMMAND_POWER_OFF, 20);
 			LastOn = false;
 			Locked = false;
 			NeedLock = true;
@@ -419,7 +421,7 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 				if (!Home)
 				{
 					delay(1000);
-					RF_Command(RF_COMMAND_LOCK, 10);
+					RF_Command(RF_COMMAND_LOCK, 20);
 					Locked = true;
 					printf("Lock not at home \r\n");
 				} 
@@ -433,7 +435,9 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 
 			if ((SecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&Locked)
 			{
-				RF_Command(RF_COMMAND_POWER_OFF, 10);
+				RF_Command(RF_COMMAND_POWER_OFF, 20);
+				delay(300);
+				RF_Command(RF_COMMAND_POWER_OFF, 20);
 				NeedLock = true;
 				Locked = false;
 				printf("Unlock \r\n");
@@ -445,9 +449,13 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 		if((SecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&(!LastOn))
 		{
 			printf("Turn ON \r\n");
-			RF_Command(RF_COMMAND_POWER_ON, 10);
+			RF_Command(RF_COMMAND_POWER_ON, 20);
 			delay(300);
-			RF_Command(RF_COMMAND_POWER_ON, 10);
+			RF_Command(RF_COMMAND_POWER_ON, 20);
+			delay(300);
+			RF_Command(RF_COMMAND_POWER_ON, 20);
+			delay(300);
+			RF_Command(RF_COMMAND_POWER_ON, 20);
 			LastOn = true;
 			Locked = false;
 		}
@@ -461,7 +469,7 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 		{
 			if((Home)&&(!LastOn)&&(!Locked))
 			{
-				RF_Command(RF_COMMAND_LOCK, 10);
+				RF_Command(RF_COMMAND_LOCK, 20);
 				Locked = true;
 #ifdef DEGBUG_OUTPUT
 				printf("Lock! leaving home without power on \r\n");

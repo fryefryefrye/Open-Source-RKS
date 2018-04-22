@@ -39,8 +39,8 @@ unsigned long Current; //mA
 bool OnCharge = false; 
 bool ScreenOn = false; 
 bool UnitShowed = false;
-#define CHARGE_MODE_AMP 800  //mA
-#define DISCHARGE_MODE_AMP 100  //mA
+#define CHARGE_MODE_AMP 1000  //mA
+#define DISCHARGE_MODE_AMP 1000  //mA
 
 
 #define VOLT_INPUT 2
