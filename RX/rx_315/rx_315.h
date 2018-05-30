@@ -466,23 +466,29 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 			Locked = false;
 		}
 
+		if((SecondsSinceStart - LastTagGetTime > TIME_OUT_LOCK) && (!LastOn)&&(!Locked))
+		{
+			RF_Command(RF_COMMAND_LOCK, 20);
+			Locked = true;
+			printf("Lock! exit park without key \r\n");
+		}
 
-		if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_LOCK) && (LastHomeGetTime != 0))
-		{
-			Home = true;
-		}
-		else
-		{
-			if((Home)&&(!LastOn)&&(!Locked))
-			{
-				RF_Command(RF_COMMAND_LOCK, 20);
-				Locked = true;
-#ifdef DEGBUG_OUTPUT
-				printf("Lock! leaving home without power on \r\n");
-#endif
-			}
-			Home = false;
-		}
+		// if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_LOCK) && (LastHomeGetTime != 0))
+		// {
+			// Home = true;
+		// }
+		// else
+		// {
+			// if((Home)&&(!LastOn)&&(!Locked))
+			// {
+				// RF_Command(RF_COMMAND_LOCK, 20);
+				// Locked = true;
+// #ifdef DEGBUG_OUTPUT
+				// printf("Lock! leaving home without power on \r\n");
+// #endif
+			// }
+			// Home = false;
+		// }
 	}
 }
 
