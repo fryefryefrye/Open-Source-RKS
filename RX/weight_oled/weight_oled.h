@@ -13,11 +13,15 @@
 //display
 #include <Wire.h>
 #include "CN_SSD1306_Wire\CN_SSD1306_Wire.h"
+#include "HX711\HX711.h"
 
 CN_SSD1306_Wire Displayer(8);//HardWare I2C
 
+HX711 scale(WEIGHT_DAT, WEIGHT_CLK);
+
 unsigned long SecondsSinceStart;
 unsigned char Alarm;
+int Weight;
 
 
 void SecondsSinceStartTask();
@@ -48,6 +52,14 @@ void setup()
 
 
 
+
+
+
+	printf("raw reading from the ADC = %ld \r\n",scale.read());
+	printf("average of 20 raw from the ADC = %ld \r\n",scale.read_average(20));
+
+	scale.set_scale(386.5f);                      // this value is obtained by calibrating the scale with known weights; see the README for details
+	scale.tare();				        // reset the scale to 0
 
 
 
@@ -119,6 +131,21 @@ void SecondsSinceStartTask()
 
 
 		printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
+
+		Weight = scale.get_units(10);
+
+		Serial.print("Average weight:");
+		Serial.println(Weight);
+
+
+		
+		Displayer.ShowASCII1632(0,4,Weight/100%10);
+
+		Displayer.ShowASCII1632(16,4,Weight/10%10);
+		Displayer.ShowASCII1632(32,4,Weight%10);
+
+
+
 
 	}
 }
