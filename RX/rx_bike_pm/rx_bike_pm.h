@@ -22,7 +22,9 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 
 //display
 #include <Wire.h>
-#include <CN_SSD1306_Wire.h>
+//#include <CN_SSD1306_Wire.h>
+
+#include "CN_SSD1306_Wire\CN_SSD1306_Wire.h"
 
 //standy 35ma; ON 80 ; Light 260mah 320mah
 
