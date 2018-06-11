@@ -1,5 +1,7 @@
 
 
+#define MIN_WEIGHT_DIFF 10
+
 #define WEIGHT_CLK 2
 #define WEIGHT_DAT 3
 
@@ -23,16 +25,23 @@ unsigned long SecondsSinceStart;
 unsigned char Alarm;
 int Weight;
 
+unsigned long TimeOutForDrink;
+int LastWeight = 0;
+int AccumulatedDrinking = 0;
 
 void SecondsSinceStartTask();
 void Buzz_task();
-
-
+void OnSecond();
+void ProcessWeight();
+void ShowState();
+void Buzz_task();
 
 
 
 void setup()
 {
+
+	TimeOutForDrink = 0;
 
 	Displayer.Initial();
 	delay(10);
@@ -40,8 +49,8 @@ void setup()
 	Displayer.Fill_Screen(0x00,0x00);
 
 
-	pinMode(WEIGHT_CLK, OUTPUT);
-	pinMode(WEIGHT_DAT, INPUT);
+	//pinMode(WEIGHT_CLK, OUTPUT);
+	//pinMode(WEIGHT_DAT, INPUT);
 
 	pinMode(BUZZ, OUTPUT);
 
@@ -49,6 +58,9 @@ void setup()
 	Serial.begin(115200);
 	Serial.println(F("Weight"));
 	printf_begin();
+
+
+	//Alarm = 5;
 
 
 
@@ -116,6 +128,7 @@ void loop()
 {
 
 	SecondsSinceStartTask();
+	Buzz_task();
 
 } // Loop
 
@@ -130,24 +143,93 @@ void SecondsSinceStartTask()
 		SecondsSinceStart++;
 
 
-		printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
-
-		Weight = scale.get_units(10);
-
-		Serial.print("Average weight:");
-		Serial.println(Weight);
+		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
 
 
-		
-		Displayer.ShowASCII1632(0,4,Weight/100%10);
-
-		Displayer.ShowASCII1632(16,4,Weight/10%10);
-		Displayer.ShowASCII1632(32,4,Weight%10);
-
+		OnSecond();
 
 
 
 	}
+}
+
+void OnSecond()
+{
+
+	TimeOutForDrink++;
+
+	Weight = scale.get_units(10);
+
+	//Serial.print("Average weight:");
+	//Serial.println(Weight);
+
+	ProcessWeight();
+	ShowState();
+
+	if (TimeOutForDrink%(15*60) == 0)
+	{
+		digitalWrite(BUZZ, HIGH);
+		delay(50);
+		digitalWrite(BUZZ, LOW);
+	}
+
+
+
+
+
+}
+
+void ProcessWeight()
+{
+	static int StableWeight;
+	static unsigned char StableWeightCounter;
+
+	if (Weight == StableWeight)
+	{
+		StableWeightCounter++;
+	} 
+	else
+	{
+		StableWeight = Weight;
+		StableWeightCounter = 0;
+	}
+
+	if (StableWeightCounter <3)
+	{
+
+		//printf("no Stable, counter =  %d \r\n ",StableWeightCounter);
+		return;
+	}
+
+	if (Weight < MIN_WEIGHT_DIFF)
+	{
+		//printf("Empty, weight =  %d \r\n ",Weight);
+		return;
+	}
+
+	//printf("Stable, weight =  %d \r\n ",Weight);
+
+	//printf("Weight change  %d \r\n ",abs(Weight - LastWeight));
+	if (abs(Weight - LastWeight) > MIN_WEIGHT_DIFF)
+	{
+		
+		printf("Weight changed to %d \r\n ",Weight);
+		if (Weight < LastWeight) //Reduce
+		{
+			printf("Weight changed. Reduce %d \r\n ",LastWeight - Weight);
+			AccumulatedDrinking = AccumulatedDrinking + (LastWeight - Weight);
+			TimeOutForDrink = 0;
+		} 
+		else
+		{
+			printf("Weight changed. Added \r\n ");
+		}
+		LastWeight = Weight;
+	} 
+	else
+	{
+	}
+
 }
 
 void Buzz_task()
@@ -190,105 +272,65 @@ void Buzz_task()
 void ShowState()
 {
 
-	//static bool UnitShowed = false;
-	static bool DataStored = false;
-	static unsigned int CellVolt = 0;
-	static unsigned char ShowIndex = 0;
+	//Displayer.ShowASCII816(8,0,DisplayerCharge/100%10);
 
-	//if (!UnitShowed)
-	//{
-	//	Displayer.ShowASCII1632(32,4,12);
-	//	Displayer.ShowASCII1632(16*5,4,10);
-	//	Displayer.ShowASCII1632(16*7,4,11);
-	//	Displayer.ShowASCII816(0,0,13);//C
-	//	Displayer.ShowASCII816(0,2,14);//D
-	//	Displayer.ShowASCII816(3*8,0,15);//.
-	//	Displayer.ShowASCII816(3*8+56-16,0,15);//.
-	//	Displayer.ShowASCII816(3*8,2,15);//.
-	//	Displayer.ShowASCII816(3*8+56-16,2,15);//.
-	//	Displayer.ShowASCII816(9*8+56-24,0,15);//.
-	//	Displayer.ShowASCII816(9*8+56-24+16,0,12);//V
-	//	Displayer.ShowASCII816(9*8+56-24,2,15);//.
-	//	Displayer.ShowASCII816(9*8+56-24+16,2,16);//%
-
-
-	//	UnitShowed = true;
-	//}
-
-
-	//if (!DataStored)
-	//{
-	//	CellVolt = FullVolt/13;
-	//	DataStored = true;
-	//	ShowIndex++;
-	//}
-
-
-	//switch(ShowIndex)
-	//{
-	//case 1:
-	//	Displayer.ShowASCII1632(0,4,CellVolt/100%10);
-	//	break;
-	//case 2:
-	//	Displayer.ShowASCII1632(16,4,CellVolt/10%10);
-	//	break;
-	//case 3:
-	//	Displayer.ShowASCII1632(16*3,4,Current/10000%10);
-	//	break;
-	//case 4:
-	//	Displayer.ShowASCII1632(16*4,4,Current/1000%10);
-	//	break;
-	//case 5:
-	//	Displayer.ShowASCII1632(16*6,4,Current/100%10);
-	//	break;
-	//}
-
-	ShowIndex++;
-
-	if (ShowIndex>=6)
+	if (Weight >= 0)
 	{
-		ShowIndex = 0;
-		DataStored = false;
+		Displayer.ShowASCII816(0,4,Weight/1000%10);
+		Displayer.ShowASCII816(8,4,Weight/100%10);
+		Displayer.ShowASCII816(8*2,4,Weight/10%10);
+		Displayer.ShowASCII816(8*3,4,Weight%10);
+	} 
+	else
+	{
+
+		Weight = Weight * (-1);
+		Displayer.ShowASCII816(0,4,10); //-
+		Displayer.ShowASCII816(16,4,Weight/100%10);
+		Displayer.ShowASCII816(32,4,Weight/10%10);
+		Displayer.ShowASCII816(48,4,Weight%10);
 	}
 
 
+
+	//if (Weight >= 0)
+	//{
+	//	Displayer.ShowASCII1632(0,4,Weight/1000%10);
+	//	Displayer.ShowASCII1632(16,4,Weight/100%10);
+	//	Displayer.ShowASCII1632(32,4,Weight/10%10);
+	//	Displayer.ShowASCII1632(48,4,Weight%10);
+	//} 
+	//else
+	//{
+
+	//	Weight = Weight * (-1);
+	//	Displayer.ShowASCII1632(0,4,10); //-
+	//	Displayer.ShowASCII1632(16,4,Weight/100%10);
+	//	Displayer.ShowASCII1632(32,4,Weight/10%10);
+	//	Displayer.ShowASCII1632(48,4,Weight%10);
+	//}
+
+
+	Displayer.ShowASCII1632(16*4,4,AccumulatedDrinking/1000%10);
+	Displayer.ShowASCII1632(16*5,4,AccumulatedDrinking/100%10);
+	Displayer.ShowASCII1632(16*6,4,AccumulatedDrinking/10%10);
+	Displayer.ShowASCII1632(16*7,4,AccumulatedDrinking%10);
+
+	//Displayer.ShowASCII1632(0,0,TimeOutForDrink/1000%10);
+	//Displayer.ShowASCII1632(16,0,TimeOutForDrink/100%10);
+	Displayer.ShowASCII1632(16*2,0,TimeOutForDrink/60/100%10);
+
+	Displayer.ShowASCII1632(16*3,0,TimeOutForDrink/60/10%10);
+	Displayer.ShowASCII1632(16*4,0,TimeOutForDrink/60%10);
+
+
+	Displayer.ShowASCII1632(16*5,0,11);
+
+
+	Displayer.ShowASCII1632(16*6,0,TimeOutForDrink%60/10%10);
+	Displayer.ShowASCII1632(16*7,0,TimeOutForDrink%60%10);
 
 }
-
-void ShowChargeInfo()
-{
-
-
-	//static bool UnitShowed = false;
-	static bool DataStored = false;
-	static unsigned int DisplayerCharge;
-	static unsigned int DisplayerDisCharge;
-	static unsigned int DisplayerLastCharge;
-	static unsigned int DisplayerLastDisCharge;
-	static unsigned int DisplayerFullVolt;
-	static unsigned int DisplayerRemain;
-	static unsigned char ShowIndex = 0;
-
-
-
-	if (!DataStored)
-	{
-		//DisplayerCharge =Charge/360000;//3600; //Charge/36000; //mah
-		//DisplayerDisCharge =DisCharge/360000;//3600; //DisCharge/36000; //mah
-		//DisplayerLastCharge = LastCharge/360000;
-		//DisplayerLastDisCharge = LastDisCharge/360000;
-		//DisplayerFullVolt = FullVolt;
-		//if (Capability >= DisCharge)
-		//{
-		//	DisplayerRemain = (Capability - DisCharge)/(Capability/1000);
-		//} 
-		//else
-		//{
-		//	DisplayerRemain = 0;
-		//}
-		//DataStored = true;
-		//ShowIndex++;
-	}
 
 
 
@@ -350,19 +392,3 @@ void ShowChargeInfo()
 	//	Displayer.ShowASCII816(8*8+56-24,2,DisplayerRemain/10%10);
 	//	Displayer.ShowASCII816(10*8+56-24,2,DisplayerRemain/1%10);
 	//	break;
-
-
-	//}
-
-
-
-	ShowIndex++;
-
-	if (ShowIndex>=13)
-	{
-		ShowIndex = 0;
-		DataStored = false;
-	}
-
-}
-
