@@ -545,9 +545,9 @@ void setup()
 
 
 
-	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
 	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4196\r\n"));
-	//_esp8266_waitFor("OK\r\n");
+	_esp8266_waitFor("OK\r\n");
 
 
 	StartNTP();
@@ -804,7 +804,7 @@ bool GetAvaForcast(unsigned char StartDay)
 
 	unsigned char Postion = 0;
 	unsigned char Temp = 0;
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"api.avatardata.cn\",80\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
 	_esp8266_waitFor("OK\r\n");
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
