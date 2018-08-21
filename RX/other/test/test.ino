@@ -28,6 +28,8 @@
 //
  
 #include <Wire.h>
+
+#include <SoftwareSerial.h>
  
  
 void setup()

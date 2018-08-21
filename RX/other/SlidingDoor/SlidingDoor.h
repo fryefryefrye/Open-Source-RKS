@@ -11,6 +11,7 @@
 
 
 #define KEY_PRESS_MIN 2
+#define PAUSE_KEY_PRESS 4
 
 #include <printf.h>
 
@@ -85,6 +86,15 @@ void OnTenthSecond()
 	static unsigned char KeyOpenCounter = 0;
 	static unsigned char KeyCloseCounter = 0;
 
+	static unsigned char PauseKeyCounter = PAUSE_KEY_PRESS;
+
+	if (PauseKeyCounter>0)
+	{
+		PauseKeyCounter--;
+		return;
+	} 
+
+
 	if ((digitalRead(KEY_OPEN)))
 	{
 
@@ -92,6 +102,7 @@ void OnTenthSecond()
 		if (KeyOpenCounter > KEY_PRESS_MIN)
 		{
 			KeyOpenCounter = 0;
+			PauseKeyCounter = PAUSE_KEY_PRESS;
 			if (ClosingDoor)
 			{
 				Stop = true;
@@ -107,7 +118,8 @@ void OnTenthSecond()
 				}
 				else
 				{
-					printf("OpenDoor Key press! But already opened \r\n");
+					ClosingDoor = true;
+					printf("OpenDoor Key press! But already opened. So, cloes it \r\n");
 				}
 			}
 		}
@@ -125,6 +137,7 @@ void OnTenthSecond()
 		if (KeyCloseCounter > KEY_PRESS_MIN)
 		{
 			KeyCloseCounter = 0;
+			PauseKeyCounter = PAUSE_KEY_PRESS;
 			if (OpeningDoor)
 			{
 				Stop = true;
@@ -139,9 +152,9 @@ void OnTenthSecond()
 				}
 				else
 				{
-					printf("CloseDoor Key press! But already closed \r\n");
+					OpeningDoor = true;
+					printf("CloseDoor Key press! But already closed. So Open it\r\n");
 				}
-
 			}
 		}
 	}
@@ -168,7 +181,7 @@ void OpenDoor()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 90)
+				if(TenthSecondsSinceStart -StartTime > 25)
 				{
 					OpenRelay(false);
 					Step = 2;
@@ -178,25 +191,6 @@ void OpenDoor()
 					printf("Open door finished.\r\n");
 				}
 			}
-			//if (Step == 2)
-			//{
-			//	if(TenthSecondsSinceStart -StartTime >4 )
-			//	{
-			//		OpenRelay(true);
-			//		Step = 3;
-			//	}
-			//}
-			//if (Step == 3)
-			//{
-			//	if(TenthSecondsSinceStart -StartTime >8 )
-			//	{
-			//		OpenRelay(false);
-			//		Step = 0;
-			//		OpeningDoor = false;
-			//		printf("Open door finished.\r\n");
-			//	}
-			//}
-
 		}
 		else
 		{
@@ -226,7 +220,7 @@ void CloseDoor()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 90)
+				if(TenthSecondsSinceStart -StartTime > 25)
 				{
 					CloseRelay(false);
 					Step = 2;
@@ -236,25 +230,6 @@ void CloseDoor()
 					printf("Close door finished.\r\n");
 				}
 			}
-			//if (Step == 2)
-			//{
-			//	if(TenthSecondsSinceStart -StartTime >4 )
-			//	{
-			//		CloseRelay(true);
-			//		Step = 3;
-			//	}
-			//}
-			//if (Step == 3)
-			//{
-			//	if(TenthSecondsSinceStart -StartTime >8 )
-			//	{
-			//		CloseRelay(false);
-			//		Step = 0;
-			//		ClosingDoor = false;
-			//		printf("Close door finished.\r\n");
-			//	}
-			//}
-
 		}
 		else
 		{
@@ -272,12 +247,12 @@ void CloseDoor()
 void OpenRelay(bool on)
 {
 	digitalWrite(RELAY_OPEN,!on);
-	digitalWrite(BUZZ,on);
+	//digitalWrite(BUZZ,on);
 	printf("Open Relay to %d .\r\n",on);
 }
 void CloseRelay(bool on)
 {
 	digitalWrite(RELAY_CLOSE,!on);
-	digitalWrite(BUZZ,on);
+	//digitalWrite(BUZZ,on);
 	printf("Close Relay to %d .\r\n",on);
 }

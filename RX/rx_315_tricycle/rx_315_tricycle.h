@@ -3,14 +3,15 @@
 byte addresses[6] = { 0x55, 0x56, 0x57, 0x58, 0x59, 0x60 }; // should be same with tx
 unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
 //#define TIME_OUT_TURN_OFF_BIKE 90		//s
-#define TIME_OUT_LOCK 30  //s
+#define TIME_OUT_LOCK 300  //s
 //#define WAIT_KEY_IN_HOME_INTERVAL 10
-#define TIME_OUT_HOME 60
+//#define TIME_OUT_HOME 60
 #define DATA_LENGTH 4					//use fixed data length 1-32
-#define BUZZON 1000				//set lenght of the buzz
-#define BUZZOFF 30000			//set interval of the buzz
+//#define BUZZON 1000				//set lenght of the buzz
+//#define BUZZOFF 30000			//set interval of the buzz
 #define DEGBUG_OUTPUT
-#define PARK_SWITCH_TIME 3  //s
+#define SWITCH_TIME 10  //tenth s
+#define LOCK_MOTO_MAX_TIME 25  //tenth s
 /*****************************************************/
 
 #include <SPI.h>
@@ -34,20 +35,33 @@ unsigned long LastKeyGetTime = 0;   //unit: ms
 
 unsigned char GotData[DATA_LENGTH];
 unsigned long Volt;   //unit: mV,
-unsigned long SecondsSinceStart;
+unsigned long TenthSecondsSinceStart;
+
+
+static bool LastLockMotoSwitch;
+static bool LastLockStateSwitch;
 
 
 bool LastOn = false;
 bool Locked = false;
-bool Auto = true;
+//bool Auto = true;
 bool NeedLock = false;
 //unsigned long TrunOffTime = 0;
-bool Park = true;
-bool Home = false;
+bool MainOnOff = false;
+//bool Home = false;
 
-
+#define LOCK_STATE 3
+#define LOCK_MOTO 4
+#define SWITCH 5
 #define RF_315 6
-#define PARK_SWITCH 5
+//D7,D8 for RF24
+#define BUZZ 9
+#define RELAY 10
+
+
+
+
+
 #define RF_LENGTH 11
 unsigned char  RfCommand[3][RF_LENGTH]={
 	//这组记录未反转，需要输出脚高低反转
@@ -71,29 +85,60 @@ unsigned char  RfCommand[3][RF_LENGTH]={
 
 void RF_Command(unsigned char command, unsigned char repeat);
 void SecondsSinceStartTask();
-void OnSecond();
+void OnTenthSecond();
 void nRFInit();
 void nRFTask();
 void ChHopTask();
 void RF_task();
+void ShowLockState_task();
+void InitLock();
+void UnLock();
+bool IsLock();
+void LockMotoOn();
+void LockMotoOff();
+bool GetSwitchState(unsigned char Switch);
+void CheckLock();
+void CheckPush();
 //void OnKeyPress();
 
 void setup()
 {
 	pinMode(RF_315, OUTPUT);
-	pinMode(PARK_SWITCH, INPUT_PULLUP);
+	pinMode(RELAY, OUTPUT);
+	pinMode(BUZZ, OUTPUT);
 
+
+	LockMotoOff();
+	digitalWrite(RF_315, LOW);
+
+	pinMode(LOCK_STATE, INPUT_PULLUP);
+	pinMode(LOCK_MOTO, INPUT_PULLUP);
+	pinMode(SWITCH, INPUT_PULLUP);
+
+
+
+
+
+
+	LastLockMotoSwitch = digitalRead(LOCK_MOTO);
+	LastLockStateSwitch = digitalRead(LOCK_STATE);
 
 
 #ifdef DEGBUG_OUTPUT
 	Serial.begin(115200);
-	Serial.println(F("RF24_315_ID_Read"));
+	Serial.println(F("RF24_315_TRICYCLE_ID_Read"));
 	printf_begin();
 #endif
 
 	//wdt_enable(WDTO_2S);
 
 	nRFInit();
+
+
+
+	//InitLock();
+	//UnLock();
+
 
 
 }
@@ -128,55 +173,134 @@ void nRFInit()
 
 }
 
-void OnSecond()
+void OnTenthSecond()
 {
+	CheckPush();
+	CheckLock();
 
 
 
-	static unsigned char UnChangeCounter;
-	bool SwitchState;
-
-	SwitchState = !(digitalRead(PARK_SWITCH));
-
-
-	if (Park != SwitchState) //down postion
-	{
-		UnChangeCounter++;
-		if (UnChangeCounter > PARK_SWITCH_TIME)
-		{
-			Park = SwitchState;
-			UnChangeCounter = 0;
 #ifdef DEGBUG_OUTPUT
-			printf("Park State change to  %d \r\n",Park);
+	//printf("SwitchState = %d ,main = %d, UnChangeCounter = %d \r\n",SwitchState,MainOnOff,UnChangeCounter);
 #endif
 
-		} 
 
+
+
+	if (TenthSecondsSinceStart%50 == 0)
+	{
+		nRFInit();
+#ifdef DEGBUG_OUTPUT
+		//printf("re init nRF \r\n");
+#endif
+
+	}
+
+}
+
+void CheckLock()
+{
+	static unsigned char UnChangeCounter;
+	bool Locked;
+
+	if (LastOn)
+	{
+		if (IsLock()) //push postion
+		//if (digitalRead(LOCK_STATE)) 
+		{
+			UnChangeCounter++;
+
+			if (UnChangeCounter%2 == 0)
+			{
+				digitalWrite(BUZZ, HIGH);
+			} 
+			if (UnChangeCounter%2 == 1)
+			{
+				digitalWrite(BUZZ, LOW);
+			} 
+			if (UnChangeCounter >= SWITCH_TIME)
+			{
+
+				MainOnOff = false;
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+				delay(200);
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+				delay(200);
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+				printf("Lock Confirm, to off \r\n",MainOnOff);
+				UnChangeCounter = 0;
+			} 
+		} 
+		else
+		{
+			UnChangeCounter = 0;
+			//digitalWrite(BUZZ, LOW);
+		}
+
+	}
+
+
+
+}
+
+void CheckPush()
+{
+	static unsigned char UnChangeCounter;
+	bool SwitchState;
+	//static bool LastSwitchState;
+
+	SwitchState = !(digitalRead(SWITCH));
+
+	if (SwitchState) //push postion
+	{
+		UnChangeCounter++;
+
+		if (UnChangeCounter%2 == 0)
+		{
+			digitalWrite(BUZZ, HIGH);
+		} 
+		if (UnChangeCounter%2 == 1)
+		{
+			digitalWrite(BUZZ, LOW);
+		} 
+		if (UnChangeCounter >= SWITCH_TIME)
+		{
+			if((TenthSecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&(!MainOnOff))
+			{
+				MainOnOff = true;
+				digitalWrite(BUZZ, HIGH);
+				delay(1500);
+				digitalWrite(BUZZ, LOW);
+			}
+			else if (MainOnOff)
+			{
+				MainOnOff = false;
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+				delay(200);
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+				delay(200);
+				digitalWrite(BUZZ, HIGH);
+				delay(500);
+				digitalWrite(BUZZ, LOW);
+			}
+			printf("Switch Confirm,  MainOnOff to %d \r\n",MainOnOff);
+			UnChangeCounter = 0;
+		} 
 	} 
 	else
 	{
 		UnChangeCounter = 0;
-	}
-
-
-#ifdef DEGBUG_OUTPUT
-	//printf("SwitchState = %d ,PARK = %d, UnChangeCounter = %d \r\n",SwitchState,Park,UnChangeCounter);
-#endif
-
-
-
-
-
-
-
-
-	if (SecondsSinceStart%5 == 0)
-	{
-		nRFInit();
-#ifdef DEGBUG_OUTPUT
-		printf("re init nRF \r\n");
-#endif
-
+		digitalWrite(BUZZ, LOW);
 	}
 }
 
@@ -187,15 +311,6 @@ void loop()
 	nRFTask();
 	ChHopTask();
 	RF_task();
-
-
-
-
-
-
-
-
-
 
 	//RF_Control test
 	//RF_Command(RF_COMMAND_POWER_OFF,10);
@@ -211,195 +326,13 @@ void loop()
 
 } // Loop
 
-//void RF_task()//simple trun on and off,then lock
-//{
-//	static bool LastOn = false;
-//
-//
-//
-//
-//	if (LastOn)
-//	{
-//		if ((SecondsSinceStart - LastTagGetTime >TIME_OUT_TURN_OFF_BIKE)&&(LastTagGetTime != 0))
-//		{
-//			RF_Command(RF_COMMAND_POWER_OFF,10);
-//			LastOn = false;
-//			NeedSendLock = true;
-//			TrunOffTime = SecondsSinceStart;
-//#ifdef DEGBUG_OUTPUT
-//			printf("Turn OFF \r\n");
-//#endif
-//		} 
-//	} 
-//	else// last OFF
-//	{
-//		if ((SecondsSinceStart - LastTagGetTime <TIME_OUT_TURN_OFF_BIKE)&&(LastTagGetTime != 0))
-//		{
-//#ifdef DEGBUG_OUTPUT
-//			printf("Turn ON \r\n");
-//#endif
-//			RF_Command(RF_COMMAND_POWER_ON,10);
-//			delay(300);
-//			RF_Command(RF_COMMAND_POWER_ON,10);
-//			LastOn = true;
-//			NeedSendLock = false;
-//		}
-//	}
-//
-//	if ((NeedSendLock)&&(SecondsSinceStart - TrunOffTime >TIME_OUT_LOCK_WAIT_HOME)&&(TrunOffTime != 0))
-//	{
-//
-//		RF_Command(RF_COMMAND_LOCK,10);
-//#ifdef DEGBUG_OUTPUT
-//		printf("Lock \r\n");
-//#endif
-//		NeedSendLock = false;
-//	}
-//}
-
-
-
-//void RF_task() // do not lock at home,  wait key for a little long at home
-//{
-//
-//	static bool Home = false;
-//	static bool HomeFirstKeyGet = false;
-//	static unsigned long HomeFirstKeyGetTime = 0;
-//
-//	if(!Auto)
-//	{
-//		return;
-//	}
-//
-//	if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_LOCK_WAIT_HOME) && (LastHomeGetTime != 0))
-//	{
-//		Home = true;
-//	}
-//	else
-//	{
-//		if((Home)&&(LastOn))
-//		{
-//			RF_Command(RF_COMMAND_LOCK, 10);
-//			Locked = true;
-//#ifdef DEGBUG_OUTPUT
-//			printf("Lock! leaving home without power on \r\n");
-//#endif
-//		}
-//		Home = false;
-//	}
-//
-//	if (LastOn)
-//	{
-//		if ((SecondsSinceStart - LastTagGetTime > TIME_OUT_TURN_OFF_BIKE) && (LastTagGetTime != 0))
-//		{
-//			RF_Command(RF_COMMAND_POWER_OFF, 10);
-//			LastOn = false;
-//			Locked = false;
-//			NeedSendLock = true;
-//			TrunOffTime = SecondsSinceStart;
-//#ifdef DEGBUG_OUTPUT
-//			printf("Turn OFF \r\n");
-//#endif
-//		}
-//	}
-//	else // last OFF
-//	{
-//		if ((SecondsSinceStart - LastTagGetTime < WAIT_KEY_IN_HOME_INTERVAL) && (LastTagGetTime != 0))
-//		{
-//			if (!Home) //No home,bike Off, key in
-//			{
-//#ifdef DEGBUG_OUTPUT
-//				printf("Turn ON \r\n");
-//#endif
-//				RF_Command(RF_COMMAND_POWER_ON, 10);
-//				delay(300);
-//				RF_Command(RF_COMMAND_POWER_ON, 10);
-//				LastOn = true;
-//				Locked = false;
-//				NeedSendLock = false;
-//			}
-//			else //home,bike Off, key in
-//			{
-//				if (!HomeFirstKeyGet)
-//				{
-//					HomeFirstKeyGetTime = SecondsSinceStart;
-//					HomeFirstKeyGet = true;
-//				}
-//				else
-//				{
-//					if (SecondsSinceStart - HomeFirstKeyGetTime > WAIT_KEY_IN_HOME)
-//					{
-//#ifdef DEGBUG_OUTPUT
-//						printf("Turn ON, in home \r\n");
-//#endif
-//						RF_Command(RF_COMMAND_POWER_ON, 10);
-//						delay(300);
-//						RF_Command(RF_COMMAND_POWER_ON, 10);
-//						LastOn = true;
-//						Locked = false;
-//						NeedSendLock = false;
-//						HomeFirstKeyGet = false;
-//						HomeFirstKeyGetTime = 0;
-//					}
-//				}
-//
-//			}
-//
-//		}
-//		else // Off,key out
-//		{
-//			HomeFirstKeyGet = false;
-//			HomeFirstKeyGetTime = 0;
-//		}
-//	}
-//
-//	if ((NeedSendLock) && (SecondsSinceStart - TrunOffTime > TIME_OUT_LOCK_WAIT_HOME) && (TrunOffTime != 0))
-//	{
-//		if (LastHomeGetTime < TrunOffTime)
-//		{
-//			RF_Command(RF_COMMAND_LOCK, 10);
-//			Locked = true;
-//#ifdef DEGBUG_OUTPUT
-//			printf("Lock \r\n");
-//#endif
-//		}
-//		else
-//		{
-//#ifdef DEGBUG_OUTPUT
-//			printf("Not Lock \r\n");
-//#endif
-//		}
-//		NeedSendLock = false;
-//	}
-//}
 
 
 
 void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on park, 
 {
-
-
-
-
-
-
-
-
-
-	if (Park)
+	if (!MainOnOff)//to off
 	{
-
-		if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_HOME) && (LastHomeGetTime != 0))
-		{
-			Home = true;
-		}
-		else
-		{
-			Home = false;
-		}
-
-
-
 		if (LastOn)
 		{
 			RF_Command(RF_COMMAND_POWER_OFF, 20);
@@ -408,32 +341,26 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 			LastOn = false;
 			Locked = false;
 			NeedLock = true;
-			printf("Turn OFF when park \r\n");
+			printf("Turn OFF  \r\n");
 		}
 		else
 		{
-			if ((SecondsSinceStart - LastTagGetTime > TIME_OUT_LOCK) 
+			if ((TenthSecondsSinceStart - LastTagGetTime > TIME_OUT_LOCK) 
 				&& (LastTagGetTime != 0)
 				&&(!Locked)
 				&&NeedLock
 				)
 			{
-				if (!Home)
-				{
-					delay(1000);
-					RF_Command(RF_COMMAND_LOCK, 20);
-					Locked = true;
-					printf("Lock not at home \r\n");
-				} 
-				else
-				{
-					NeedLock = false;
-					printf("Do not Lock at home \r\n");
-				}
+
+				delay(1000);
+				RF_Command(RF_COMMAND_LOCK, 20);
+				Locked = true;
+				printf("Lock \r\n");
+
 
 			}
 
-			if ((SecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&Locked)
+			if ((TenthSecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&Locked)
 			{
 				RF_Command(RF_COMMAND_POWER_OFF, 20);
 				delay(300);
@@ -444,11 +371,14 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 			}
 		}
 	} 
-	else
+	else//to on
 	{
-		if((SecondsSinceStart - LastTagGetTime < TIME_OUT_LOCK) && (LastTagGetTime != 0)&&(!LastOn))
+		if(!LastOn)
 		{
 			printf("Turn ON \r\n");
+
+			UnLock();
+
 			RF_Command(RF_COMMAND_POWER_ON, 20);
 			delay(300);
 			RF_Command(RF_COMMAND_POWER_ON, 20);
@@ -459,55 +389,10 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 			LastOn = true;
 			Locked = false;
 		}
-
-
-		if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_LOCK) && (LastHomeGetTime != 0))
-		{
-			Home = true;
-		}
-		else
-		{
-			if((Home)&&(!LastOn)&&(!Locked))
-			{
-				RF_Command(RF_COMMAND_LOCK, 20);
-				Locked = true;
-#ifdef DEGBUG_OUTPUT
-				printf("Lock! leaving home without power on \r\n");
-#endif
-			}
-			Home = false;
-		}
 	}
 }
 
-//void OnKeyPress()
-//{
-//	if (LastOn)
-//	{
-//		RF_Command(RF_COMMAND_POWER_OFF,10);//Unlock, powerOFF
-//		LastOn = false;
-//		Locked = false;
-//		Auto = false;
-//
-//#ifdef DEGBUG_OUTPUT
-//		printf("Turn OFF manually \r\n");
-//#endif
-//	}
-//	else
-//	{
-//		//powerON
-//		RF_Command(RF_COMMAND_POWER_ON,10);
-//		delay(300);
-//		RF_Command(RF_COMMAND_POWER_ON,10);
-//		LastOn = true;
-//		Locked = false;
-//		Auto = true;
-//
-//#ifdef DEGBUG_OUTPUT
-//		printf("Turn ON manually \r\n");
-//#endif
-//	}
-//}
+
 
 void nRFTask()
 {
@@ -525,24 +410,9 @@ void nRFTask()
 
 		if (GotData[0] == 0)
 		{
-			LastTagGetTime = SecondsSinceStart;
+			LastTagGetTime = TenthSecondsSinceStart;
 		}
-		else if (GotData[0] == 1)
-		{
-#ifdef DEGBUG_OUTPUT
-			printf("LastHomeGetTime offset = %d \r\n", SecondsSinceStart - LastHomeGetTime);
-#endif
-			LastHomeGetTime = SecondsSinceStart;
-		}
-		else if (GotData[0] == 2)
-		{
-			LastTagGetTime = SecondsSinceStart;
-			if (millis() - LastKeyGetTime > 2000)
-			{
-				LastKeyGetTime = millis();
-				//OnKeyPress();
-			}
-		}
+
 
 #ifdef DEGBUG_OUTPUT
 		Serial.print(PackageCounter);
@@ -560,14 +430,14 @@ void nRFTask()
 }
 void ChHopTask()
 {
-	if (SecondsSinceStart - LastChangeCHTime > 0)             //RF_HOP every seconds
+	if (TenthSecondsSinceStart - LastChangeCHTime > 10)             //RF_HOP every seconds
 	{
 		CurrCH++;
 		if (CurrCH > 2)
 		{
 			CurrCH = 0;
 		}
-		LastChangeCHTime = SecondsSinceStart;
+		LastChangeCHTime = TenthSecondsSinceStart;
 		radio.stopListening();
 		radio.setChannel(HopCH[CurrCH]);
 		radio.startListening();
@@ -628,11 +498,139 @@ unsigned long LastMillis = 0;
 void SecondsSinceStartTask()
 {
 	unsigned long CurrentMillis = millis();
-	if (abs(CurrentMillis - LastMillis) > 1000)
+	if (abs(CurrentMillis - LastMillis) > 100)
 	{
 		LastMillis = CurrentMillis;
-		SecondsSinceStart++;
-		OnSecond();
+		TenthSecondsSinceStart++;
+		OnTenthSecond();
 		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
+	}
+}
+
+void ShowLockState_task()
+{
+	bool LockMotoSwitch;
+	bool LockStateSwitch;
+	static unsigned char i = 0;
+
+
+	LockMotoSwitch = GetSwitchState(LOCK_MOTO);
+	if (LastLockMotoSwitch != LockMotoSwitch)
+	{
+		LastLockMotoSwitch = LockMotoSwitch;
+		i++;
+		printf("%d LockMotoSwitch changed to: %d \r\n",i,LastLockMotoSwitch);
+	} 
+
+	LockStateSwitch = GetSwitchState(LOCK_STATE);
+	if (LastLockStateSwitch != LockStateSwitch)
+	{
+		LastLockStateSwitch = LockStateSwitch;
+		i++;
+		printf("%d LockStateSwitch changed to: %d \r\n",i,LastLockStateSwitch);
+	} 
+}
+
+
+void InitLock()
+{
+	//if (!digitalRead(LOCK_MOTO))
+	//{
+	//	return;
+	//}
+	LockMotoOn();
+	delay(300);
+	while (!digitalRead(LOCK_MOTO))
+	{
+	}
+	LockMotoOff();
+}
+void UnLock()
+{
+	unsigned long MotoOnTenthSeconds = TenthSecondsSinceStart;
+	if(IsLock())
+	{
+		LockMotoOn();
+		while (GetSwitchState(LOCK_STATE))
+		{
+			SecondsSinceStartTask();
+			if(TenthSecondsSinceStart - MotoOnTenthSeconds>LOCK_MOTO_MAX_TIME) break;
+		}
+		printf("UnLock OK  \r\n");
+
+		while (!GetSwitchState(LOCK_MOTO))
+		{
+			SecondsSinceStartTask();
+			if(TenthSecondsSinceStart - MotoOnTenthSeconds>LOCK_MOTO_MAX_TIME) break;
+		}
+		printf("reset moto 1  \r\n");
+
+		while (GetSwitchState(LOCK_MOTO))
+		{
+			SecondsSinceStartTask();
+			if(TenthSecondsSinceStart - MotoOnTenthSeconds>LOCK_MOTO_MAX_TIME) break;
+		}
+		printf("reset moto 2  \r\n");
+
+
+		while (!GetSwitchState(LOCK_MOTO))
+		{
+			SecondsSinceStartTask();
+			if(TenthSecondsSinceStart - MotoOnTenthSeconds>LOCK_MOTO_MAX_TIME) break;
+		}
+		printf("reset moto 3  \r\n");
+
+		printf("Unlock time = %d  \r\n",TenthSecondsSinceStart - MotoOnTenthSeconds);
+
+		LockMotoOff();
+	}
+	else
+	{
+		printf("Already unlocked  \r\n");
+	}
+
+
+}
+bool IsLock()
+{
+	return (GetSwitchState(LOCK_STATE));
+}
+
+void LockMotoOff()
+{
+	digitalWrite(RELAY, LOW);
+}
+void LockMotoOn()
+{
+	digitalWrite(RELAY, HIGH);
+}
+
+bool GetSwitchState(unsigned char Switch)
+{
+#define AVG 100
+	unsigned char i;
+	unsigned char Key = 0;
+	//bool State;
+
+	for (i=0;i<AVG;i++)
+	{
+		//State = digitalRead(Switch);
+		//printf("key type = %d  State = %d  \r\n",Switch,State);
+		if (digitalRead(Switch))
+		{
+			Key ++;
+		}
+
+	}
+
+	//printf("key type = %d  value = %d  \r\n",Switch,Key);
+
+	if (Key > (AVG/2))
+	{
+		return true;
+	} 
+	else
+	{
+		return false;
 	}
 }
