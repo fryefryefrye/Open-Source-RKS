@@ -49,10 +49,10 @@ bool UnitShowed = false;
 #define CURRENT_INPUT 6
 
 
-#define CURRENT_MIDDLE 510
-#define CURRENT_DEAD 3
-
+#define CURRENT_MIDDLE 515
+#define CURRENT_DEAD 10
 #define CURRENT_RATE 74  //2.5/512*1000/66*1000 ma
+
 #define VOLT_RATE 62
 
 
@@ -681,11 +681,11 @@ void GetMeasurementData()
 		//standing by discharge
 		DisCharge = DisCharge + (ScreenOn ? 80 : 35);
 
-
+      printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
 
 		if (Current > (CURRENT_MIDDLE + CURRENT_DEAD))//Charge
 		{
-			//printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
+			printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
 			Current = Current - CURRENT_MIDDLE;
 			Current = Current*CURRENT_RATE;          //2.5/512*1000/66*1000 ma
 

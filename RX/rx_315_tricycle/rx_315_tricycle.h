@@ -5,7 +5,7 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 //#define TIME_OUT_TURN_OFF_BIKE 90		//s
 #define TIME_OUT_LOCK 300  //s
 //#define WAIT_KEY_IN_HOME_INTERVAL 10
-//#define TIME_OUT_HOME 60
+#define TIME_OUT_HOME 600
 #define DATA_LENGTH 4					//use fixed data length 1-32
 //#define BUZZON 1000				//set lenght of the buzz
 //#define BUZZOFF 30000			//set interval of the buzz
@@ -48,7 +48,7 @@ bool Locked = false;
 bool NeedLock = false;
 //unsigned long TrunOffTime = 0;
 bool MainOnOff = false;
-//bool Home = false;
+bool Home = false;
 
 #define LOCK_STATE 3
 #define LOCK_MOTO 4
@@ -329,10 +329,19 @@ void loop()
 
 
 
-void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on park, 
+void RF_task() 
 {
 	if (!MainOnOff)//to off
 	{
+
+		if ((TenthSecondsSinceStart - LastHomeGetTime < TIME_OUT_HOME) && (LastHomeGetTime != 0))
+		{
+			Home = true;
+		}
+		else
+		{
+			Home = false;
+		}
 		if (LastOn)
 		{
 			RF_Command(RF_COMMAND_POWER_OFF, 20);
@@ -351,11 +360,18 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 				&&NeedLock
 				)
 			{
-
-				delay(1000);
-				RF_Command(RF_COMMAND_LOCK, 20);
-				Locked = true;
-				printf("Lock \r\n");
+				if (!Home)
+				{
+					delay(1000);
+					RF_Command(RF_COMMAND_LOCK, 20);
+					Locked = true;
+					printf("Lock not at home \r\n");
+				} 
+				else
+				{
+					NeedLock = false;
+					printf("Do not Lock at home \r\n");
+				}
 
 
 			}
@@ -411,6 +427,13 @@ void nRFTask()
 		if (GotData[0] == 0)
 		{
 			LastTagGetTime = TenthSecondsSinceStart;
+		}
+		else if (GotData[0] == 1)
+		{
+#ifdef DEGBUG_OUTPUT
+			printf("LastHomeGetTime offset = %d \r\n", TenthSecondsSinceStart - LastHomeGetTime);
+#endif
+			LastHomeGetTime = TenthSecondsSinceStart;
 		}
 
 
