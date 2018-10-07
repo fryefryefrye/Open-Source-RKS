@@ -383,18 +383,8 @@ void loop()
 
 void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on park, 
 {
-
-
-
-
-
-
-
-
-
 	if (Park)
 	{
-
 		if ((SecondsSinceStart - LastHomeGetTime < TIME_OUT_HOME) && (LastHomeGetTime != 0))
 		{
 			Home = true;
@@ -403,7 +393,6 @@ void RF_task() // alarm on/off by tag, do not lock at home,  on/off depend on pa
 		{
 			Home = false;
 		}
-
 
 
 		if (LastOn)

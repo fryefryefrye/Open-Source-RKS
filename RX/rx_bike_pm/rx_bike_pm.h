@@ -38,6 +38,10 @@ unsigned long LastCharge = 0;//ma* s
 unsigned long Capability = 72000000;
 unsigned long FullVolt; //mV
 unsigned long Current; //mA
+
+unsigned long CurrentRead; //mA
+
+
 bool OnCharge = false; 
 bool ScreenOn = false; 
 bool UnitShowed = false;
@@ -49,11 +53,11 @@ bool UnitShowed = false;
 #define CURRENT_INPUT 6
 
 
-#define CURRENT_MIDDLE 515
-#define CURRENT_DEAD 10
+#define CURRENT_MIDDLE 516
+#define CURRENT_DEAD 3
 #define CURRENT_RATE 74  //2.5/512*1000/66*1000 ma
 
-#define VOLT_RATE 62
+#define VOLT_RATE 60
 
 
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
@@ -91,6 +95,7 @@ void ShowState();
 void ShowChargeInfo();
 void TenthSecondsSinceStartTask();
 void GetMeasurementData();
+void SendVolt();
 
 
 
@@ -113,7 +118,7 @@ void setup()
 #endif
 
 	radio.begin();
-	radio.setPALevel(RF24_PA_MIN);
+	radio.setPALevel(RF24_PA_MAX);
 	radio.setAddressWidth(5);
 	radio.setPayloadSize(4);
 	radio.setDataRate(RF24_2MBPS); //RF24_250KBPS  //RF24_2MBPS     //RF24_1MBPS
@@ -379,20 +384,72 @@ void nRFTask()
 }
 void ChHopTask()
 {
-	if (SecondsSinceStart - LastChangeCHTime > 0)             //RF_HOP every seconds
+	static unsigned long RandDelay = 0;
+	if (abs( millis() - LastChangeCHTime>RandDelay))//RF_HOP (random 0-2s)
 	{
+
 		CurrCH++;
-		if (CurrCH > 2)
+		if (CurrCH>2)
 		{
 			CurrCH = 0;
 		}
-		LastChangeCHTime = SecondsSinceStart;
+		LastChangeCHTime = millis();
+
+
+		RandDelay = random(5000);
+
 		radio.stopListening();
 		radio.setChannel(HopCH[CurrCH]);
-		radio.startListening();
+		printf("CH change \r\n");
 
-		//printf("CH change \r\n");
+		delay(10);
+		SendVolt();
+		printf("send volt \r\n");
+		delay(10);
+
+		radio.startListening();
 	}
+
+
+	//if (SecondsSinceStart - LastChangeCHTime > 0)             //RF_HOP every seconds
+	//{
+	//	CurrCH++;
+	//	if (CurrCH > 2)
+	//	{
+	//		CurrCH = 0;
+	//	}
+	//	LastChangeCHTime = SecondsSinceStart;
+	//	radio.stopListening();
+	//	radio.setChannel(HopCH[CurrCH]);
+
+	//	delay(10);
+	//	SendBeacon();
+	//	delay(10);
+
+	//	radio.startListening();
+
+	//	//printf("CH change \r\n");
+	//}
+}
+
+void SendVolt()
+{
+
+
+	GotData[0] = 5;
+	GotData[1] = FullVolt>>16&0xFF;
+	GotData[2] = FullVolt>>8&0xFF;
+	GotData[3] = FullVolt&0xFF;
+
+
+	//GotData[0] = 5;
+	//GotData[1] = CurrentRead>>16&0xFF;
+	//GotData[2] = CurrentRead>>8&0xFF;
+	//GotData[3] = CurrentRead&0xFF;
+
+
+
+	radio.write(GotData, 4);
 }
 
 unsigned long LastMillis = 0;
@@ -671,17 +728,16 @@ void GetMeasurementData()
 		FullVolt = AnalogReadVolt/10;
 		Current = AnalogReadCurrent/10;
 
-		//printf("FullVolt  %d \r\n",FullVolt);
-		
-
+		CurrentRead = Current;
 
 		FullVolt = FullVolt*VOLT_RATE;
+		printf("FullVolt  %d \r\n",FullVolt);
 
 
 		//standing by discharge
 		DisCharge = DisCharge + (ScreenOn ? 80 : 35);
 
-      printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
+        printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
 
 		if (Current > (CURRENT_MIDDLE + CURRENT_DEAD))//Charge
 		{
@@ -689,7 +745,7 @@ void GetMeasurementData()
 			Current = Current - CURRENT_MIDDLE;
 			Current = Current*CURRENT_RATE;          //2.5/512*1000/66*1000 ma
 
-			printf("Charge Current =  %d \r\n",Current);
+			printf("Charge Current =  %d mA.\r\n",Current);
 
 
 			Charge = Charge + Current;
@@ -714,12 +770,11 @@ void GetMeasurementData()
 		} 
 		else if (Current < (CURRENT_MIDDLE - CURRENT_DEAD))//DisCharge
 		{
-			//printf("analogRead(CURRENT_INPUT)  %d \r\n",Current);
 			Current =  CURRENT_MIDDLE - Current;
 			Current = Current*CURRENT_RATE;          //2.5/512*1000/66*1000 ma
 			DisCharge = DisCharge + Current;
 
-			printf("DisCharge Current =  %d \r\n",Current);
+			printf("DisCharge Current =  %d mA.\r\n",Current);
 			printf("DisCharge mah %d \r\n",DisCharge/3600);
 
 

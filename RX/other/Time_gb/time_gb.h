@@ -545,9 +545,8 @@ void setup()
 
 
 
-	WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
-	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4196\r\n"));
-	_esp8266_waitFor("OK\r\n");
+	//WIFI_SERIAL.print(F("AT+CIPSSLSIZE=4096\r\n"));
+	//_esp8266_waitFor("OK\r\n");
 
 
 	StartNTP();
@@ -761,42 +760,42 @@ bool GetNow()
 	_esp8266_waitFor("CLOSED\r\n");
 
 }
-bool GetForcast(unsigned char Day,unsigned char Postion)
-{
-
-	HttpForcast[90]=Day+0x30;
-
-
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
-	_esp8266_waitFor("OK\r\n");
-
-	WIFI_SERIAL.print(F("AT+CIPSEND="));
-	WIFI_SERIAL.print(sizeof(HttpForcast));
-	WIFI_SERIAL.print(F("\r\n"));
-
-	_esp8266_waitFor("OK\r\n>");
-
-	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
-	{
-		WIFI_SERIAL.print(HttpForcast[i]);
-	}
-
-	if(!_esp8266_waitFor("200 OK")) return false;
-
-	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherCode[Postion][1] = 0;
-	}
-	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
-	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,3); 
-
-	//Weather[Postion][2] = '~';
-
-	_esp8266_waitFor("CLOSED\r\n");
-
-}
+//bool GetForcast(unsigned char Day,unsigned char Postion)
+//{
+//
+//	HttpForcast[90]=Day+0x30;
+//
+//
+//	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+//	_esp8266_waitFor("OK\r\n");
+//
+//	WIFI_SERIAL.print(F("AT+CIPSEND="));
+//	WIFI_SERIAL.print(sizeof(HttpForcast));
+//	WIFI_SERIAL.print(F("\r\n"));
+//
+//	_esp8266_waitFor("OK\r\n>");
+//
+//	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
+//	{
+//		WIFI_SERIAL.print(HttpForcast[i]);
+//	}
+//
+//	if(!_esp8266_waitFor("200 OK")) return false;
+//
+//	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+//	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherCode[Postion][1] = 0;
+//	}
+//	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
+//	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,3); 
+//
+//	//Weather[Postion][2] = '~';
+//
+//	_esp8266_waitFor("CLOSED\r\n");
+//
+//}
 
 
 bool GetAvaForcast(unsigned char StartDay)
@@ -804,7 +803,8 @@ bool GetAvaForcast(unsigned char StartDay)
 
 	unsigned char Postion = 0;
 	unsigned char Temp = 0;
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
+	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.15\",440\r\n"));
 	_esp8266_waitFor("OK\r\n");
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));

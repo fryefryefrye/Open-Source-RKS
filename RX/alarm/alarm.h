@@ -17,13 +17,17 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 #define ALARM_AUDIO_LIMIT 600  //0.1s
 #define ALARM_FLASH_LIMIT 6000  //0.1s
 
-#define BUZZ 9
-#define LIGHT 10
-#define ALARM_FLASH 6
+
 
 #define BIKE_CHECK1 2
 #define BIKE_CHECK2 3
 #define BIKE_CHECK3 4
+
+#define ALARM_FLASH 6
+//D7,D8 for RF24
+#define BUZZ 9
+#define LIGHT 10
+
 
 #define AUDIO1 A0
 #define AUDIO2 A1
