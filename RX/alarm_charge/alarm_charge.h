@@ -13,22 +13,23 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 
 #define TIME_OUT_KEY 100  //0.1s
 #define BIKE_CHECK_TIME 10  //0.1s
-#define PRE_ALARM_TIME 200  //0.1s
+#define PRE_ALARM_TIME 300  //0.1s
 #define ALARM_AUDIO_LIMIT 600  //0.1s
 #define ALARM_FLASH_LIMIT 6000  //0.1s
 #define DATA_UPDATE_INTERVAL 10 //0.1s
 #define WIFI_COMMAND_LEN 5
+#define OFF_LINE_CHARGE_TIME 3600 //s
 
 
 //analogWrite() on pins 3, 5, 6, 9, 10, and 11
 
 //D2,D3 for SoftwareSerial
-#define BAT_CHK_1 4
-#define BAT_CHK_2 5
+#define CHARGE_SWITCH_1 4
+#define CHARGE_SWITCH_2 5
 #define  AUDIO 6
 //D7,D8 for RF24
 #define BUZZ 9
-#define CHARGE_SWITCH 10
+//#define 10
 //D11,D12,D13 for RF24
 
 
@@ -55,9 +56,13 @@ SoftwareSerial SoftSerial(2, 3); //rx 2,tx 3
 
 #include <Wire.h>
 #include "Adafruit_INA219.h"
-
 Adafruit_INA219 ina219_1(INA219_ADDRESS);
 Adafruit_INA219 ina219_2(INA219_ADDRESS+1);
+
+
+#include "Adafruit_ADS1015.h"
+// Adafruit_ADS1115 ads;  /* Use this for the 16-bit version */
+Adafruit_ADS1015 ads;     /* Use thi for the 12-bit version */
 
 
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */
@@ -85,7 +90,6 @@ bool Tag = false;
 bool AlarmOn = false;
 unsigned long AlarmOnCounter = 0;
 bool BikeChecked[2] = {false,false};
-unsigned long * BikeState;
 unsigned char UnChangeCounter[2];
 unsigned char BickCheckCounter = 0;
 bool WifiOK = false;
@@ -95,18 +99,11 @@ bool RecvDataOK = false;
 unsigned int WaitForTimeOut = 300;
 bool RecvStater = false;
 
+unsigned long ChargeControlTimer[2];
+
+
 #include "Z:\bt\web\datastruct.h"
-//struct tUpdateData
-//{
-//	unsigned long volt_1 ;			//0.1v
-//	unsigned long volt_2 ;			//0.1v
-//	unsigned long volt_3 ;			//0.1v
-//	unsigned long Current ;		//mA
-//	unsigned long  Connected_1 ;
-//	unsigned long  Connected_2 ;
-//	unsigned long  Connected_3 ;
-//	unsigned long Sum;
-//};
+
 
 tUpdateData UpdateData;
 
@@ -137,29 +134,19 @@ void setup()
 	pinMode(AUDIO, OUTPUT);
 	pinMode(FLASH, OUTPUT);
 
-		digitalWrite(LIGHT, HIGH);
-		digitalWrite(ALARM, HIGH);
-		digitalWrite(FLASH, HIGH);
-		digitalWrite(POWER, HIGH);
+	digitalWrite(LIGHT, HIGH);
+	digitalWrite(ALARM, HIGH);
+	digitalWrite(FLASH, HIGH);
+	digitalWrite(POWER, HIGH);
 
-
-		//digitalWrite(AUDIO, HIGH);
-		
-
-
-	pinMode(CHARGE_SWITCH, OUTPUT);
-
-
-
-	pinMode(BAT_CHK_1, INPUT_PULLUP);
-	pinMode(BAT_CHK_2, INPUT_PULLUP);
-
-
+	pinMode(CHARGE_SWITCH_1, OUTPUT);
+	pinMode(CHARGE_SWITCH_2, OUTPUT);
 
 	SoftSerial.begin(115200);
 
 	ina219_1.begin();
 	ina219_2.begin();
+	ads.begin();
 
 #ifdef DEGBUG_OUTPUT
 	Serial.begin(115200);
@@ -196,21 +183,21 @@ void setup()
 	WaitForTimeOut = 300;
 
 
-	UpdateData.volt_1 = 0;
-	UpdateData.volt_2 = 0;
-
-	UpdateData.volt_1_updateTime = 0;
-	UpdateData.volt_2_updateTime = 0;
+	UpdateData.volt[0] = 0;
+	UpdateData.volt[1] = 0;
 
 
+	UpdateData.Current[0]  = 0;		//mA
+	UpdateData.Current[1]  = 0;		//mA
+	UpdateData.Connected[0] = false;
+	UpdateData.Connected[1] = false;
+	UpdateData.ChargeON[0]  = false;
+	UpdateData.ChargeON[1]  = false;
+	ChargeControlTimer[0] = 0;
+	ChargeControlTimer[1] = 0;
+	UpdateData.DataType = 1;
 
-	UpdateData.Current_1  = 0;		//mA
-	UpdateData.Current_2  = 0;		//mA
-	UpdateData.Connected_1 = false;
-	UpdateData.Connected_2 = false;
-	UpdateData.ChargeON  = true;
 
-	BikeState = &(UpdateData.Connected_1);
 
 }
 
@@ -268,123 +255,151 @@ void OnTenthSecond()
 	if (RecvDataOK)
 	{
 		printf("Recv command = %d %d %d %d \r\n",RecvData[0],RecvData[1],RecvData[2],RecvData[3],RecvData[4]);
-		UpdateData.ChargeON = RecvData[0];
-		//UpdateData.ChargeON_2 = RecvData[1];
+		UpdateData.ChargeON[0] = RecvData[0];
+		UpdateData.ChargeON[1] = RecvData[1];
 		RecvDataOK = false;
 	}
 
 
 
 	float Current;
-	if (TenthSecondsSinceStart%10==0)
+	int16_t voltRaw;
+	/* Be sure to update this value based on the IC and the gain settings! */
+	//int16_t   multiplier = 112;    /* ADS1015 @ +/- 6.144V gain (12-bit results) */
+	//float multiplier = 0.1875F; /* ADS1115  @ +/- 6.144V gain (16-bit results) */
+	float multiplier = 50.6211180124224F;
+
+
+	if (TenthSecondsSinceStart%5==0)
 	{
-		float Current = ina219_1.getCurrent_mA();
+		digitalWrite(CHARGE_SWITCH_1, LOW);
+		voltRaw = ads.readADC_Differential_0_1(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		voltRaw = ads.readADC_Differential_0_1(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		voltRaw = ads.readADC_Differential_0_1(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		voltRaw = ads.readADC_Differential_0_1(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		voltRaw = ads.readADC_Differential_0_1(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		if (voltRaw < 0)
+		{
+			voltRaw = 0;
+		}
+		UpdateData.volt[0] = (unsigned long)(voltRaw * multiplier);
+		printf("volt1  =  %ld \r\n",UpdateData.volt[0]);
+		UpdateData.Connected[0] = (UpdateData.volt[0] > 30000);
+
+		if (UpdateData.ChargeON[0])
+		{
+			digitalWrite(CHARGE_SWITCH_1, HIGH);
+		}
+
+	}
+
+	if (TenthSecondsSinceStart%5==1)
+	{
+		digitalWrite(CHARGE_SWITCH_2, LOW);
+		voltRaw = ads.readADC_Differential_2_3(); 
+		voltRaw = ads.readADC_Differential_2_3(); 
+		voltRaw = ads.readADC_Differential_2_3(); 
+		voltRaw = ads.readADC_Differential_2_3(); 
+		voltRaw = ads.readADC_Differential_2_3(); 
+		//printf("volt raw  =  %d \r\n",voltRaw);
+		if (voltRaw < 0)
+		{
+			voltRaw = 0;
+		}
+		UpdateData.volt[1] = (unsigned long)(voltRaw * multiplier);
+		printf("volt2  =  %ld \r\n",UpdateData.volt[1]);
+		UpdateData.Connected[1] = (UpdateData.volt[1] > 30000);
+
+		if (UpdateData.ChargeON[1])
+		{
+			digitalWrite(CHARGE_SWITCH_2, HIGH);
+		}
+	}
+
+	if (TenthSecondsSinceStart%5==4)
+	{
+
+
+		Current = ina219_1.getCurrent_mA();
+		//printf("Current1 raw   =  %d \r\n",Current);
 		if (Current < 0)
 		{
 			Current = 0;
 		}
-		UpdateData.Current_1 = Current;
-		//UpdateData.Current_2 = ina219_2.getCurrent_mA();
+		UpdateData.Current[0] = Current;
+		printf("Current[0]   =  %d \r\n",UpdateData.Current[0]);
 
-
-		//printf("current  =  %d \r\n",UpdateData.Current);
-
-		unsigned int testvolt = ina219_1.getBusVoltage_V()*1000;
-
-		printf("test volt  =  %d \r\n",testvolt);
-
-		//UpdateData.volt_1 = analogRead(CHARGE_VOLT_1);
-		//printf("volt  =  %d \r\n",UpdateData.volt_1);
-
-	}
-
-	if (TenthSecondsSinceStart%10==5)
-	{
-		//UpdateData.Current_1 = ina219_1.getCurrent_mA();
-		float Current = ina219_2.getCurrent_mA();
+		Current = ina219_2.getCurrent_mA();
+		//printf("Current2 raw   =  %d \r\n",Current);
 		if (Current < 0)
 		{
 			Current = 0;
 		}
-		UpdateData.Current_2 = Current;
-
-
-		//printf("current  =  %d \r\n",UpdateData.Current);
-
-		//UpdateData.volt_1 = analogRead(CHARGE_VOLT_1);
-		//printf("volt  =  %d \r\n",UpdateData.volt_1);
-
+		UpdateData.Current[1] = Current;
+		printf("Current[1]  =  %d \r\n",UpdateData.Current[1]);
 	}
-
-	if (TenthSecondsSinceStart%1==0)
-	{
-
-		digitalWrite(CHARGE_SWITCH, LOW);
-		delay(1);
-		UpdateData.Connected_1 = !digitalRead(BAT_CHK_1);
-		UpdateData.Connected_2 = !digitalRead(BAT_CHK_2);
-		//printf("INPUT_TEST 2  =  %s \r\n",(UpdateData.Connected_1?"Yes":"No"));
-		if (UpdateData.ChargeON)
-		{
-			digitalWrite(CHARGE_SWITCH, HIGH);
-		}
-
-	}
-
 
 	if (TenthSecondsSinceStart%10==0)
 	{
-		UpdateData.volt_1_updateTime++;
-		UpdateData.volt_2_updateTime++;
+
+		//Off line chagre off
+		for (unsigned char i = 0; i < 2; i++)
+		{
+			if (UpdateData.ChargeON[i])
+			{
+				ChargeControlTimer[i]--;
+				if (ChargeControlTimer[i] == 0)
+				{
+					UpdateData.ChargeON[i] = 0;
+				}
+			} 
+		}
+
+		if ((UpdateData.ChargeON[0])||(UpdateData.ChargeON[1]))
+		{
+			digitalWrite(POWER, LOW);
+		}
+		else
+		{
+			digitalWrite(POWER, HIGH);
+		}
+
+
+		//static bool test;
+		//test = !test;
+		//digitalWrite(POWER, test);
 	}
-
-	//if (TenthSecondsSinceStart%20==0)
-	//{
-
-	//	digitalWrite(LIGHT, HIGH);
-	//	digitalWrite(ALARM, HIGH);
-	//	digitalWrite(FLASH, HIGH);
-	//	digitalWrite(POWER, HIGH);
-	//	printf("test relay High \r\n");
-
-	//}
-
-	//if (TenthSecondsSinceStart%20==10)
-	//{
-
-	//	digitalWrite(LIGHT, LOW);
-	//	digitalWrite(ALARM, LOW);
-	//	digitalWrite(FLASH, LOW);
-	//	digitalWrite(POWER, LOW);
-	//	printf("test relay Low \r\n");
-
-	//}
-
-
 
 
 	for (unsigned char i = 0; i < 2; i++)
 	{
-
-
-
-		if (BikeChecked[i] != BikeState[i]) 
+		if (BikeChecked[i] != UpdateData.Connected[i]) 
 		{
 			UnChangeCounter[i]++;
 
 			if (UnChangeCounter[i] > BIKE_CHECK_TIME)
 			{
-				BikeChecked[i] = BikeState[i];
+				BikeChecked[i] = UpdateData.Connected[i];
 				UnChangeCounter[i] = 0;
 				printf("Bike checked[%d] =  %d \r\n",i,BikeChecked[i]);
 
 				if (BikeChecked[i])
 				{
+					//Off line chagre on
+					UpdateData.ChargeON[i] = 1;
+					ChargeControlTimer[i] = OFF_LINE_CHARGE_TIME;
 					AlarmOn = false;
 					Buzz = 2;
 				} 
 				else//disconnect
 				{
+					UpdateData.ChargeON[i] = 0;
+					ChargeControlTimer[i] = 0;
 					Buzz = 1;
 					if (Tag == false)
 					{
@@ -520,22 +535,6 @@ void nRFTask()
 			//    OnKeyPress();
 			//}
 		}
-		else if (GotData[0] == 5)
-		{
-			UpdateData.volt_1_updateTime = 0;
-			UpdateData.volt_1 = 0;
-			UpdateData.volt_1 = UpdateData.volt_1 + GotData[1];
-			UpdateData.volt_1 = UpdateData.volt_1 << 8;
-			UpdateData.volt_1 = UpdateData.volt_1 + GotData[2];
-			UpdateData.volt_1 = UpdateData.volt_1 << 8;
-			UpdateData.volt_1 = UpdateData.volt_1 + GotData[3];
-			printf("Get volt  = %d V \r\n", UpdateData.volt_1/1000);
-
-			printf("Get test data  = %d V \r\n", UpdateData.volt_1);
-		}
-
-
-
 	}
 
 }
@@ -676,7 +675,7 @@ void ESP8266_Check()
 				}
 				else
 				{
-					printf("Recv data check failed \r\n");
+					//printf("Recv data check failed \r\n");
 				}
 				RecvStater = false;
 				StoreData = false;
@@ -687,90 +686,8 @@ void ESP8266_Check()
 			}
 			break;
 		}
-		//a = SoftSerial.read();
-		//if ((!RecvStater)&&(a == '+'))
-		//{
-		//	if (!_esp8266_waitFor("IPD,")) return;
-
-		//	RecvStater = true;
-		//	return;
-		//}
-
-		//if ((RecvStater)&&(RecvLen == 0))
-		//{
-		//	RecvLen = a - 0x30;
-		//	if(RecvLen != WIFI_COMMAND_LEN)
-		//	{
-		//		printf("Recv wrong len \r\n");
-		//		RecvStater = false;
-		//		RecvLen = 0;
-		//		return;
-		//	}
-		//	return;
-		//	//printf("RecvLen = %d \r\n",RecvLen);
-		//}
-
-		//if ((RecvStater)&&(RecvLen != 0)&&(!StoreData))
-		//{
-		//	if (a ==':')
-		//	{
-		//		StoreData = true;
-		//		return;
-		//	}
-		//	else
-		//	{
-		//		printf("Recv wrong len, >=10 \r\n");
-		//		RecvStater = false;
-		//		RecvLen = 0;
-		//		return;
-		//	}
-
-		//}
-
-		//if (StoreData)
-		//{
-
-		//	RecvData[RecvCounter] = a;
-		//	RecvCounter++;
-		//	if (RecvCounter >= WIFI_COMMAND_LEN)
-		//	{
-		//		RecvDataOK = true;
-		//		RecvStater = false;
-		//		StoreData = false;
-		//		RecvLen = 0;
-		//		RecvCounter = 0;
-		//		//printf("Recv data = %c%c%c%c%c \r\n",RecvData[0],RecvData[1],RecvData[2],RecvData[3],RecvData[4]);
-		//	}
-
-		//}
 	}
-
-	//if (Serial.available()) 
-	//{
-	//	a = Serial.read();
-	//	SoftSerial.write(a);
-	//}
-
 }
-
-//bool CheckResponse(unsigned char GetData,const char * ExpectResponse)
-//{
-//	static  char CheckedBytePostion = -1;
-//	if (GetData == ExpectResponse[CheckedBytePostion+1])
-//	{
-//		CheckedBytePostion++;
-//		if(ExpectResponse[CheckedBytePostion+1] == 0)
-//		{
-//			return true;
-//		}
-//	}
-//	else
-//	{
-//		CheckedBytePostion = -1;
-//	}
-//
-//	return false;
-//}
 
 void WiFi_task()
 {
@@ -803,7 +720,7 @@ void WiFi_task()
 	{
 		if (TenthSecondsSinceStart - LastSendTime > DATA_UPDATE_INTERVAL)
 		{
-			printf("Start Data Update.\r\n");
+			//printf("Start Data Update.\r\n");
 
 			SoftSerial.print(F("AT+CIPSEND="));
 			SoftSerial.print(Len);
@@ -829,7 +746,7 @@ void WiFi_task()
 
 
 			if (!_esp8266_waitFor("OK")) return;
-			printf("Data Update OK \r\n");
+			//printf("Data Update OK \r\n");
 
 			LastSendTime = TenthSecondsSinceStart;
 
