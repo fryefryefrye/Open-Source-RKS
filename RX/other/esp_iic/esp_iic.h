@@ -15,9 +15,13 @@ catalex.taobao.com
 #include <time.h>
 #define timezone 8
 
-#include <Wire.h>
-#include "Adafruit_INA219.h"
-Adafruit_INA219 ina219_1(INA219_ADDRESS);
+//#include <Wire.h>
+//#include "Adafruit_INA219.h"
+//Adafruit_INA219 ina219_1(INA219_ADDRESS);
+
+#include <Wire.h>     //The DHT12 uses I2C comunication.
+#include "DHT12.h"
+DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
 
 
 #include <SoftwareSerial.h>
@@ -89,7 +93,9 @@ void setup()
 
 
 
-	ina219_1.begin();
+	//ina219_1.begin();
+
+	Wire.begin();
 
 
 	swSer.begin(9600);
@@ -157,10 +163,31 @@ void OnTenthSecond()
 		Serial.printf("Light = %d \n",  Light);
 
 		//IIC∂¡»°
-		unsigned int Current = ina219_1.getCurrent_mA();
-		Serial.printf("Current  =  %d mA \r\n",Current);
-		unsigned int testvolt = ina219_1.getBusVoltage_V()*1000;
-		Serial.printf("test volt  =  %d mv \r\n",testvolt);
+		//unsigned int Current = ina219_1.getCurrent_mA();
+		//Serial.printf("Current  =  %d mA \r\n",Current);
+		//unsigned int testvolt = ina219_1.getBusVoltage_V()*1000;
+		//Serial.printf("test volt  =  %d mv \r\n",testvolt);
+
+
+		swSer.enableRx(false);
+
+		Serial.print("Temperatura: ");
+		Serial.print(dht12.readTemperature());
+		//Read temperature with preset scale.
+		Serial.print("*C  Humedad: ");
+		//Serial.print(dht12.readHumidity());
+		//Read humidity.
+		//Serial.println("%RH");
+		//Serial.print("Temperatura: ");
+		//Serial.print(dht12.readTemperature(FAHRENHEIT));
+		////Read temperature as forced fahrenheit.
+		//Serial.println("*F");
+		//Serial.print("Temperatura: ");
+		//Serial.print(dht12.readTemperature(KELVIN));
+		////Read termperature as forced kelvin.
+		//Serial.println("*K");
+
+		swSer.enableRx(true);
 
 	}
 

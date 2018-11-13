@@ -98,8 +98,8 @@ unsigned char RecvData[WIFI_COMMAND_LEN];
 bool RecvDataOK = false;
 unsigned int WaitForTimeOut = 300;
 bool RecvStater = false;
-
 unsigned long ChargeControlTimer[2];
+unsigned long LastControlGetTime = 0;
 
 
 #include "Z:\bt\web\datastruct.h"
@@ -258,6 +258,7 @@ void OnTenthSecond()
 		UpdateData.ChargeON[0] = RecvData[0];
 		UpdateData.ChargeON[1] = RecvData[1];
 		RecvDataOK = false;
+		LastControlGetTime = TenthSecondsSinceStart;
 	}
 
 
@@ -288,7 +289,7 @@ void OnTenthSecond()
 			voltRaw = 0;
 		}
 		UpdateData.volt[0] = (unsigned long)(voltRaw * multiplier);
-		printf("volt1  =  %ld \r\n",UpdateData.volt[0]);
+		//printf("volt1  =  %ld \r\n",UpdateData.volt[0]);
 		UpdateData.Connected[0] = (UpdateData.volt[0] > 30000);
 
 		if (UpdateData.ChargeON[0])
@@ -312,7 +313,7 @@ void OnTenthSecond()
 			voltRaw = 0;
 		}
 		UpdateData.volt[1] = (unsigned long)(voltRaw * multiplier);
-		printf("volt2  =  %ld \r\n",UpdateData.volt[1]);
+		//printf("volt2  =  %ld \r\n",UpdateData.volt[1]);
 		UpdateData.Connected[1] = (UpdateData.volt[1] > 30000);
 
 		if (UpdateData.ChargeON[1])
@@ -332,7 +333,7 @@ void OnTenthSecond()
 			Current = 0;
 		}
 		UpdateData.Current[0] = Current;
-		printf("Current[0]   =  %d \r\n",UpdateData.Current[0]);
+		//printf("Current[0]   =  %d \r\n",UpdateData.Current[0]);
 
 		Current = ina219_2.getCurrent_mA();
 		//printf("Current2 raw   =  %d \r\n",Current);
@@ -341,7 +342,7 @@ void OnTenthSecond()
 			Current = 0;
 		}
 		UpdateData.Current[1] = Current;
-		printf("Current[1]  =  %d \r\n",UpdateData.Current[1]);
+		//printf("Current[1]  =  %d \r\n",UpdateData.Current[1]);
 	}
 
 	if (TenthSecondsSinceStart%10==0)
@@ -391,15 +392,24 @@ void OnTenthSecond()
 				if (BikeChecked[i])
 				{
 					//Off line chagre on
-					UpdateData.ChargeON[i] = 1;
-					ChargeControlTimer[i] = OFF_LINE_CHARGE_TIME;
+					if(TenthSecondsSinceStart - LastControlGetTime >600)
+					{
+						printf("Bike %d Off line chagre on \r\n",i);
+						UpdateData.ChargeON[i] = 1;
+						ChargeControlTimer[i] = OFF_LINE_CHARGE_TIME;
+					}
 					AlarmOn = false;
 					Buzz = 2;
+
 				} 
 				else//disconnect
 				{
-					UpdateData.ChargeON[i] = 0;
-					ChargeControlTimer[i] = 0;
+					//Off line chagre off
+					if(TenthSecondsSinceStart - LastControlGetTime >600)
+					{
+						UpdateData.ChargeON[i] = 0;
+						ChargeControlTimer[i] = 0;
+					}
 					Buzz = 1;
 					if (Tag == false)
 					{

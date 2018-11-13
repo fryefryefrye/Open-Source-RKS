@@ -40,25 +40,6 @@ void setup()
 
 void loop()
 {
-	//// 设置颜色，参数为 R G B，范围0-255
-	//uint32_t color = strip.Color(val, val, val);
-
-	//for(int i = 0; i < MAX_LED;i++)
-	//{
-	//	strip.setPixelColor(i, color);
-	//}
-
-	//// 下面是产生呼吸灯效果
-	//if(val>=255)
-	//	stat = SUB;
-	//if(val<=0)
-	//	stat = ADD;
-
-	//strip.show();
-	//delay(5);
-	//if(stat==SUB) val --;
-	//else if(stat==ADD) val++;
-
 
 
 	// 随机色流水
@@ -228,7 +209,7 @@ void loop()
 	//delay(200);
 
 
-
+//变换色
 static uint8_t mode = 0;
 static uint8_t r=0; 
 static uint8_t g=0; 

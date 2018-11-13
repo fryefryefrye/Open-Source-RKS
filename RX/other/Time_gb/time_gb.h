@@ -4,8 +4,8 @@
 
 
 void Hdot();
-void hc595senddata(byte data,byte data2,byte data3,byte data4);//·¢ËÍÉÏÏÂ°ëÆÁ£¬¸÷Ò»ÐÐÊý¾Ý¡£
-void hc138sacn(byte r);   //Êä³öÐÐÏß×´Ì¬ABCD £¨AµÍ,D¸ß)
+void hc595senddata(byte data,byte data2,byte data3,byte data4);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½
+void hc138sacn(byte r);   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ABCD ï¿½ï¿½Aï¿½ï¿½,Dï¿½ï¿½)
 void DataUpdate();
 bool GpsUpdate(unsigned char k);
 void PmUpdate(unsigned char   k  );
@@ -44,18 +44,18 @@ void WeatherCode2ChartIndex2(unsigned char Code,unsigned char * ChartIndex);
 
 
 
-#define RowA 45    		//ÐÐÐÅºÅ,Çý¶¯138  
+#define RowA 45    		//ï¿½ï¿½ï¿½Åºï¿½,ï¿½ï¿½ï¿½ï¿½138  
 #define RowB 46
 #define RowC 47
 #define RowD 48
-#define STB 49         //595 Ë¢ÐÂÏÔÊ¾  SS  
-#define CLK 50         //Ê±ÖÓ    SCK  
-#define OE 51 			//  Ê¹ÄÜ  
-#define R1 52          //ÉÏ°ëÆÁÁÐÐÅºÅÊä³ö    
-#define R2 53          //ÏÂ°ëÆÁÁÐÐÅºÅÊä³ö     
+#define STB 49         //595 Ë¢ï¿½ï¿½ï¿½ï¿½Ê¾  SS  
+#define CLK 50         //Ê±ï¿½ï¿½    SCK  
+#define OE 51 			//  Ê¹ï¿½ï¿½  
+#define R1 52          //ï¿½Ï°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿?   
+#define R2 53          //ï¿½Â°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿?    
 
-#define R3 44          //ÉÏ°ëÆÁÁÐÐÅºÅÊä³ö    
-#define R4 43          //ÏÂ°ëÆÁÁÐÐÅºÅÊä³ö    
+#define R3 44          //ï¿½Ï°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿?   
+#define R4 43          //ï¿½Â°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿?   
 
 //Display
 
@@ -116,7 +116,7 @@ unsigned long SecondsSinceStart = 0;
 unsigned char TimeOut = 30;
 
 
-//Çç¶àÔÆÒõÕóÓêÀ×Ð¡ÖÐ´ó±©Ñ©¶³¸¡³¾ÑïÉ³Îíö²·çì«Áú¾íÀäÈÈÎ´Öª
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Ð´ï¿½Ñ©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´Öª
 
 #define	KONG		0
 #define	QING	1
@@ -211,13 +211,13 @@ unsigned char Chart[] = {
 
 //http://blog.csdn.net/zhouyanldh/article/details/8558961
 /*
-ÏÔÊ¾Á÷³Ì:
-1:´«ËÍ595Êý¾Ý
-2:¹Ø±ÕEN 1£¬¹Ø±ÕÏÔÊ¾
-3:ÇÐ»»ÐÐÐÅÏ¢
-4:Ë¢ÐÂ595£¬STB
-5£º¿ªEN 0
-6:ÑÓÊ± (Ë¢ÐÂÂÊµ÷Õû)
+ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½:
+1:ï¿½ï¿½ï¿½ï¿½595ï¿½ï¿½ï¿½ï¿½
+2:ï¿½Ø±ï¿½EN 1ï¿½ï¿½ï¿½Ø±ï¿½ï¿½ï¿½Ê¾
+3:ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
+4:Ë¢ï¿½ï¿½595ï¿½ï¿½STB
+5ï¿½ï¿½ï¿½ï¿½EN 0
+6:ï¿½ï¿½Ê± (Ë¢ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½)
 */
 
 //8*16H
@@ -226,75 +226,74 @@ unsigned char Chart[] = {
 
 
 /***********************************************xyz
-ASCII×ÝÏòÈ¡Ä£8*16×Ö¿â¡£Îª1ÁÁ¡£
-×ÝÏòÈ¡Ä££¨8Î»£©(È¡ÍêÒ»ºáºóÔÙÈ¡ÏÂÒ»ºá)-LCD12864SPI
-Ã¿¸ö×Ö½Ú´ú±íÒ»ÁÐ8¸öÏñËØÖµ£¬Ã¿¸öASCIIÓÉ8*16/8=16¸ö×Ö½Ú´æ´¢£¬Ç°8¸ö×Ö½ÚÎªÉÏ°ë²¿·ÖÖµ£¬ºó8¸ö×Ö½ÚÎªÏÂ°ë²¿·ÖÖµ¡£
-¹²95¸ö£¬´Ó32(¿Õ¸ñ)µ½126¡£ASCII816[0]Îª¿Õ¸ñ¡£
-ASCIIÖµ¼õ32¼´ÎªÊý×é¶þÎ¬ÏÂ±ê¡£
-**************************************************/
+ASCIIï¿½ï¿½ï¿½ï¿½È¡Ä£8*16ï¿½Ö¿â¡£Îª1ï¿½ï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½ï¿½È¡Ä£ï¿½ï¿½8Î»ï¿½ï¿½(È¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½Ò»ï¿½ï¿?-LCD12864SPI
+Ã¿ï¿½ï¿½ï¿½Ö½Ú´ï¿½ï¿½ï¿½Ò»ï¿½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½Ã¿ï¿½ï¿½ASCIIï¿½ï¿½8*16/8=16ï¿½ï¿½ï¿½Ö½Ú´æ´¢ï¿½ï¿½Ç°8ï¿½ï¿½ï¿½Ö½ï¿½Îªï¿½Ï°ë²¿ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½8ï¿½ï¿½ï¿½Ö½ï¿½Îªï¿½Â°ë²¿ï¿½ï¿½Öµï¿½ï¿½
+ï¿½ï¿½95ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½32(ï¿½Õ¸ï¿½)ï¿½ï¿½126ï¿½ï¿½ASCII816[0]Îªï¿½Õ¸ï¿½
+ASCIIÖµï¿½ï¿½32ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½Î¬ï¿½Â±ê¡?**************************************************/
 unsigned char ASCII816[96][16]=
 {
 	// !
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0xF8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x33,0x30,0x00,0x00,0x00,
-	//"#«þ
+	//"#ï¿½ï¿½
 	0x00,0x10,0x0C,0x06,0x10,0x0C,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x40,0xC0,0x78,0x40,0xC0,0x78,0x40,0x00,0x04,0x3F,0x04,0x04,0x3F,0x04,0x04,0x00,
-	//$% ¬¡
+	//$% ï¿½ï¿½
 
 	0x00,0x70,0x88,0xFC,0x08,0x30,0x00,0x00,0x00,0x18,0x20,0xFF,0x21,0x1E,0x00,0x00,
 	0xF0,0x08,0xF0,0x00,0xE0,0x18,0x00,0x00,0x00,0x21,0x1C,0x03,0x1E,0x21,0x1E,0x00,
-	//&'¬¢
+	//&'ï¿½ï¿½
 
 	0x00,0xF0,0x08,0x88,0x70,0x00,0x00,0x00,0x1E,0x21,0x23,0x24,0x19,0x27,0x21,0x10,
 	0x10,0x16,0x0E,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-	//() ¬£
+	//() ï¿½ï¿½
 	0x00,0x00,0x00,0xE0,0x18,0x04,0x02,0x00,0x00,0x00,0x00,0x07,0x18,0x20,0x40,0x00,
 	0x00,0x02,0x04,0x18,0xE0,0x00,0x00,0x00,0x00,0x40,0x20,0x18,0x07,0x00,0x00,0x00,
-	//*+¬¤
+	//*+ï¿½ï¿½
 
 	0x40,0x40,0x80,0xF0,0x80,0x40,0x40,0x00,0x02,0x02,0x01,0x0F,0x01,0x02,0x02,0x00,
 	0x00,0x00,0x00,0xF0,0x00,0x00,0x00,0x00,0x01,0x01,0x01,0x1F,0x01,0x01,0x01,0x00,
-	//,-¬¥
+	//,-ï¿½ï¿½
 
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0xB0,0x70,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,0x01,0x01,0x01,0x01,
-	//./ ¬¦
+	//./ ï¿½ï¿½
 
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x30,0x00,0x00,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x00,0x80,0x60,0x18,0x04,0x00,0x60,0x18,0x06,0x01,0x00,0x00,0x00,
-	//01¬§
+	//01ï¿½ï¿½
 
 
 	0x00,0xE0,0x10,0x08,0x08,0x10,0xE0,0x00,0x00,0x0F,0x10,0x20,0x20,0x10,0x0F,0x00,
 	0x00,0x10,0x10,0xF8,0x00,0x00,0x00,0x00,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,
-	//23¬¨
+	//23ï¿½ï¿½
 
 	0x00,0x70,0x08,0x08,0x08,0x88,0x70,0x00,0x00,0x30,0x28,0x24,0x22,0x21,0x30,0x00,
 	0x00,0x30,0x08,0x88,0x88,0x48,0x30,0x00,0x00,0x18,0x20,0x20,0x20,0x11,0x0E,0x00,
-	//45¬©
+	//45ï¿½ï¿½
 	0x00,0x00,0xC0,0x20,0x10,0xF8,0x00,0x00,0x00,0x07,0x04,0x24,0x24,0x3F,0x24,0x00,
 	0x00,0xF8,0x08,0x88,0x88,0x08,0x08,0x00,0x00,0x19,0x21,0x20,0x20,0x11,0x0E,0x00,
-	//67¬ª
+	//67ï¿½ï¿½
 	0x00,0xE0,0x10,0x88,0x88,0x18,0x00,0x00,0x00,0x0F,0x11,0x20,0x20,0x11,0x0E,0x00,
 	0x00,0x38,0x08,0x08,0xC8,0x38,0x08,0x00,0x00,0x00,0x00,0x3F,0x00,0x00,0x00,0x00,
-	//89¬«
+	//89ï¿½ï¿½
 	0x00,0x70,0x88,0x08,0x08,0x88,0x70,0x00,0x00,0x1C,0x22,0x21,0x21,0x22,0x1C,0x00,
 	0x00,0xE0,0x10,0x08,0x08,0x10,0xE0,0x00,0x00,0x00,0x31,0x22,0x22,0x11,0x0F,0x00,
-	//:;¬¬
+	//:;ï¿½ï¿½
 
 	0x00,0x00,0x00,0xC0,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x30,0x30,0x00,0x00,0x00,
 	0x00,0x00,0x00,0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x80,0x60,0x00,0x00,0x00,0x00,
-	//<=¬­
+	//<=ï¿½ï¿½
 	0x00,0x00,0x80,0x40,0x20,0x10,0x08,0x00,0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x00,
 	0x40,0x40,0x40,0x40,0x40,0x40,0x40,0x00,0x04,0x04,0x04,0x04,0x04,0x04,0x04,0x00,
-	//>?¬®
+	//>?ï¿½ï¿½
 	0x00,0x08,0x10,0x20,0x40,0x80,0x00,0x00,0x00,0x20,0x10,0x08,0x04,0x02,0x01,0x00,
 	0x00,0x70,0x48,0x08,0x08,0x08,0xF0,0x00,0x00,0x00,0x00,0x30,0x36,0x01,0x00,0x00,
 	//@A
 	0xC0,0x30,0xC8,0x28,0xE8,0x10,0xE0,0x00,0x07,0x18,0x27,0x24,0x23,0x14,0x0B,0x00,
 	0x00,0x00,0xC0,0x38,0xE0,0x00,0x00,0x00,0x20,0x3C,0x23,0x02,0x02,0x27,0x38,0x20,
-	//BC¬°
+	//BCï¿½ï¿½
 	0x08,0xF8,0x88,0x88,0x88,0x70,0x00,0x00,0x20,0x3F,0x20,0x20,0x20,0x11,0x0E,0x00,
 	0xC0,0x30,0x08,0x08,0x08,0x08,0x38,0x00,0x07,0x18,0x20,0x20,0x20,0x10,0x08,0x00,
 	//DE
@@ -304,7 +303,7 @@ unsigned char ASCII816[96][16]=
 
 	0x08,0xF8,0x88,0x88,0xE8,0x08,0x10,0x00,0x20,0x3F,0x20,0x00,0x03,0x00,0x00,0x00,
 	0xC0,0x30,0x08,0x08,0x08,0x38,0x00,0x00,0x07,0x18,0x20,0x20,0x22,0x1E,0x02,0x00,
-	//HI¬³
+	//HIï¿½ï¿½
 	0x08,0xF8,0x08,0x00,0x00,0x08,0xF8,0x08,0x20,0x3F,0x21,0x01,0x01,0x21,0x3F,0x20,
 	0x00,0x08,0x08,0xF8,0x08,0x08,0x00,0x00,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,
 	//JK
@@ -313,28 +312,28 @@ unsigned char ASCII816[96][16]=
 	//LM
 	0x08,0xF8,0x08,0x00,0x00,0x00,0x00,0x00,0x20,0x3F,0x20,0x20,0x20,0x20,0x30,0x00,
 	0x08,0xF8,0xF8,0x00,0xF8,0xF8,0x08,0x00,0x20,0x3F,0x00,0x3F,0x00,0x3F,0x20,0x00,
-	//NO¬¶
+	//NOï¿½ï¿½
 	0x08,0xF8,0x30,0xC0,0x00,0x08,0xF8,0x08,0x20,0x3F,0x20,0x00,0x07,0x18,0x3F,0x00,
 	0xE0,0x10,0x08,0x08,0x08,0x10,0xE0,0x00,0x0F,0x10,0x20,0x20,0x20,0x10,0x0F,0x00,
-	//PQ¬·
+	//PQï¿½ï¿½
 	0x08,0xF8,0x08,0x08,0x08,0x08,0xF0,0x00,0x20,0x3F,0x21,0x01,0x01,0x01,0x00,0x00,
 	0xE0,0x10,0x08,0x08,0x08,0x10,0xE0,0x00,0x0F,0x18,0x24,0x24,0x38,0x50,0x4F,0x00,
-	//RS¬¸
+	//RSï¿½ï¿½
 	0x08,0xF8,0x88,0x88,0x88,0x88,0x70,0x00,0x20,0x3F,0x20,0x00,0x03,0x0C,0x30,0x20,
 	0x00,0x70,0x88,0x08,0x08,0x08,0x38,0x00,0x00,0x38,0x20,0x21,0x21,0x22,0x1C,0x00,
-	//TU¬¹
+	//TUï¿½ï¿½
 	0x18,0x08,0x08,0xF8,0x08,0x08,0x18,0x00,0x00,0x00,0x20,0x3F,0x20,0x00,0x00,0x00,
 	0x08,0xF8,0x08,0x00,0x00,0x08,0xF8,0x08,0x00,0x1F,0x20,0x20,0x20,0x20,0x1F,0x00,
-	//VW¬º
+	//VWï¿½ï¿½
 	0x08,0x78,0x88,0x00,0x00,0xC8,0x38,0x08,0x00,0x00,0x07,0x38,0x0E,0x01,0x00,0x00,
 	0xF8,0x08,0x00,0xF8,0x00,0x08,0xF8,0x00,0x03,0x3C,0x07,0x00,0x07,0x3C,0x03,0x00,
-	//XY¬»
+	//XYï¿½ï¿½
 	0x08,0x18,0x68,0x80,0x80,0x68,0x18,0x08,0x20,0x30,0x2C,0x03,0x03,0x2C,0x30,0x20,
 	0x08,0x38,0xC8,0x00,0xC8,0x38,0x08,0x00,0x00,0x00,0x20,0x3F,0x20,0x00,0x00,0x00,
-	//Z[¬¼
+	//Z[ï¿½ï¿½
 	0x10,0x08,0x08,0x08,0xC8,0x38,0x08,0x00,0x20,0x38,0x26,0x21,0x20,0x20,0x18,0x00,
 	0x00,0x00,0x00,0xFE,0x02,0x02,0x02,0x00,0x00,0x00,0x00,0x7F,0x40,0x40,0x40,0x00,
-	//\]¬½
+	//\]ï¿½ï¿½
 	0x00,0x0C,0x30,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01,0x06,0x38,0xC0,0x00,
 	0x00,0x02,0x02,0x02,0xFE,0x00,0x00,0x00,0x00,0x40,0x40,0x40,0x7F,0x00,0x00,0x00,
 	//^_
@@ -348,52 +347,52 @@ unsigned char ASCII816[96][16]=
 	//bc
 	0x08,0xF8,0x00,0x80,0x80,0x00,0x00,0x00,0x00,0x3F,0x11,0x20,0x20,0x11,0x0E,0x00,
 	0x00,0x00,0x00,0x80,0x80,0x80,0x00,0x00,0x00,0x0E,0x11,0x20,0x20,0x20,0x11,0x00,
-	//de¬Á
+	//deï¿½ï¿½
 	0x00,0x00,0x00,0x80,0x80,0x88,0xF8,0x00,0x00,0x0E,0x11,0x20,0x20,0x10,0x3F,0x20,
 	0x00,0x00,0x80,0x80,0x80,0x80,0x00,0x00,0x00,0x1F,0x22,0x22,0x22,0x22,0x13,0x00,
-	//fg¬Â
+	//fgï¿½ï¿½
 	0x00,0x80,0x80,0xF0,0x88,0x88,0x88,0x18,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,
 	0x00,0x00,0x80,0x80,0x80,0x80,0x80,0x00,0x00,0x6B,0x94,0x94,0x94,0x93,0x60,0x00,
-	//hi¬Ã
+	//hiï¿½ï¿½
 	0x08,0xF8,0x00,0x80,0x80,0x80,0x00,0x00,0x20,0x3F,0x21,0x00,0x00,0x20,0x3F,0x20,
 	0x00,0x80,0x98,0x98,0x00,0x00,0x00,0x00,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,
 	//jk
 
 	0x00,0x00,0x00,0x80,0x98,0x98,0x00,0x00,0x00,0xC0,0x80,0x80,0x80,0x7F,0x00,0x00,
 	0x08,0xF8,0x00,0x00,0x80,0x80,0x80,0x00,0x20,0x3F,0x24,0x02,0x2D,0x30,0x20,0x00,
-	//lm¬Å
+	//lmï¿½ï¿½
 	0x00,0x08,0x08,0xF8,0x00,0x00,0x00,0x00,0x00,0x20,0x20,0x3F,0x20,0x20,0x00,0x00,
 	0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x00,0x20,0x3F,0x20,0x00,0x3F,0x20,0x00,0x3F,
 	//no
 	0x80,0x80,0x00,0x80,0x80,0x80,0x00,0x00,0x20,0x3F,0x21,0x00,0x00,0x20,0x3F,0x20,
 	0x00,0x00,0x80,0x80,0x80,0x80,0x00,0x00,0x00,0x1F,0x20,0x20,0x20,0x20,0x1F,0x00,
-	//pq¬Ç
+	//pqï¿½ï¿½
 	0x80,0x80,0x00,0x80,0x80,0x00,0x00,0x00,0x80,0xFF,0xA1,0x20,0x20,0x11,0x0E,0x00,
 	0x00,0x00,0x00,0x80,0x80,0x80,0x80,0x00,0x00,0x0E,0x11,0x20,0x20,0xA0,0xFF,0x80,
-	//rs¬È
+	//rsï¿½ï¿½
 	0x80,0x80,0x80,0x00,0x80,0x80,0x80,0x00,0x20,0x20,0x3F,0x21,0x20,0x00,0x01,0x00,
 	0x00,0x00,0x80,0x80,0x80,0x80,0x80,0x00,0x00,0x33,0x24,0x24,0x24,0x24,0x19,0x00,
 	//tu?
 	0x00,0x80,0x80,0xE0,0x80,0x80,0x00,0x00,0x00,0x00,0x00,0x1F,0x20,0x20,0x00,0x00,
 	0x80,0x80,0x00,0x00,0x00,0x80,0x80,0x00,0x00,0x1F,0x20,0x20,0x20,0x10,0x3F,0x20,
-	//vw¬Ê
+	//vwï¿½ï¿½
 	0x80,0x80,0x80,0x00,0x00,0x80,0x80,0x80,0x00,0x01,0x0E,0x30,0x08,0x06,0x01,0x00,
 	0x80,0x80,0x00,0x80,0x00,0x80,0x80,0x80,0x0F,0x30,0x0C,0x03,0x0C,0x30,0x0F,0x00,
 	//xy
 	0x00,0x80,0x80,0x00,0x80,0x80,0x80,0x00,0x00,0x20,0x31,0x2E,0x0E,0x31,0x20,0x00,
 	0x80,0x80,0x80,0x00,0x00,0x80,0x80,0x80,0x80,0x81,0x8E,0x70,0x18,0x06,0x01,0x00,
-	//z{¬Ì
+	//z{ï¿½ï¿½
 	0x00,0x80,0x80,0x80,0x80,0x80,0x80,0x00,0x00,0x21,0x30,0x2C,0x22,0x21,0x30,0x00,
 	0x00,0x00,0x00,0x00,0x80,0x7C,0x02,0x02,0x00,0x00,0x00,0x00,0x00,0x3F,0x40,0x40,
-	//|}¬Í
+	//|}ï¿½ï¿½
 	0x00,0x00,0x00,0x00,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF,0x00,0x00,0x00,
 	0x00,0x02,0x02,0x7C,0x80,0x00,0x00,0x00,0x00,0x40,0x40,0x3F,0x00,0x00,0x00,0x00,
-	//~¬Í
+	//~ï¿½ï¿½
 	0x00,0x06,0x01,0x01,0x02,0x02,0x04,0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
 // !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-//5*7µãÕó,×ÝÏòÈ¡Ä£(¸ßÎ»ÔÚÏÂ·½),×Ö½ÚÕýÐò(×Ô×óµ½ÓÒÅÅÁÐ)
+//5*7ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½È¡Ä£(ï¿½ï¿½Î»ï¿½ï¿½ï¿½Â·ï¿½),ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
 
 
 unsigned char ACSII57[95][5]=
@@ -523,20 +522,20 @@ void setup()
 	pinMode(RowB, OUTPUT);
 	pinMode(RowC, OUTPUT);
 	pinMode(RowD, OUTPUT); //138Æ¬Ñ¡
-	pinMode(OE, OUTPUT); //138 Ê¹ÄÜ
-	pinMode(R1, OUTPUT);//595 Êý¾Ý
-	pinMode(R2, OUTPUT);//595 Êý¾Ý
-	pinMode(R3, OUTPUT);//595 Êý¾Ý
-	pinMode(R4, OUTPUT);//595 Êý¾Ý
-	pinMode(CLK, OUTPUT); //595 Ê±ÖÓ
-	pinMode(STB, OUTPUT); //595 Ê¹ÄÜ
+	pinMode(OE, OUTPUT); //138 Ê¹ï¿½ï¿½
+	pinMode(R1, OUTPUT);//595 ï¿½ï¿½ï¿½ï¿½
+	pinMode(R2, OUTPUT);//595 ï¿½ï¿½ï¿½ï¿½
+	pinMode(R3, OUTPUT);//595 ï¿½ï¿½ï¿½ï¿½
+	pinMode(R4, OUTPUT);//595 ï¿½ï¿½ï¿½ï¿½
+	pinMode(CLK, OUTPUT); //595 Ê±ï¿½ï¿½
+	pinMode(STB, OUTPUT); //595 Ê¹ï¿½ï¿½
 
 
 	DDRA=B00001111;
 
 
 
-	Hdot();//×Ö¿âÈ¡Ä£¸Ä³ÉºáÏò
+	Hdot();//ï¿½Ö¿ï¿½È¡Ä£ï¿½Ä³Éºï¿½ï¿½ï¿½
 
 	WIFI_SERIAL.print(F("AT+RST\r\n"));
 	TimeOut = 30;
@@ -608,39 +607,39 @@ void NonStopTask()
 
 	//static unsigned char row=0;//16
 	//static unsigned char col=0;//8
-	////ÏÔÊ¾»º´æÉ¨Ãè
+	////ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½É¨ï¿½ï¿½
 	//for(row=0; row<16; row++)
 	//{
 
 	//	for (col=0; col<8; col++)
 	//	{	
-	//		hc595senddata(DispBuf[col][row],DispBuf[col][row+16],DispBuf[col+8][row],DispBuf[col+8][row+16]);//·¢ËÍÁÐÊý¾Ý£¬ÉÏ16ÐÐÓëÏÂ16ÐÐÍ¬Ê±·¢ËÍ¡£
+	//		hc595senddata(DispBuf[col][row],DispBuf[col][row+16],DispBuf[col+8][row],DispBuf[col+8][row+16]);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½16ï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½Í¡ï¿½
 	//	}
-	//	digitalWrite(OE, 1);  //¹Ø±ÕÏÔÊ¾
-	//	hc138sacn(row);            //Ñ¡ÐÐ
-	//	digitalWrite(STB, 1);      //Êý¾ÝÈ·ÈÏ
+	//	digitalWrite(OE, 1);  //ï¿½Ø±ï¿½ï¿½ï¿½Ê¾
+	//	hc138sacn(row);            //Ñ¡ï¿½ï¿½
+	//	digitalWrite(STB, 1);      //ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
 	//	digitalWrite(STB, 0);
 	//	DataUpdate();
 	//	CheckNTP();
-	//	digitalWrite(OE, 0);  //¿ªÆôÏÔÊ¾
+	//	digitalWrite(OE, 0);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 
 	//}
 
 
 	static unsigned char row=0;//16
 	static unsigned char col=0;//8
-	//ÏÔÊ¾»º´æÉ¨Ãè
-	hc595senddata(DispBuf[col][row],DispBuf[col][row+16],DispBuf[col+8][row],DispBuf[col+8][row+16]);//·¢ËÍÁÐÊý¾Ý£¬ÉÏ16ÐÐÓëÏÂ16ÐÐÍ¬Ê±·¢ËÍ¡£
+	//ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½É¨ï¿½ï¿½
+	hc595senddata(DispBuf[col][row],DispBuf[col][row+16],DispBuf[col+8][row],DispBuf[col+8][row+16]);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½16ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½16ï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½Í¡ï¿½
 	col++;
 	if (col>=8)
 	{
-		digitalWrite(OE, 1);  //¹Ø±ÕÏÔÊ¾
-		hc138sacn(row);            //Ñ¡ÐÐ
-		digitalWrite(STB, 1);      //Êý¾ÝÈ·ÈÏ
+		digitalWrite(OE, 1);  //ï¿½Ø±ï¿½ï¿½ï¿½Ê¾
+		hc138sacn(row);            //Ñ¡ï¿½ï¿½
+		digitalWrite(STB, 1);      //ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
 		digitalWrite(STB, 0);
 		DataUpdate();
 		CheckNTP();
-		digitalWrite(OE, 0);  //¿ªÆôÏÔÊ¾
+		digitalWrite(OE, 0);  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾
 
 		col=0;
 		row++;
@@ -733,7 +732,8 @@ bool GetAir()
 bool GetNow()
 {
 	//	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
+	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
+    WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
 	_esp8266_waitFor("OK\r\n");
 
 
@@ -755,47 +755,59 @@ bool GetNow()
 
 	//_esp8266_getValue("text\":\"",DateLine2,&InfoLen,0,7); 
 	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		DateLine2[1] = ' ';
+	}
 
 
 	_esp8266_waitFor("CLOSED\r\n");
 
 }
-//bool GetForcast(unsigned char Day,unsigned char Postion)
-//{
-//
-//	HttpForcast[90]=Day+0x30;
-//
-//
-//	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
-//	_esp8266_waitFor("OK\r\n");
-//
-//	WIFI_SERIAL.print(F("AT+CIPSEND="));
-//	WIFI_SERIAL.print(sizeof(HttpForcast));
-//	WIFI_SERIAL.print(F("\r\n"));
-//
-//	_esp8266_waitFor("OK\r\n>");
-//
-//	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
-//	{
-//		WIFI_SERIAL.print(HttpForcast[i]);
-//	}
-//
-//	if(!_esp8266_waitFor("200 OK")) return false;
-//
-//	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-//	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-//	if (InfoLen == 1)
-//	{
-//		WeatherCode[Postion][1] = 0;
-//	}
-//	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
-//	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,3); 
-//
-//	//Weather[Postion][2] = '~';
-//
-//	_esp8266_waitFor("CLOSED\r\n");
-//
-//}
+bool GetForcast(unsigned char Day,unsigned char Postion)
+{
+
+	HttpForcast[90]=Day+0x30;
+
+
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+	_esp8266_waitFor("OK\r\n");
+
+	WIFI_SERIAL.print(F("AT+CIPSEND="));
+	WIFI_SERIAL.print(sizeof(HttpForcast));
+	WIFI_SERIAL.print(F("\r\n"));
+
+	_esp8266_waitFor("OK\r\n>");
+
+	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
+	{
+		WIFI_SERIAL.print(HttpForcast[i]);
+	}
+
+	if(!_esp8266_waitFor("200 OK")) return false;
+
+	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		WeatherCode[Postion][1] = 0;
+	}
+	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][4] = ' ';
+	}
+	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,2); 
+	if (InfoLen == 1)
+	{
+		WeatherTemp[Postion][1] = ' ';
+	}
+
+	//Weather[Postion][2] = '~';
+
+	_esp8266_waitFor("CLOSED\r\n");
+
+}
 
 
 bool GetAvaForcast(unsigned char StartDay)
@@ -804,7 +816,7 @@ bool GetAvaForcast(unsigned char StartDay)
 	unsigned char Postion = 0;
 	unsigned char Temp = 0;
 	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.15\",440\r\n"));
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
 	_esp8266_waitFor("OK\r\n");
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
@@ -985,35 +997,35 @@ void HourlyUpdate()
 
 
 
-	//GetNow();
+	GetNow();
 
 	//GetAir();
 
 	if (hour(t+8*3600)<18)
 	{
-		//GetForcast(0,0);
-		//GetForcast(1,1);
-		if (!GetAvaForcast(0))
+		GetForcast(0,0);
+		GetForcast(1,1);
+/* 		if (!GetAvaForcast(0))
 		{
 			DateLine2[0] = '-';
 			DateLine2[1] = '-';
-		}
+		} */
 
 	} 
 	else
 	{
-		//GetForcast(1,0);
-		//GetForcast(2,1);
-		if (!GetAvaForcast(1))
+		GetForcast(1,0);
+		GetForcast(2,1);
+/* 		if (!GetAvaForcast(1))
 		{
 			DateLine2[0] = '-';
 			DateLine2[1] = '-';
-		}
+		} */
 	}
 
-	//GetAvaForcast(1);
 
-	printf("GetAvaForcast finished\r\n");
+
+	//printf("GetAvaForcast finished\r\n");
 
 
 	for (int i=0; i<10; i++)
@@ -1095,7 +1107,7 @@ void HourlyUpdate()
 	DateLine[9]=tempDay%10+0x30;
 
 
-	//×óÉÏ½Ç  ÖÃ0
+	//ï¿½ï¿½ï¿½Ï½ï¿½  ï¿½ï¿½0
 	for (int j=8; j<16; j++)
 	{
 		for (int i=0; i<16; i++)
@@ -1103,7 +1115,7 @@ void HourlyUpdate()
 			DispBuf[j][i] = 0;
 		}
 	}
-	//ÈÕÆÚ 
+	//ï¿½ï¿½ï¿½ï¿½ 
 
 	for (int j=8*8; j<64+60; j++)
 	{
@@ -1123,7 +1135,7 @@ void HourlyUpdate()
 		}
 
 	}
-	//µ±Ç°ÌìÆø
+	//ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½
 	for (int j=8*8; j<64+60; j++)
 	{
 		for (int i=8; i<16; i++)
@@ -1143,7 +1155,7 @@ void HourlyUpdate()
 	}
 
 
-	//×óÏÂ½Ç  ÖÃ0
+	//ï¿½ï¿½ï¿½Â½ï¿½  ï¿½ï¿½0
 	for (int j=8; j<16; j++)
 	{
 		for (int i=0+16; i<16+16; i++)
@@ -1151,7 +1163,7 @@ void HourlyUpdate()
 			DispBuf[j][i] = 0;
 		}
 	}
-	//µÚÒ»Ìì ÈÕÆÚ¡¢ÆøÎÂ
+	//ï¿½ï¿½Ò»ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¡ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	for (int j=8*8; j<64+30; j++)
 	{
@@ -1169,7 +1181,7 @@ void HourlyUpdate()
 				);
 		}
 	}
-	//µÚÒ»Ìì ÌìÆø
+	//ï¿½ï¿½Ò»ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	for (int j=8*8; j<64+30; j++)
 	{
 		for (int i=8+16; i<16+16; i++)
@@ -1189,7 +1201,7 @@ void HourlyUpdate()
 	}
 
 
-	//ÓÒÏÂ½Ç  ÖÃ0
+	//ï¿½ï¿½ï¿½Â½ï¿½  ï¿½ï¿½0
 	for (int j=0; j<8; j++)
 	{
 		for (int i=0+16; i<16+16; i++)
@@ -1197,7 +1209,7 @@ void HourlyUpdate()
 			DispBuf[j][i] = 0;
 		}
 	}
-	//µÚ¶þÌì ÈÕÆÚ¡¢ÆøÎÂ
+	//ï¿½Ú¶ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ú¡ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	for (int j=0; j<30; j++)
 	{
@@ -1217,7 +1229,7 @@ void HourlyUpdate()
 		}
 
 	}
-	//µÚ¶þÌì ÌìÆø
+	//ï¿½Ú¶ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	for (int j=0; j<30; j++)
 	{
 		for (int i=8+16; i<16+16; i++)
@@ -1245,14 +1257,13 @@ void HourlyUpdate()
 
 
 	//WeatherCode2ChartIndex(20,ChartIndex);
-
-	WeatherCode2ChartIndex2(atoi((const char*)WeatherCode[0]),ChartIndex);
+	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[0]),ChartIndex);
 
 	ShowChart(ChartIndex[0],4+8,16);
 	ShowChart(ChartIndex[1],6+8,16);
 
 	//WeatherCode2ChartIndex(28,ChartIndex);
-	WeatherCode2ChartIndex2(atoi((const char*)WeatherCode[1]),ChartIndex);
+	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[1]),ChartIndex);
 
 	ShowChart(ChartIndex[0],4,16);
 	ShowChart(ChartIndex[1],6,16);
@@ -1265,75 +1276,74 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 	unsigned char TempChat[2];
 	switch(Code)
 	{
-	case 0://	Çç
-	case 1://Çç
-	case 2://Çç
-	case 3://Çç
+	case 0://	ï¿½ï¿½
+	case 1://ï¿½ï¿½
+	case 2://ï¿½ï¿½
+	case 3://ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = QING;
 
 		break;
 
-	case 4://¶àÔÆ
-	case 5://¶àÔÆ	Partly Cloudy	Çç¼ä¶àÔÆ
-	case 6://¶àÔÆ	Partly Cloudy	Çç¼ä¶àÔÆ
-	case 7://¶àÔÆ	Mostly Cloudy	´ó²¿¶àÔÆ
-	case 8://¶àÔÆ	Mostly Cloudy	´ó²¿¶àÔÆ
+	case 4://ï¿½ï¿½ï¿½ï¿½
+	case 5://ï¿½ï¿½ï¿½ï¿½	Partly Cloudy	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	case 6://ï¿½ï¿½ï¿½ï¿½	Partly Cloudy	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	case 7://ï¿½ï¿½ï¿½ï¿½	Mostly Cloudy	ï¿½ó²¿¶ï¿½ï¿½ï¿½
+	case 8://ï¿½ï¿½ï¿½ï¿½	Mostly Cloudy	ï¿½ó²¿¶ï¿½ï¿½ï¿½
 		ChartIndex[0] = DUO;
 		ChartIndex[1] = YUN;
 		break;
 
-	case 9://Òõ	Overcast	Òõ
+	case 9://ï¿½ï¿½	Overcast	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = YING;
 		break;
 
-	case 10://ÕóÓê	Shower	ÕóÓê
+	case 10://ï¿½ï¿½ï¿½ï¿½	Shower	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = ZHEN;
 		ChartIndex[1] = YU;
 		break;
 
-	case 11://À×Óê
-	case 12://À×Óê
+	case 11://ï¿½ï¿½ï¿½ï¿½
+	case 12://ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = LEI;
 		ChartIndex[1] = YU;
 		break;
 
-	case 13://Ð¡Óê	Light Rain	Ð¡Óê
+	case 13://Ð¡ï¿½ï¿½	Light Rain	Ð¡ï¿½ï¿½
 		ChartIndex[0] = XIAO;
 		ChartIndex[1] = YU;
 		break;
 
-	case 14://ÖÐÓê	Moderate Rain	ÖÐÓê
+	case 14://ï¿½ï¿½ï¿½ï¿½	Moderate Rain	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = ZHONG;
 		ChartIndex[1] = YU;
 		break;
 
-	case 15://´óÓê	Heavy Rain	´óÓê
+	case 15://ï¿½ï¿½ï¿½ï¿½	Heavy Rain	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = DA;
 		ChartIndex[1] = YU;
 		break;
 
 
 
-	case 16://±©Óê	Storm	±©Óê
-	case 17://±©Óê	Heavy Storm	´ó±©Óê
-	case 18://±©Óê	Severe Storm	ÌØ´ó±©Óê
+	case 16://ï¿½ï¿½ï¿½ï¿½	Storm	ï¿½ï¿½ï¿½ï¿½
+	case 17://ï¿½ï¿½ï¿½ï¿½	Heavy Storm	ï¿½ï¿½ï¿½ï¿½
+	case 18://ï¿½ï¿½ï¿½ï¿½	Severe Storm	ï¿½Ø´ï¿½ï¿½ï¿½
 		ChartIndex[0] = BAO;
 		ChartIndex[1] = YU;
 		break;
 
-	case 19://¶³Óê	Ice Rain	¶³Óê
+	case 19://ï¿½ï¿½ï¿½ï¿½	Ice Rain	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = DONG;
 		ChartIndex[1] = YU;
 		break;
 
-	case 20://ÓêÑ©	Sleet	Óê¼ÐÑ©
-		ChartIndex[0] = YU;
+	case 20://ï¿½ï¿½Ñ©	Sleet	ï¿½ï¿½ï¿½Ñ?		ChartIndex[0] = YU;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 21://ÕóÑ©	Snow Flurry	ÕóÑ©
+	case 21://ï¿½ï¿½Ñ©	Snow Flurry	ï¿½ï¿½Ñ©
 		ChartIndex[0] = ZHEN;
 		ChartIndex[1] = XUE;
 		break;
@@ -1343,87 +1353,85 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		ChartIndex[1] = XUE;
 		break;
 
-	case 23://ÖÐÑ©	Moderate Snow	ÖÐÑ©
+	case 23://ï¿½ï¿½Ñ©	Moderate Snow	ï¿½ï¿½Ñ©
 		ChartIndex[0] = ZHONG;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 24://´óÑ©	Heavy Snow	´óÑ©
+	case 24://ï¿½ï¿½Ñ©	Heavy Snow	ï¿½ï¿½Ñ©
 		ChartIndex[0] = DA;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 25://	±©Ñ©	Snowstorm	±©Ñ©
+	case 25://	ï¿½ï¿½Ñ©	Snowstorm	ï¿½ï¿½Ñ©
 		ChartIndex[0] = BAO;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 26://¸¡³¾	Dust	¸¡³¾
+	case 26://ï¿½ï¿½ï¿½ï¿½	Dust	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = FU;
 		ChartIndex[1] = CHENG;
 		break;
 
-	case 27://ÑïÉ³	Sand	ÑïÉ³
+	case 27://ï¿½ï¿½É³	Sand	ï¿½ï¿½É³
 		ChartIndex[0] = YANG;
 		ChartIndex[1] = SHA;
 		break;
 
-	case 28://³¾±©	Duststorm	É³³¾±©
-	case 29://³¾±©	Sandstorm	Ç¿É³³¾±©
+	case 28://ï¿½ï¿½ï¿½ï¿½	Duststorm	É³ï¿½ï¿½ï¿½ï¿½
+	case 29://ï¿½ï¿½ï¿½ï¿½	Sandstorm	Ç¿É³ï¿½ï¿½ï¿½ï¿½
 
 		ChartIndex[0] = CHENG;
 		ChartIndex[1] = BAO;
 		break;
 
-	case 30://Îí	Foggy	Îí
+	case 30://ï¿½ï¿½	Foggy	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = WU;
 		break;
 
-	case 31://ö²	Haze	ö²
+	case 31://ï¿½ï¿½	Haze	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = MAI;
 		break;
 
 
-	case 32://·ç	Windy	·ç
+	case 32://ï¿½ï¿½	Windy	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = FENG;
 		break;
 
 
-	case 33://´ó·ç	Blustery	´ó·ç
-		ChartIndex[0] = DA;
+	case 33://ï¿½ï¿½ï¿?Blustery	ï¿½ï¿½ï¿?		ChartIndex[0] = DA;
 		ChartIndex[1] = FENG;
 		break;
 
 
-	case 34://	ì«·ç	Hurricane	ì«·ç
+	case 34://	ì«·ï¿½	Hurricane	ì«·ï¿½
 		ChartIndex[0] = JU;
 		ChartIndex[1] = FENG;
 		break;
 
 
-	case 35://		·ç±©	Tropical Storm	ÈÈ´ø·ç±©
+	case 35://		ï¿½ç±©	Tropical Storm	ï¿½È´ï¿½ï¿½ç±©
 		ChartIndex[0] = FENG;
 		ChartIndex[1] = BAO;
 		break;
 		;
 
-	case 36://	Áú¾í	Tornado	Áú¾í·ç
-		ChartIndex[0] = LONG;
+	case 36://	ï¿½ï¿½ï¿½ï¿½	Tornado	ï¿½ï¿½ï¿½ï¿½ï¿?		ChartIndex[0] = LONG;
 		ChartIndex[1] = JUAN;
 		break;
 
 
 
-	case 37://	Àä	Cold	Àä
+	case 37://	ï¿½ï¿½	Cold	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = LENG;
 		break;
 
 
-	case 38://	ÈÈ	Hot	ÈÈ
+	case 38://	ï¿½ï¿½	Hot	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = RE;
 		break;
@@ -1453,69 +1461,68 @@ void WeatherCode2ChartIndex2(unsigned char Code,unsigned char * ChartIndex)
 	unsigned char TempChat[2];
 	switch(Code)
 	{
-	case 0://	Çç
+	case 0://	ï¿½ï¿½
 
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = QING;
 
 		break;
 
-	case 1://¶àÔÆ
+	case 1://ï¿½ï¿½ï¿½ï¿½
 
 		ChartIndex[0] = DUO;
 		ChartIndex[1] = YUN;
 		break;
 
-	case 2://Òõ	Overcast	Òõ
+	case 2://ï¿½ï¿½	Overcast	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = YING;
 		break;
 
-	case 3://ÕóÓê	Shower	ÕóÓê
+	case 3://ï¿½ï¿½ï¿½ï¿½	Shower	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = ZHEN;
 		ChartIndex[1] = YU;
 		break;
 
-	case 4://À×Óê
-	case 5://À×Óê
+	case 4://ï¿½ï¿½ï¿½ï¿½
+	case 5://ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = LEI;
 		ChartIndex[1] = YU;
 		break;
 
-	case 6://ÓêÑ©	Sleet	Óê¼ÐÑ©
-		ChartIndex[0] = YU;
+	case 6://ï¿½ï¿½Ñ©	Sleet	ï¿½ï¿½ï¿½Ñ?		ChartIndex[0] = YU;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 7://Ð¡Óê	Light Rain	Ð¡Óê
+	case 7://Ð¡ï¿½ï¿½	Light Rain	Ð¡ï¿½ï¿½
 	case 21:
 		ChartIndex[0] = XIAO;
 		ChartIndex[1] = YU;
 		break;
 
-	case 8://ÖÐÓê	Moderate Rain	ÖÐÓê
+	case 8://ï¿½ï¿½ï¿½ï¿½	Moderate Rain	ï¿½ï¿½ï¿½ï¿½
 	case 22:
 		ChartIndex[0] = ZHONG;
 		ChartIndex[1] = YU;
 		break;
 
-	case 9://´óÓê	Heavy Rain	´óÓê
+	case 9://ï¿½ï¿½ï¿½ï¿½	Heavy Rain	ï¿½ï¿½ï¿½ï¿½
 	case 23:
 		ChartIndex[0] = DA;
 		ChartIndex[1] = YU;
 		break;
 
 
-	case 10://±©Óê	Storm	±©Óê
-	case 11://±©Óê	Heavy Storm	´ó±©Óê
-	case 12://±©Óê	Severe Storm	ÌØ´ó±©Óê
+	case 10://ï¿½ï¿½ï¿½ï¿½	Storm	ï¿½ï¿½ï¿½ï¿½
+	case 11://ï¿½ï¿½ï¿½ï¿½	Heavy Storm	ï¿½ï¿½ï¿½ï¿½
+	case 12://ï¿½ï¿½ï¿½ï¿½	Severe Storm	ï¿½Ø´ï¿½ï¿½ï¿½
 	case 24:
 	case 25:
 		ChartIndex[0] = BAO;
 		ChartIndex[1] = YU;
 		break;
 
-	case 13://ÕóÑ©	Snow Flurry	ÕóÑ©
+	case 13://ï¿½ï¿½Ñ©	Snow Flurry	ï¿½ï¿½Ñ©
 		ChartIndex[0] = ZHEN;
 		ChartIndex[1] = XUE;
 		break;
@@ -1526,52 +1533,52 @@ void WeatherCode2ChartIndex2(unsigned char Code,unsigned char * ChartIndex)
 		ChartIndex[1] = XUE;
 		break;
 
-	case 15://ÖÐÑ©	Moderate Snow	ÖÐÑ©
+	case 15://ï¿½ï¿½Ñ©	Moderate Snow	ï¿½ï¿½Ñ©
 	case 27:
 		ChartIndex[0] = ZHONG;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 16://´óÑ©	Heavy Snow	´óÑ©
+	case 16://ï¿½ï¿½Ñ©	Heavy Snow	ï¿½ï¿½Ñ©
 	case 28:
 		ChartIndex[0] = DA;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 17://	±©Ñ©	Snowstorm	±©Ñ©
+	case 17://	ï¿½ï¿½Ñ©	Snowstorm	ï¿½ï¿½Ñ©
 		ChartIndex[0] = BAO;
 		ChartIndex[1] = XUE;
 		break;
 
-	case 18://Îí	Foggy	Îí
+	case 18://ï¿½ï¿½	Foggy	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = WU;
 		break;
 
 
-	case 19://¶³Óê	Ice Rain	¶³Óê
+	case 19://ï¿½ï¿½ï¿½ï¿½	Ice Rain	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = DONG;
 		ChartIndex[1] = YU;
 		break;
 
-	case 20://³¾±©	Duststorm	É³³¾±©
+	case 20://ï¿½ï¿½ï¿½ï¿½	Duststorm	É³ï¿½ï¿½ï¿½ï¿½
 	case 31:
 
 		ChartIndex[0] = CHENG;
 		ChartIndex[1] = BAO;
 		break;
 
-	case 29://¸¡³¾	Dust	¸¡³¾
+	case 29://ï¿½ï¿½ï¿½ï¿½	Dust	ï¿½ï¿½ï¿½ï¿½
 		ChartIndex[0] = FU;
 		ChartIndex[1] = CHENG;
 		break;
 
-	case 30://ÑïÉ³	Sand	ÑïÉ³
+	case 30://ï¿½ï¿½É³	Sand	ï¿½ï¿½É³
 		ChartIndex[0] = YANG;
 		ChartIndex[1] = SHA;
 		break;
 
-	case 32://ö²	Haze	ö²
+	case 32://ï¿½ï¿½	Haze	ï¿½ï¿½
 		ChartIndex[1] = KONG;
 		ChartIndex[0] = MAI;
 		break;
@@ -1607,7 +1614,7 @@ void ShowChart(unsigned char ChartIndex,unsigned char PostionX,unsigned char Pos
 }
 
 
-void hc595senddata(byte data,byte data2,byte data3,byte data4)//·¢ËÍÉÏÏÂ°ëÆÁ£¬¸÷Ò»ÐÐÊý¾Ý¡£
+void hc595senddata(byte data,byte data2,byte data3,byte data4)//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½
 {
 	byte temp = 0;
 
@@ -1617,7 +1624,7 @@ void hc595senddata(byte data,byte data2,byte data3,byte data4)//·¢ËÍÉÏÏÂ°ëÆÁ£¬¸÷
 
 		temp = 0;
 		temp = 
-			data&1 //ÓÒÉÏ
+			data&1 //ï¿½ï¿½ï¿½ï¿½
 			|
 			((data2&1)<<1)
 			|
@@ -1641,16 +1648,16 @@ void hc595senddata(byte data,byte data2,byte data3,byte data4)//·¢ËÍÉÏÏÂ°ëÆÁ£¬¸÷
 
 void Hdot()
 {
-	//×Ö¿âÈ¡Ä£¸Ä³ÉºáÏò
+	//ï¿½Ö¿ï¿½È¡Ä£ï¿½Ä³Éºï¿½ï¿½ï¿½
 	unsigned char pix = 0;
 	for (int k=0; k<96; k++)
 	{
-		for (int i=0; i<16; i++)//ÔÝ´æ
+		for (int i=0; i<16; i++)//ï¿½Ý´ï¿½
 		{
 			ASCII816Buf[i]=ASCII816[k][i];
 		}
 
-		for(int j=0; j<8; j++)//×ª»»ÉÏ°ë²¿·Ö8*8
+		for(int j=0; j<8; j++)//×ªï¿½ï¿½ï¿½Ï°ë²¿ï¿½ï¿½8*8
 		{
 			pix = 0;
 			for(int i=0; i<8; i++)
@@ -1661,7 +1668,7 @@ void Hdot()
 			ASCII816[k][j] = pix;
 		}
 
-		for(int j=8; j<16; j++)//×ª»»ÏÂ°ë²¿·Ö8*8
+		for(int j=8; j<16; j++)//×ªï¿½ï¿½ï¿½Â°ë²¿ï¿½ï¿½8*8
 		{
 			pix = 0;
 			for(int i=8; i<16; i++)
@@ -1676,7 +1683,7 @@ void Hdot()
 
 
 
-void hc138sacn(byte r)   //Êä³öÐÐÏß×´Ì¬ABCD £¨AµÍ,D¸ß)
+void hc138sacn(byte r)   //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ABCD ï¿½ï¿½Aï¿½ï¿½,Dï¿½ï¿½)
 {
 	digitalWrite(RowA,(r & 0x01));
 	digitalWrite(RowB,(r & 0x02));
@@ -1818,7 +1825,7 @@ void OnSeconds()
 		HourlyUpdate();
 	}
 
-	//ÐÅºÅ½ÓÊÕ×´Ì¬
+	//ï¿½ÅºÅ½ï¿½ï¿½ï¿½×´Ì¬
 	if (GPS_Valid[0]=='A')
 	{
 		bGPS_Valid = true;
@@ -1836,9 +1843,9 @@ void OnSeconds()
 
 
 
-	//×Ö·û´®->ÏÔÊ¾»º´æ
+	//ï¿½Ö·ï¿½ï¿½ï¿½->ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 
-	//Ê±¼ä
+	//Ê±ï¿½ï¿½
 	for (int j=0; j<8; j++)
 	{
 		for (int i=0; i<16; i++)

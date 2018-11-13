@@ -1,107 +1,196 @@
-/*
-Demo code for Relay Shield 
-by Catalex
-catalex.taobao.com
-*/
-#define RELAY1 5
-#define RELAY2 16
-//#define RELAY3 D5
-//#define RELAY4 D4
+
+
+
+
+
+//D0 = GPIO16; 
+//D1 = GPIO5; 
+//D2 = GPIO4;	
+//D3 = GPIO0;can not download when connected to low
+//D4 = GPIO2;	
+//D5 = GPIO14;  
+//D6 = GPIO12;
+//D7 = GPIO13;
+//D8 = GPIO15;  can not start when high input
+//D9 = GPIO3; UART RX
+//D10 = GPIO1; UART TX
+//LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
+
+
+#define RELAY1				D0
+#define RELAY2				D1
+#define SOFT_SERIAL_RX		D2
+#define IIC_DAT				D3
+#define IIC_CLK				D4
+#define AC_POWER 			D5
+#define MIDEA_AC_RX			D6   
+#define MIDEA_AC_TX			D7 
+//#define 				D8
+
+
+//#define RELAY1				D9 //UART RX
+//#define RELAY2				D10//UART TX
 
 
 #include<ESP8266WiFi.h>
 #include<WiFiUdp.h>
+#include<ESP8266mDNS.h>
+#include<ArduinoOTA.h>
 #include<ESP8266WiFiMulti.h>
-#include <time.h>
+#include<time.h>
 #define timezone 8
 
-#include <Wire.h>
-#include "Adafruit_INA219.h"
-Adafruit_INA219 ina219_1(INA219_ADDRESS);
+//IIC current and volt
+//#include <Wire.h>
+//#include "Adafruit_INA219.h"
+//Adafruit_INA219 ina219_1(INA219_ADDRESS);
 
+#include "ir_Midea.h"
+IRMideaAC m_IRMideaAC(D7);
+
+
+//#include "DHT.h"
+//DHT dht(DHTPIN, DHT11);
+
+
+#include <Wire.h>     //The DHT12 uses I2C comunication.
+#include "DHT12.h"
+DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
 
 #include <SoftwareSerial.h>
-//#define BAUD_RATE 115200
-SoftwareSerial swSer(4, 4, false, 256);
-//0==nodeD3 
-//4==nodeD2
-
-//D0 = GPIO16;
-//D1 = GPIO5;
-//D2 = GPIO4;	无线接收
-//D3 = GPIO0;	连接时无法下载
-//D4 = GPIO2;	DHT
-//D5 = GPIO14;  IIC
-//D6 = GPIO12;
-//D7 = GPIO13;
-//D8 = GPIO15;  IIC
-//D9 = GPIO3;
-//D10 = GPIO1;
-//LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
-
-
-#include "DHT.h"
-#define DHTPIN 2     // what digital pin we're connected to
-#define DHTTYPE DHT11   // DHT 11
-DHT dht(DHTPIN, DHTTYPE);
-
-
-//#include "Adafruit_NeoPixel.h"
-//#define PIN 6
-//#define MAX_LED 20
-//uint32_t color_array[MAX_LED];
-//Adafruit_NeoPixel strip = Adafruit_NeoPixel( MAX_LED, PIN, NEO_RGB + NEO_KHZ800 );
-
+SoftwareSerial swSer(SOFT_SERIAL_RX, SOFT_SERIAL_RX, false, 256);
 
 const char* ssid = "frye";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
 
-
-unsigned long MS_TIMER = 0;
-unsigned long timer,lasttime=0;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
-
-#define RF_COMMAND_DELAY 4
-#define RF_COMMAND_LEN 3
-
-#define RF_COMMAND_COUNTER 5
-#define RF_COMMAND_LIGHT 2
-unsigned char RelayPin[RF_COMMAND_LIGHT] = {RELAY1,RELAY2};
-unsigned char PreSetRfCommand[RF_COMMAND_LIGHT][RF_COMMAND_COUNTER][RF_COMMAND_LEN] 
-		={
-			{{0xC3, 0x7C, 0x68},{0xC3, 0x7C, 0x64},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
-			,{{0xC3, 0x7C, 0x61},{0xC3, 0x7C, 0x62},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
-		};
-unsigned long TenthSecondsSinceStart = 0;
-void TenthSecondsSinceStartTask();
-void OnTenthSecond();
-void GetRfCommand(unsigned char RfData);
-void CheckRfCommand(unsigned char * RfCommand);
 
 
 #include "Z:\bt\web\datastruct.h"
 tRoomData RoomData;
-//unsigned char Humidity;
-//unsigned char Temperature;
+
+#define RF_COMMAND_DELAY 4
+#define RF_COMMAND_LEN 3
+#define RF_COMMAND_KEY_COUNTER 5
+#define RF_COMMAND_FUNCTION_COUNTER 4
+unsigned char RelayPin[LIGHT_NUMBER] = {RELAY1,RELAY2};
+unsigned char RoomIndex = 0;
 
 
-//#include <LCD4Bit_mod.h>
-//LCD4Bit_mod lcd = LCD4Bit_mod(2);
+
+//const unsigned char PROGMEM PreSetRfCommand[]
+
+
+
+//unsigned char PreSetRfCommand[RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
+//={
+//	{{0xC3, 0x7C, 0x68},{0xC3, 0x7C, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0xC3, 0x7C, 0x64},{0xC3, 0x7C, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0xC3, 0x7C, 0x62},{0xC3, 0x7C, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0xC3, 0x7C, 0x61},{0xC3, 0x7C, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//};
+
+
+//南房间，3号（0-3） 控制空调开关
+//unsigned char PreSetRfCommand[RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN] 
+//={
+//	{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//	,{{0x6B, 0xE1, 0xA8},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//};
+
+
+unsigned char PreSetRfCommand[ROOM_NUMBER][RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
+={
+
+	//0x82,0x7D,0x3A,0x69,0x3F,0x48 阳台
+	{{{0xC3, 0x7C, 0x68},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x64},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x62},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x61},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}}
+
+	//,{0xA2,0x20,0xA6,0x21,0xAF,0x77 Wemos
+	,{{{0xC3, 0x7C, 0x68},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x64},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x62},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x61},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}}
+
+	//0x82,0x7D,0x3A,0x3D,0x5F,0x75 南房间
+	,{{{0xC3, 0x7C, 0x62},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x61},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	//ac ,number 4 on bed
+	,{{0x6B, 0xE1, 0xA8},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}}
+
+	//0x82,0x7D,0x3A,0x3D,0x5F,0xC0 Mini
+	,{{{0xC3, 0x7C, 0x68},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x64},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x62},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	,{{0xC3, 0x7C, 0x61},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}}
+
+};
+
+
+unsigned long TenthSecondsSinceStart = 0;
+void TenthSecondsSinceStartTask();
+void OnTenthSecond();
+void OnSecond();
+void GetRfCommand(unsigned char RfData);
+void CheckRfCommand(unsigned char * RfCommand);
+
+
+void IR_DEconde_INT();
+void CheckAcData();
+unsigned char acTemperature(unsigned char code);
+
+#define AC_OP_ON_OFF	0
+#define AC_OP_ON_MODE	1
+#define AC_OP_ON_UP		2
+#define AC_OP_ON_DOWN	3
+void AcOperation(unsigned char OpCode);
+
+#define  SAMPLE_NUMBER 200
+byte IrData[6] = {0,0,0,0,0,0};
+bool isComamndStart = false;
+bool FrameOK = false;
+unsigned char LastAcMode = 0;
+unsigned char LastAcTemperature = 30;
+bool LastAcOn = false;
+
+
+unsigned long PowerTimeDiff;
+unsigned long LastPowerTime = 0;
+bool GotPower = false;
+//unsigned long Power;
+void AC_Power_INT();
+
+
+
+
 
 void setup() 
 {       
-	digitalWrite(RELAY1, HIGH);
-	digitalWrite(RELAY2, HIGH);
 
 	pinMode(RELAY1, OUTPUT);//set the pin to be OUTPUT pin.
 	pinMode(RELAY2, OUTPUT);//
-	//pinMode(RELAY3, OUTPUT);//
-	//pinMode(RELAY4, OUTPUT);//
 	digitalWrite(RELAY1, HIGH);
 	digitalWrite(RELAY2, HIGH);
+
+
+	//AC RX
+	pinMode(MIDEA_AC_RX, INPUT_PULLUP);//NodeMCU D6 GPIO12
+	attachInterrupt(digitalPinToInterrupt(MIDEA_AC_RX), IR_DEconde_INT, RISING);
+
+	pinMode(AC_POWER, INPUT_PULLUP);
+	attachInterrupt(digitalPinToInterrupt(AC_POWER), AC_Power_INT, RISING);
+
+
+	//AC TX
+	m_IRMideaAC.begin();
 
 
 
@@ -126,8 +215,8 @@ void setup()
 	configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
 	Serial.println("\nWaiting for time");
 	while (!time(nullptr)) {
-	  Serial.print(".");
-	  delay(1000);    
+		Serial.print(".");
+		delay(1000);    
 	}
 	Serial.println("");
 
@@ -142,56 +231,101 @@ void setup()
 		RoomData.Mac[i] = mac[i];
 	}
 
+	for (unsigned char i = 0;i<ROOM_NUMBER;i++)
+	{
+		if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			printf("room ID=%d \r\n",i);
+			RoomIndex = i;
+			break;
+		}
+	}
+
 	m_WiFiUDP.begin(5050); 
-	
 
 
 
+
+	Wire.begin(IIC_DAT,IIC_CLK);
 	//ina219_1.begin();
-
-
-
 	swSer.begin(9600);
-	//Serial.println("\nSoftware serial test started");
-	//for (char ch = ' '; ch <= 'z'; ch++) {
-	//	swSer.write(ch);
-	//}
-	//swSer.println("");
-
-
-	dht.begin();
-
-
-
-
-	// 初始化库
-	//strip.begin();
-	//// 发送数据，默认每个点的颜色为0，所以初始的每个点都是不亮的
-	//strip.show();
-
-
-
-
-	//Serial.begin(BAUD_RATE);
-	//swSer.begin(BAUD_RATE);
-
-	//Serial.println("\nSoftware serial test started");
-
-	//for (char ch = ' '; ch <= 'z'; ch++) {
-	//	swSer.write(ch);
-	//}
-	//swSer.println("");
+	//dht.begin();
 
 
 	RoomData.DataType = 2;
+	RoomData.AcMode = 5;
+	RoomData.AcTemperature = 27;
 
 
+
+
+	// Port defaults to 8266
+	// ArduinoOTA.setPort(8266);
+
+	// Hostname defaults to esp8266-[ChipID]
+	//ArduinoOTA.setHostname("Test");
+
+	// No authentication by default
+	// ArduinoOTA.setPassword("admin");
+
+	// Password can be set with it's md5 value as well
+	// MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+	// ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+
+
+
+
+
+
+
+
+
+
+
+	ArduinoOTA.onStart([]() {
+		String type;
+		if (ArduinoOTA.getCommand() == U_FLASH) {
+			type = "sketch";
+		} else { // U_SPIFFS
+			type = "filesystem";
+		}
+
+		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+		Serial.println("Start updating " + type);
+	});
+	ArduinoOTA.onEnd([]() {
+		Serial.println("\nEnd");
+	});
+	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+		Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+	});
+	ArduinoOTA.onError([](ota_error_t error) {
+		Serial.printf("Error[%u]: ", error);
+		if (error == OTA_AUTH_ERROR) {
+			Serial.println("Auth Failed");
+		} else if (error == OTA_BEGIN_ERROR) {
+			Serial.println("Begin Failed");
+		} else if (error == OTA_CONNECT_ERROR) {
+			Serial.println("Connect Failed");
+		} else if (error == OTA_RECEIVE_ERROR) {
+			Serial.println("Receive Failed");
+		} else if (error == OTA_END_ERROR) {
+			Serial.println("End Failed");
+		}
+	});
+	ArduinoOTA.begin();
+	Serial.println("Ready");
+	Serial.print("IP address: ");
+	Serial.println(WiFi.localIP());
 
 
 }
 
 void loop() 
 {
+	ArduinoOTA.handle();
+
+	CheckAcData();
 
 	while (swSer.available() > 0) {
 		unsigned char recvdata = swSer.read();
@@ -212,30 +346,19 @@ void loop()
 
 		if (tempRoomCommand.ChangeNotice == true)
 		{
-			for (byte i=0;i<RF_COMMAND_LIGHT;i++)
+			for (byte i=0;i<LIGHT_NUMBER;i++)
 			{
 				RoomData.Light[i] = tempRoomCommand.Light[i];
 				printf("get from control %d %d\r\n",i,RoomData.Light[i]);
 				digitalWrite(RelayPin[i], !RoomData.Light[i]);
 			}
 		}
-
-
-
-
+		if (tempRoomCommand.AcChangeNotice == true)
+		{
+			printf("get ac control code %d\r\n",tempRoomCommand.AcOpCode);
+			AcOperation(tempRoomCommand.AcOpCode);
+		}
 	}
-
-	//UDP.read().
-
-	//	//模拟量读取
-	//	int Light = 100-(analogRead(A0)/11);
-	//	Serial.printf("Light = %d \n",  Light);
-
-	//	//IIC读取
-	//	unsigned int Current = ina219_1.getCurrent_mA();
-	//	Serial.printf("Current  =  %d mA \r\n",Current);
-	//	unsigned int testvolt = ina219_1.getBusVoltage_V()*1000;
-	//	Serial.printf("test volt  =  %d mv \r\n",testvolt);
 }
 
 
@@ -252,54 +375,122 @@ void TenthSecondsSinceStartTask()
 	}
 }
 
+void OnSecond()
+{
+	time_t now = time(nullptr); //获取当前时间
+	time_str = ctime(&now);
+	H1 = time_str[11];
+	H2 = time_str[12];
+	M1 = time_str[14];
+	M2 = time_str[15];
+	S1 = time_str[17];
+	S2 = time_str[18];
+	//Serial.printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
+	//Serial.printf(time_str);
+
+	//printf("AcTemperature = %d  AcMode = %d \r\n",RoomData.AcTemperature,RoomData.AcMode);
+
+
+	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
+	m_WiFiUDP.endPacket(); 
+
+
+
+	//swSer.enableRx(false);
+
+	//Serial.print("Temperatura: ");
+	//Serial.print(dht12.readTemperature());
+	//Serial.print("*C  Humedad: ");
+	//Serial.print(dht12.readHumidity());
+	//Serial.println("%RH");
+
+	if(dht12.read() == 0)		
+	{
+		RoomData.Humidity = dht12.LastHumidity*10;
+		RoomData.RealTemperature = dht12.LastTemperature*10;
+	}
+
+	//printf("Humidity: %d %%	Temperature: %d *C \r\n",RoomData.Humidity,RoomData.RealTemperature);
+
+
+	if (GotPower)
+	{
+		GotPower = false;
+		RoomData.Power = 36000000/16/PowerTimeDiff;
+		printf("TimeDiff = %ld power = %ld \r\n",PowerTimeDiff,RoomData.Power);
+	}
+	else
+	{
+		unsigned long CurrentDiff = millis()-LastPowerTime;
+		if (PowerTimeDiff < CurrentDiff)
+		{
+			RoomData.Power = 36000000/16/CurrentDiff;
+			//printf("ruduce power to = %ld \r\n",RoomData.Power);
+		}
+	}
+
+	//swSer.enableRx(true);
+
+	////IIC读取
+	//unsigned int Current = ina219_1.getCurrent_mA();
+	//Serial.printf("Current  =  %d mA \r\n",Current);
+	//unsigned int testvolt = ina219_1.getBusVoltage_V()*1000;
+	//Serial.printf("test volt  =  %d mv \r\n",testvolt);
+
+	//	//模拟量读取
+	//	int Light = 100-(analogRead(A0)/11);
+	//	Serial.printf("Light = %d \n",  Light);
+}
+
 void OnTenthSecond()
 {
 
 	if (TenthSecondsSinceStart%10==0)
 	{
-		time_t now = time(nullptr); //获取当前时间
-		time_str = ctime(&now);
-		H1 = time_str[11];
-		H2 = time_str[12];
-		M1 = time_str[14];
-		M2 = time_str[15];
-		S1 = time_str[17];
-		S2 = time_str[18];
-		//Serial.printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
-		//Serial.printf(time_str);
-
-
-		//UDP.parsePacket(); 
-		//WiFiUDP.available()
-		//UDP.read().
-
-		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-		m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
-		m_WiFiUDP.endPacket(); 
+		OnSecond();
 	}
 
+	//if (TenthSecondsSinceStart%200==0)
+	//{
+	//	digitalWrite(RELAY1, HIGH);
+	//	digitalWrite(RELAY2, HIGH);
+	//	printf("relay to high,  disconnect \r\n");
 
-	if (TenthSecondsSinceStart%200==0)
-	{
+	//}
 
-		// Reading temperature or humidity takes about 250 milliseconds!
-		// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-		float h = dht.readHumidity();
-		RoomData.Humidity = h;
-		// Read temperature as Celsius (the default)
-		float t = dht.readTemperature();
-		RoomData.Temperature = t;
+	//if (TenthSecondsSinceStart%200==100)
+	//{
+	//	digitalWrite(RELAY1, LOW);
+	//	digitalWrite(RELAY2, LOW);
+	//	printf("relay to low,  connect \r\n");
 
-		// Check if any reads failed.
-		if (!isnan(h) && !isnan(t)) 
-		{
-			printf("Humidity: %d %%	Temperature: %d *C \r\n",RoomData.Humidity,RoomData.Temperature);
-		}
-		else
-		{
-			Serial.println("Read Temperature failed");
-		}
-	}
+	//}
+
+
+
+
+	//if (TenthSecondsSinceStart%200==0)
+	//{
+
+	//	// Reading temperature or humidity takes about 250 milliseconds!
+	//	// Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+	//	float h = dht.readHumidity();
+	//	RoomData.Humidity = h;
+	//	// Read temperature as Celsius (the default)
+	//	float t = dht.readTemperature();
+	//	RoomData.RealTemperature = t;
+
+	//	// Check if any reads failed.
+	//	if (!isnan(h) && !isnan(t)) 
+	//	{
+	//		printf("Humidity: %d %%	Temperature: %d *C \r\n",RoomData.Humidity,RoomData.RealTemperature);
+	//	}
+	//	else
+	//	{
+	//		Serial.println("Read Temperature failed");
+	//	}
+	//}
 }
 
 void GetRfCommand(unsigned char RfData)
@@ -336,19 +527,34 @@ void CheckRfCommand(unsigned char * RfCommand)
 {
 	static unsigned long LastTrigerTimer;
 	printf("CheckRfCommand 0x%02X 0x%02X 0x%02X\r\n",RfCommand[0],RfCommand[1],RfCommand[2]);
-	for (byte j=0;j<RF_COMMAND_LIGHT;j++)
+	for (byte j=0;j<RF_COMMAND_FUNCTION_COUNTER;j++)
 	{
-		for (byte i=0;i<RF_COMMAND_COUNTER;i++)
+		for (byte i=0;i<RF_COMMAND_KEY_COUNTER;i++)
 		{
 			//printf("Check with 0x%02X 0x%02X 0x%02X\r\n",PreSetRfCommand[i][0],PreSetRfCommand[i][1],PreSetRfCommand[i][2]);
-			if(memcmp(RfCommand,PreSetRfCommand[j][i],RF_COMMAND_LEN)==0)
+			if(memcmp(RfCommand,PreSetRfCommand[RoomIndex][j][i],RF_COMMAND_LEN)==0)
 			{
-				printf("Found Command %d \r\n",j);
+
 				if (TenthSecondsSinceStart - LastTrigerTimer > RF_COMMAND_DELAY)
 				{
 					LastTrigerTimer = TenthSecondsSinceStart;
-					RoomData.Light[j] = !RoomData.Light[j] ;
-					digitalWrite(RelayPin[j], !RoomData.Light[j]);
+
+					if (j<LIGHT_NUMBER)
+					{
+						printf("Execute light Command %d \r\n",j);
+						RoomData.Light[j] = !RoomData.Light[j] ;
+						digitalWrite(RelayPin[j], !RoomData.Light[j]);
+					} 
+					else
+					{
+
+						if (j == 3)
+						{
+							swSer.enableRx(false);
+							AcOperation(AC_OP_ON_OFF);
+							swSer.enableRx(true);
+						}
+					}
 				}
 			}
 		}
@@ -357,4 +563,299 @@ void CheckRfCommand(unsigned char * RfCommand)
 
 
 
+}
+
+void AcOperation(unsigned char OpCode)
+{
+
+	m_IRMideaAC.stateReset();
+
+	switch(OpCode)
+	{
+	case AC_OP_ON_OFF:
+		if (RoomData.AcMode == 5)
+		{
+			printf("Execute AC On \r\n");
+			m_IRMideaAC.setPower(true);
+			m_IRMideaAC.setMode(LastAcMode);
+			m_IRMideaAC.setTemp(LastAcTemperature);
+		}
+		else
+		{
+			printf("Execute AC Off \r\n");
+			RoomData.AcMode = 5;
+			m_IRMideaAC.setPower(false);
+		}
+		break;
+	case AC_OP_ON_MODE:
+		printf("Execute AC mode \r\n");
+		m_IRMideaAC.setPower(LastAcOn);
+		m_IRMideaAC.setTemp(LastAcTemperature);
+		switch(RoomData.AcMode)//0冷 1湿 2自 3热  4风 5关机
+		{
+		case 0:
+			m_IRMideaAC.setMode(1);
+			break;
+		case 1:
+			m_IRMideaAC.setMode(2);
+			break;
+		case 2:
+			m_IRMideaAC.setMode(3);
+			break;
+		case 3:
+			m_IRMideaAC.setMode(0);
+			break;
+		case 4:
+			m_IRMideaAC.setMode(0);
+			break;
+		case 5:
+			m_IRMideaAC.setPower(false);
+			break;
+		}
+		break;
+	case AC_OP_ON_UP:
+		printf("Execute AC up \r\n");
+		m_IRMideaAC.setPower(LastAcOn);
+		m_IRMideaAC.setMode(LastAcMode);
+		m_IRMideaAC.setTemp(LastAcTemperature+1);
+		break;
+	case AC_OP_ON_DOWN:
+		printf("Execute AC down \r\n");
+		m_IRMideaAC.setPower(LastAcOn);
+		m_IRMideaAC.setMode(LastAcMode);
+		m_IRMideaAC.setTemp(LastAcTemperature-1);
+		break;
+	}
+
+	m_IRMideaAC.send();
+}
+
+void AC_Power_INT()//中断函数
+{
+	unsigned long ThisPowerTime = millis();
+
+	if (LastPowerTime == 0)
+	{
+		LastPowerTime = ThisPowerTime;
+		return;
+	}
+	else
+	{
+		unsigned long ThisPowerDiff = ThisPowerTime - LastPowerTime;
+		if (ThisPowerDiff > 10)
+		{
+			PowerTimeDiff = ThisPowerTime - LastPowerTime;
+			LastPowerTime = ThisPowerTime;
+			GotPower = true;
+		}
+
+	}
+
+}
+
+void IR_DEconde_INT()//中断函数
+{
+	unsigned long ThisTime;
+	unsigned long DiffTime;
+	unsigned int PulseTime;
+	unsigned int IdleTime;
+
+	static unsigned long PulseStartTime = 0;
+	static bool isLastLong = true;
+	static unsigned char BitCounter = 0;
+	static unsigned long LastTime = 0;
+
+
+	if (BitCounter<SAMPLE_NUMBER)
+	{
+		if (LastTime == 0)
+		{
+			LastTime = micros();
+		} 
+		else
+		{
+			ThisTime = micros();
+			DiffTime = ThisTime-LastTime;
+			if (DiffTime < 100)
+			{
+				if (isLastLong)
+				{
+					PulseStartTime = ThisTime;
+					isLastLong = false;
+				}
+			}
+			else
+			{
+				PulseTime = LastTime - PulseStartTime;
+				IdleTime = DiffTime;
+
+				if (isComamndStart)
+				{
+					if (IdleTime > 3800)
+					{
+						FrameOK = true;
+						BitCounter = 0;
+						LastTime = 0;
+					}
+					else if(!FrameOK)
+					{
+						if (IdleTime > 1000)//bit 1
+						{
+							IrData[BitCounter/8] += 1<<(7-BitCounter%8);
+						}
+						else//bit 0
+						{
+						}
+						BitCounter++;
+					}
+				}
+				else
+				{
+					if ((PulseTime > 3800)&&(IdleTime > 3800))
+					{
+						isComamndStart = true;
+					}
+				}
+				isLastLong = true;
+			}
+			LastTime = ThisTime;
+		}
+	}
+}
+
+
+void CheckAcData()
+{
+
+	if (FrameOK)
+	{
+		//printf("Get IR data:");
+		//for (unsigned char i = 0; i<6 ; i++)
+		//{
+		//	printf("0x%02X ",IrData[i]);
+		//}
+		//printf("\r\n");
+
+
+
+		if((IrData[0] == 0xb2)
+			&&(IrData[0] == (byte)(~(IrData[1])))
+			&&(IrData[2] == (byte)(~(IrData[3])))
+			&&(IrData[4] == (byte)(~(IrData[5]))))
+		{
+			//printf("Data checked!\r\n");
+
+
+			if ((IrData[2] == 0x7B)&&(IrData[4] == 0xE0))
+			{
+				RoomData.AcMode = 5;
+				//printf("Mode = 关机 \r\n");
+			}
+			else
+
+			{
+
+
+				RoomData.AcTemperature = acTemperature(IrData[4]>>4);
+				//printf("Temperature = %d \r\n",RoomData.AcTemperature);
+
+				//原厂定义
+				//0冷 1风湿 2自 3热 
+
+				//自有定义
+				//0冷 1湿 2自 3热  4风 5关机
+
+				if (RoomData.AcTemperature == 0)
+				{
+					RoomData.AcMode = 4;
+				} 
+				else
+				{
+					RoomData.AcMode = (IrData[4]>>2)&3;
+				}
+			}
+
+			printf("Data checked! mode = %d, temp = %d\r\n",RoomData.AcMode,RoomData.AcTemperature);
+
+
+			if (RoomData.AcMode != 5)
+			{
+				LastAcMode = RoomData.AcMode;
+				LastAcTemperature = RoomData.AcTemperature;
+				LastAcOn = true;
+			}
+			else
+			{
+				LastAcOn = false;
+			}
+
+
+		}
+		else
+		{
+			//printf("Data checke failed!\r\n");
+		}
+
+		//printf("\r\n");
+
+
+		for (unsigned char i = 0; i<6 ; i++)
+		{
+			IrData[i] = 0;
+		}
+		FrameOK = false;
+		isComamndStart = false;
+	}
+}
+
+unsigned char acTemperature(unsigned char code)
+{
+	switch(code)
+	{
+	case 0:
+		return 17; 
+		break;
+	case 1:
+		return 18; 
+		break;
+	case 3:
+		return 19; 
+		break;
+	case 2:
+		return 20; 
+		break;
+	case 6:
+		return 21; 
+		break;
+	case 7:
+		return 22; 
+		break;
+	case 5:
+		return 23; 
+		break;
+	case 4:
+		return 24; 
+		break;
+	case 12:
+		return 25; 
+		break;
+	case 13:
+		return 26; 
+		break;
+	case 9:
+		return 27; 
+		break;
+	case 8:
+		return 28; 
+		break;
+	case 10:
+		return 29; 
+		break;
+	case 11:
+		return 30; 
+		break;
+	case 14:
+		return 0; 
+		break;
+	}
 }
