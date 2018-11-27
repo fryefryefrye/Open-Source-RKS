@@ -59,6 +59,7 @@ DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
 
 #include <SoftwareSerial.h>
 SoftwareSerial swSer(SOFT_SERIAL_RX, SOFT_SERIAL_RX, false, 256);
+bool IsSoftwareSerialOn = true; 
 
 const char* ssid = "frye";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
@@ -144,19 +145,24 @@ void CheckRfCommand(unsigned char * RfCommand);
 
 
 void IR_DEconde_INT();
+bool IsIrIntOn = false; 
 void CheckAcData();
+void ProcessAcData();
 unsigned char acTemperature(unsigned char code);
-
-#define AC_OP_ON_OFF	0
-#define AC_OP_ON_MODE	1
-#define AC_OP_ON_UP		2
-#define AC_OP_ON_DOWN	3
 void AcOperation(unsigned char OpCode);
 
 #define  SAMPLE_NUMBER 200
-byte IrData[6] = {0,0,0,0,0,0};
+
+byte IrData1[6] = {0,0,0,0,0,0};
+byte IrData2[6] = {0,0,0,0,0,0};
+byte * pIrData = IrData1;
 bool isComamndStart = false;
 bool FrameOK = false;
+bool Frame1OK = false;
+unsigned long PulseStartTime = 0;
+bool isLastLong = true;
+unsigned char BitCounter = 0;
+unsigned long LastTime = 0;
 unsigned char LastAcMode = 0;
 unsigned char LastAcTemperature = 30;
 bool LastAcOn = false;
@@ -184,6 +190,7 @@ void setup()
 	//AC RX
 	pinMode(MIDEA_AC_RX, INPUT_PULLUP);//NodeMCU D6 GPIO12
 	attachInterrupt(digitalPinToInterrupt(MIDEA_AC_RX), IR_DEconde_INT, RISING);
+	IsIrIntOn = true; 
 
 	pinMode(AC_POWER, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(AC_POWER), AC_Power_INT, RISING);
@@ -445,11 +452,25 @@ void OnSecond()
 
 void OnTenthSecond()
 {
+	static unsigned char SoftwareSerialOffTime = 0;
 
 	if (TenthSecondsSinceStart%10==0)
 	{
 		OnSecond();
 	}
+
+	if (!IsSoftwareSerialOn)
+	{
+		SoftwareSerialOffTime++;
+		if (SoftwareSerialOffTime>5)
+		{
+			swSer.enableRx(true);
+			IsSoftwareSerialOn = true;
+			SoftwareSerialOffTime = 0;
+		}
+	}
+
+
 
 	//if (TenthSecondsSinceStart%200==0)
 	//{
@@ -551,8 +572,8 @@ void CheckRfCommand(unsigned char * RfCommand)
 						if (j == 3)
 						{
 							swSer.enableRx(false);
+							IsSoftwareSerialOn = false;
 							AcOperation(AC_OP_ON_OFF);
-							swSer.enableRx(true);
 						}
 					}
 				}
@@ -583,11 +604,11 @@ void AcOperation(unsigned char OpCode)
 		else
 		{
 			printf("Execute AC Off \r\n");
-			RoomData.AcMode = 5;
+			//RoomData.AcMode = 5;
 			m_IRMideaAC.setPower(false);
 		}
 		break;
-	case AC_OP_ON_MODE:
+	case AC_OP_MODE:
 		printf("Execute AC mode \r\n");
 		m_IRMideaAC.setPower(LastAcOn);
 		m_IRMideaAC.setTemp(LastAcTemperature);
@@ -613,17 +634,36 @@ void AcOperation(unsigned char OpCode)
 			break;
 		}
 		break;
-	case AC_OP_ON_UP:
+	case AC_OP_UP:
 		printf("Execute AC up \r\n");
 		m_IRMideaAC.setPower(LastAcOn);
 		m_IRMideaAC.setMode(LastAcMode);
 		m_IRMideaAC.setTemp(LastAcTemperature+1);
 		break;
-	case AC_OP_ON_DOWN:
+	case AC_OP_DOWN:
 		printf("Execute AC down \r\n");
 		m_IRMideaAC.setPower(LastAcOn);
 		m_IRMideaAC.setMode(LastAcMode);
 		m_IRMideaAC.setTemp(LastAcTemperature-1);
+		break;
+
+	case AC_OP_ON_COLD:
+		printf("Execute AC down \r\n");
+		m_IRMideaAC.setPower(true);
+		m_IRMideaAC.setMode(0);
+		m_IRMideaAC.setTemp(28);
+		break;
+
+	case AC_OP_ON_HEAT:
+		printf("Execute AC down \r\n");
+		m_IRMideaAC.setPower(true);
+		m_IRMideaAC.setMode(3);
+		m_IRMideaAC.setTemp(17);
+		break;
+
+	case AC_OP_OFF:
+		printf("Execute AC Off \r\n");
+		m_IRMideaAC.setPower(false);
 		break;
 	}
 
@@ -660,15 +700,12 @@ void IR_DEconde_INT()//中断函数
 	unsigned int PulseTime;
 	unsigned int IdleTime;
 
-	static unsigned long PulseStartTime = 0;
-	static bool isLastLong = true;
-	static unsigned char BitCounter = 0;
-	static unsigned long LastTime = 0;
+
 
 
 	if (BitCounter<SAMPLE_NUMBER)
 	{
-		if (LastTime == 0)
+		if (LastTime == 0)//record the first timestamp
 		{
 			LastTime = micros();
 		} 
@@ -693,20 +730,34 @@ void IR_DEconde_INT()//中断函数
 				{
 					if (IdleTime > 3800)
 					{
-						FrameOK = true;
-						BitCounter = 0;
-						LastTime = 0;
+						
 					}
 					else if(!FrameOK)
 					{
 						if (IdleTime > 1000)//bit 1
 						{
-							IrData[BitCounter/8] += 1<<(7-BitCounter%8);
+							pIrData[BitCounter/8] += 1<<(7-BitCounter%8);
 						}
 						else//bit 0
 						{
 						}
 						BitCounter++;
+						if (BitCounter>=48)
+						{
+							if (pIrData == IrData1)
+							{
+								BitCounter = 0;
+								isComamndStart = false;
+								pIrData = IrData2;
+								Frame1OK = true;
+							} 
+							else
+							{
+								detachInterrupt(digitalPinToInterrupt(MIDEA_AC_RX));
+								IsIrIntOn = false; 
+								FrameOK = true;
+							}
+						}
 					}
 				}
 				else
@@ -727,85 +778,127 @@ void IR_DEconde_INT()//中断函数
 void CheckAcData()
 {
 
+	static long FrameOKTime;
+
+	if (Frame1OK)
+	{
+		delay(300);
+		if (!FrameOK)
+		{
+			printf("Only get data 1\r\n");
+			printf("Get IR data1:0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\r\n",IrData1[0],IrData1[1],IrData1[2],IrData1[3],IrData1[4],IrData1[5]);
+
+		}
+		Frame1OK = false;
+
+	}
+
 	if (FrameOK)
 	{
-		//printf("Get IR data:");
-		//for (unsigned char i = 0; i<6 ; i++)
-		//{
-		//	printf("0x%02X ",IrData[i]);
-		//}
-		//printf("\r\n");
+		FrameOK = false;	
+		FrameOKTime = TenthSecondsSinceStart;
+		printf("Get IR data1:0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\r\n",IrData1[0],IrData1[1],IrData1[2],IrData1[3],IrData1[4],IrData1[5]);
+		printf("Get IR data2:0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X\r\n",IrData2[0],IrData2[1],IrData2[2],IrData2[3],IrData2[4],IrData2[5]);
 
+		pIrData = IrData1;
 
-
-		if((IrData[0] == 0xb2)
-			&&(IrData[0] == (byte)(~(IrData[1])))
-			&&(IrData[2] == (byte)(~(IrData[3])))
-			&&(IrData[4] == (byte)(~(IrData[5]))))
+		if((pIrData[0] == 0xb2)
+			&&(pIrData[0] == (byte)(~(pIrData[1])))
+			&&(pIrData[2] == (byte)(~(pIrData[3])))
+			&&(pIrData[4] == (byte)(~(pIrData[5]))))
 		{
-			//printf("Data checked!\r\n");
-
-
-			if ((IrData[2] == 0x7B)&&(IrData[4] == 0xE0))
-			{
-				RoomData.AcMode = 5;
-				//printf("Mode = 关机 \r\n");
-			}
-			else
-
-			{
-
-
-				RoomData.AcTemperature = acTemperature(IrData[4]>>4);
-				//printf("Temperature = %d \r\n",RoomData.AcTemperature);
-
-				//原厂定义
-				//0冷 1风湿 2自 3热 
-
-				//自有定义
-				//0冷 1湿 2自 3热  4风 5关机
-
-				if (RoomData.AcTemperature == 0)
-				{
-					RoomData.AcMode = 4;
-				} 
-				else
-				{
-					RoomData.AcMode = (IrData[4]>>2)&3;
-				}
-			}
-
-			printf("Data checked! mode = %d, temp = %d\r\n",RoomData.AcMode,RoomData.AcTemperature);
-
-
-			if (RoomData.AcMode != 5)
-			{
-				LastAcMode = RoomData.AcMode;
-				LastAcTemperature = RoomData.AcTemperature;
-				LastAcOn = true;
-			}
-			else
-			{
-				LastAcOn = false;
-			}
-
-
+			printf("Data 1 checked!\r\n");
+			ProcessAcData();
+			return;
 		}
 		else
 		{
-			//printf("Data checke failed!\r\n");
+			printf("Data 1 faled!\r\n");
 		}
 
-		//printf("\r\n");
+		pIrData = IrData2;
+
+		if((pIrData[0] == 0xb2)
+			&&(pIrData[0] == (byte)(~(pIrData[1])))
+			&&(pIrData[2] == (byte)(~(pIrData[3])))
+			&&(pIrData[4] == (byte)(~(pIrData[5]))))
+		{
+			printf("Data 2 checked!\r\n");
+			ProcessAcData();
+			return;
+		}
+		else
+		{
+			printf("Data 2 faled!\r\n");
+		}
+	}
 
 
+	//non stop task
+	if((TenthSecondsSinceStart - FrameOKTime > 4)&&(IsIrIntOn == false)) 
+	{
 		for (unsigned char i = 0; i<6 ; i++)
 		{
-			IrData[i] = 0;
+			IrData1[i] = 0;
+			IrData2[i] = 0;
 		}
-		FrameOK = false;
+		pIrData = IrData1;
+		BitCounter = 0;
+		LastTime = 0;
+		PulseStartTime = 0;
+		isLastLong = true;
 		isComamndStart = false;
+		attachInterrupt(digitalPinToInterrupt(MIDEA_AC_RX), IR_DEconde_INT, RISING);
+		IsIrIntOn = true; 
 	}
+}
+
+void ProcessAcData()
+{
+	if ((pIrData[2] == 0x7B)&&(pIrData[4] == 0xE0))
+	{
+		RoomData.AcMode = 5;
+		//printf("Mode = 关机 \r\n");
+	}
+	else
+	{
+		RoomData.AcTemperature = acTemperature(pIrData[4]>>4);
+		//printf("Temperature = %d \r\n",RoomData.AcTemperature);
+
+		//原厂定义
+		//0冷 1风湿 2自 3热 
+
+		//自有定义
+		//0冷 1湿 2自 3热  4风 5关机
+
+		if (RoomData.AcTemperature == 0)
+		{
+			RoomData.AcMode = 4;
+		} 
+		else
+		{
+			RoomData.AcMode = (pIrData[4]>>2)&3;
+		}
+	}
+
+	printf("Data checked! mode = %d, temp = %d\r\n",RoomData.AcMode,RoomData.AcTemperature);
+
+
+	if (RoomData.AcMode != 5)
+	{
+		LastAcMode = RoomData.AcMode;
+		LastAcTemperature = RoomData.AcTemperature;
+		LastAcOn = true;
+	}
+	else
+	{
+		LastAcOn = false;
+	}
+
+
+
+
+
 }
 
 unsigned char acTemperature(unsigned char code)
