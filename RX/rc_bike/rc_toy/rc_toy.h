@@ -10,7 +10,7 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 
 #define THROTLE_MIDDLE 128
 #define RUDDER_MIDDLE 128
-#define THROTLE_DEAD_ZONE 70
+#define THROTLE_DEAD_ZONE 20
 
 
 /*****************************************************/
@@ -197,14 +197,14 @@ void nRFTask()
 		if (GotData[0] == 4)
 		{
 			RcCode = GotData[1];
-			RcThrottle = GotData[2];
-			//RcRudder = GotData[3];
+			//RcThrottle = GotData[2];
+			RcThrottle = 255 - GotData[2];
 
-			if(RcThrottle < (THROTLE_MIDDLE - THROTLE_DEAD_ZONE))
 
+			//if(RcThrottle < (THROTLE_MIDDLE - THROTLE_DEAD_ZONE))
+			if(RcThrottle > (THROTLE_MIDDLE + THROTLE_DEAD_ZONE))
 			{
 				RcRudder = 255 - GotData[3];
-
 			}
 			else
 			{

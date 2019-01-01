@@ -113,7 +113,7 @@ unsigned char InfoLen;
 
 unsigned long SecondsSinceStart = 0;
 
-unsigned char TimeOut = 30;
+unsigned char TimeOut;
 
 
 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½Ğ´ï¿½Ñ©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´Öª
@@ -731,24 +731,25 @@ bool GetAir()
 }
 bool GetNow()
 {
+	TimeOut = 2;
 	//	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
 	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
-    WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
-	_esp8266_waitFor("OK\r\n");
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+	if(!_esp8266_waitFor("OK\r\n")) return false;
 
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
 	WIFI_SERIAL.print(sizeof(HttpNow));
 	WIFI_SERIAL.print(F("\r\n"));
 
-	_esp8266_waitFor("OK\r\n>");
+	if(!_esp8266_waitFor("OK\r\n>")) return false;
 
 	for(unsigned char i = 0; i<sizeof(HttpNow) ; i++)
 	{
 		WIFI_SERIAL.print(HttpNow[i]);
 	}
 
-	_esp8266_waitFor("200 OK");
+	if(!_esp8266_waitFor("200 OK")) return false;
 
 
 
@@ -771,13 +772,13 @@ bool GetForcast(unsigned char Day,unsigned char Postion)
 
 
 	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
-	_esp8266_waitFor("OK\r\n");
+	if(!_esp8266_waitFor("OK\r\n")) return false;
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
 	WIFI_SERIAL.print(sizeof(HttpForcast));
 	WIFI_SERIAL.print(F("\r\n"));
 
-	_esp8266_waitFor("OK\r\n>");
+	if(!_esp8266_waitFor("OK\r\n>")) return false;
 
 	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
 	{
@@ -997,29 +998,51 @@ void HourlyUpdate()
 
 
 
-	GetNow();
+	Serial.println(F("before GetNow!\r\n"));
+	if(!GetNow())
+	{
+		DateLine2[0] = '-';
+		DateLine2[1] = '-';
+		Serial.println(F("GetNow failed!\r\n"));
+	}
 
 	//GetAir();
 
 	if (hour(t+8*3600)<18)
 	{
-		GetForcast(0,0);
-		GetForcast(1,1);
-/* 		if (!GetAvaForcast(0))
+		if (!GetForcast(0,0))
 		{
 			DateLine2[0] = '-';
 			DateLine2[1] = '-';
+		}
+		if (!GetForcast(1,1))
+		{
+			DateLine2[0] = '-';
+			DateLine2[1] = '-';
+		}
+		/* 		if (!GetAvaForcast(0))
+		{
+		DateLine2[0] = '-';
+		DateLine2[1] = '-';
 		} */
 
 	} 
 	else
 	{
-		GetForcast(1,0);
-		GetForcast(2,1);
-/* 		if (!GetAvaForcast(1))
+		if (!GetForcast(1,0))
 		{
 			DateLine2[0] = '-';
 			DateLine2[1] = '-';
+		}
+		if (!GetForcast(2,1))
+		{
+			DateLine2[0] = '-';
+			DateLine2[1] = '-';
+		}
+		/* 		if (!GetAvaForcast(1))
+		{
+		DateLine2[0] = '-';
+		DateLine2[1] = '-';
 		} */
 	}
 
@@ -1339,7 +1362,8 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		ChartIndex[1] = YU;
 		break;
 
-	case 20://ï¿½ï¿½Ñ©	Sleet	ï¿½ï¿½ï¿½Ñ?		ChartIndex[0] = YU;
+	case 20://ï¿½ï¿½Ñ©	Sleet	ï¿½ï¿½ï¿½Ñ?		
+		ChartIndex[0] = YU;
 		ChartIndex[1] = XUE;
 		break;
 
@@ -1402,7 +1426,8 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		break;
 
 
-	case 33://ï¿½ï¿½ï¿?Blustery	ï¿½ï¿½ï¿?		ChartIndex[0] = DA;
+	case 33://ï¿½ï¿½ï¿?Blustery	ï¿½ï¿½ï¿?		
+		ChartIndex[0] = DA;
 		ChartIndex[1] = FENG;
 		break;
 
@@ -1419,7 +1444,8 @@ void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex)
 		break;
 		;
 
-	case 36://	ï¿½ï¿½ï¿½ï¿½	Tornado	ï¿½ï¿½ï¿½ï¿½ï¿?		ChartIndex[0] = LONG;
+	case 36://	ï¿½ï¿½ï¿½ï¿½	Tornado	ï¿½ï¿½ï¿½ï¿½ï¿?		
+		ChartIndex[0] = LONG;
 		ChartIndex[1] = JUAN;
 		break;
 
@@ -2044,6 +2070,11 @@ bool _esp8266_getch(char * RetData)
 			NonStopTask();
 			DataUpdate();
 		}
+		//if (SecondsSinceStart!=RecvStartTime)
+		//{
+		//	printf("TimeOut = %d\r\n",SecondsSinceStart - RecvStartTime);
+		//}
+		
 		if (SecondsSinceStart - RecvStartTime > TimeOut)
 		{
 			return false;

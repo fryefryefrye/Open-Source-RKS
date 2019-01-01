@@ -77,7 +77,7 @@ void loop()
 	//	strip.setPixelColor(i, color);
 	//}
 	//strip.show();
-	//delay(50);
+	//delay(500);
 
 	//LedOn++;
 	//if (LedOn > MAX_LED)
@@ -90,166 +90,166 @@ void loop()
 
 
 	////渐变色,单色亮灭。
-	//static uint8_t mode = 0;
-	//static uint8_t r=0; 
-	//static uint8_t g=0; 
-	//static uint8_t b=0;
-	//switch (mode)
-	//{
-	//	case 0:
-	//		r++;
-	//		if (r == MAX_LIGHT)
-	//		{
-	//			mode = 1;
-	//		}
-	//		break;
-	//	case 1:
-	//		r--;
-	//		if (r == 0)
-	//		{
-	//			mode = 2;
-	//		}
-	//		break;
-	//	case 2:
-	//		g++;
-	//		if (g == MAX_LIGHT)
-	//		{
-	//			mode = 3;
-	//		}
-	//		break;
-	//	case 3:
-	//		g--;
-	//		if (g == 0)
-	//		{
-	//			mode = 4;
-	//		}
-	//		break;
-	//	case 4:
-	//		b++;
-	//		if (b == MAX_LIGHT)
-	//		{
-	//			mode = 5;
-	//		}
-	//		break;
-	//	case 5:
-	//		b--;
-	//		if (b == 0)
-	//		{
-	//			mode = 6;
-	//		}
-	//		break;
-	//	case 6:
-	//		r++;
-	//		g++;
-	//		if (r == MAX_LIGHT)
-	//		{
-	//			mode = 7;
-	//		}
-	//		break;
-	//	case 7:
-	//		r--;
-	//		g--;
-	//		if (r == 0)
-	//		{
-	//			mode = 8;
-	//		}
-	//		break;
-	//	case 8:
-	//		g++;
-	//		b++;
-	//		if (g == MAX_LIGHT)
-	//		{
-	//			mode = 9;
-	//		}
-	//		break;
-	//	case 9:
-	//		g--;
-	//		b--;
-	//		if (g == 0)
-	//		{
-	//			mode = 10;
-	//		}
-	//		break;
-	//	case 10:
-	//		b++;
-	//		r++;
-	//		if (b == MAX_LIGHT)
-	//		{
-	//			mode = 11;
-	//		}
-	//		break;
-	//	case 11:
-	//		b--;
-	//		r--;
-	//		if (b == 0)
-	//		{
-	//			mode = 12;
-	//		}
-	//		break;
-	//	case 12:
-	//		b++;
-	//		r++;
-	//		g++;
-	//		if (b == MAX_LIGHT)
-	//		{
-	//			mode = 13;
-	//		}
-	//		break;
-	//	case 13:
-	//		b--;
-	//		r--;
-	//		g--;
-	//		if (b == 0)
-	//		{
-	//			mode = 0;
-	//		}
-	//		break;
-	//}
-	//setColor(r, g, b);
-	//delay(200);
+	static uint8_t mode = 0;
+	static uint8_t r=0; 
+	static uint8_t g=0; 
+	static uint8_t b=0;
+	switch (mode)
+	{
+		case 0:
+			r++;
+			if (r == MAX_LIGHT)
+			{
+				mode = 1;
+			}
+			break;
+		case 1:
+			r--;
+			if (r == 0)
+			{
+				mode = 2;
+			}
+			break;
+		case 2:
+			g++;
+			if (g == MAX_LIGHT)
+			{
+				mode = 3;
+			}
+			break;
+		case 3:
+			g--;
+			if (g == 0)
+			{
+				mode = 4;
+			}
+			break;
+		case 4:
+			b++;
+			if (b == MAX_LIGHT)
+			{
+				mode = 5;
+			}
+			break;
+		case 5:
+			b--;
+			if (b == 0)
+			{
+				mode = 6;
+			}
+			break;
+		case 6:
+			r++;
+			g++;
+			if (r == MAX_LIGHT)
+			{
+				mode = 7;
+			}
+			break;
+		case 7:
+			r--;
+			g--;
+			if (r == 0)
+			{
+				mode = 8;
+			}
+			break;
+		case 8:
+			g++;
+			b++;
+			if (g == MAX_LIGHT)
+			{
+				mode = 9;
+			}
+			break;
+		case 9:
+			g--;
+			b--;
+			if (g == 0)
+			{
+				mode = 10;
+			}
+			break;
+		case 10:
+			b++;
+			r++;
+			if (b == MAX_LIGHT)
+			{
+				mode = 11;
+			}
+			break;
+		case 11:
+			b--;
+			r--;
+			if (b == 0)
+			{
+				mode = 12;
+			}
+			break;
+		case 12:
+			b++;
+			r++;
+			g++;
+			if (b == MAX_LIGHT)
+			{
+				mode = 13;
+			}
+			break;
+		case 13:
+			b--;
+			r--;
+			g--;
+			if (b == 0)
+			{
+				mode = 0;
+			}
+			break;
+	}
+	setColor(r, g, b);
+	delay(200);
 
-
-//变换色
-static uint8_t mode = 0;
-static uint8_t r=0; 
-static uint8_t g=0; 
-static uint8_t b=0;
-switch (mode)
-{
-case 0:
-	r++;
-	if (r == MAX_LIGHT)
-	{
-		mode = 1;
-	}
-	break;
-case 1:
-	r--;
-	g++;
-	if (r == 0)
-	{
-		mode = 2;
-	}
-	break;
-case 2:
-	g--;
-	b++;
-	if (g == 0)
-	{
-		mode = 3;
-	}
-	break;
-case 3:
-	b--;
-	r++;
-	if (b == 0)
-	{
-		mode = 1;
-	}
-	break;
-}
-setColor(r, g, b);
-delay(20);
+//
+////变换色
+//static uint8_t mode = 0;
+//static uint8_t r=0; 
+//static uint8_t g=0; 
+//static uint8_t b=0;
+//switch (mode)
+//{
+//case 0:
+//	r++;
+//	if (r == MAX_LIGHT)
+//	{
+//		mode = 1;
+//	}
+//	break;
+//case 1:
+//	r--;
+//	g++;
+//	if (r == 0)
+//	{
+//		mode = 2;
+//	}
+//	break;
+//case 2:
+//	g--;
+//	b++;
+//	if (g == 0)
+//	{
+//		mode = 3;
+//	}
+//	break;
+//case 3:
+//	b--;
+//	r++;
+//	if (b == 0)
+//	{
+//		mode = 1;
+//	}
+//	break;
+//}
+//setColor(r, g, b);
+//delay(20);
 
 
 	
