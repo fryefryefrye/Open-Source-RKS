@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="1" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="1" altunitdist="mm" altunit="mm"/>
+<grid distance="0.1" unitdist="mm" unit="mm" style="lines" multiple="1" display="yes" altdistance="1" altunitdist="mm" altunit="mm"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -183,7 +183,6 @@ by exp-lbrs.ulp</description>
 &lt;p&gt;Example device(s):
 &lt;ul&gt;&lt;li&gt;CONN_04x2&lt;/li&gt;
 &lt;/ul&gt;&lt;/p&gt;</description>
-<wire x1="-5.595" y1="-30.844" x2="-6.865" y2="-30.844" width="0.2032" layer="22"/>
 <wire x1="17.78" y1="-35.45" x2="17.78" y2="19.05" width="0.127" layer="21"/>
 <wire x1="17.78" y1="19.05" x2="-15.68" y2="19.05" width="0.127" layer="21"/>
 <wire x1="-15.68" y1="19.05" x2="-15.68" y2="-35.45" width="0.127" layer="21"/>
@@ -219,10 +218,10 @@ by exp-lbrs.ulp</description>
 <rectangle x1="9.256" y1="15.126" x2="9.764" y2="15.634" layer="51"/>
 <pad name="8" x="9.51" y="15.38" drill="2" diameter="3.81"/>
 <text x="13.82" y="14.58" size="2" layer="21">2</text>
-<wire x1="-11" y1="11.1" x2="13.3" y2="11.1" width="0.127" layer="20"/>
-<wire x1="13.3" y1="11.1" x2="13.3" y2="-25.7" width="0.127" layer="20"/>
-<wire x1="13.3" y1="-25.7" x2="-11" y2="-25.7" width="0.127" layer="20"/>
-<wire x1="-11" y1="-25.7" x2="-11" y2="11.1" width="0.127" layer="20"/>
+<wire x1="-11" y1="12.1" x2="13.3" y2="12.1" width="0.127" layer="20"/>
+<wire x1="13.3" y1="12.1" x2="13.3" y2="-20.62" width="0.127" layer="20"/>
+<wire x1="13.3" y1="-20.62" x2="-11" y2="-20.62" width="0.127" layer="20"/>
+<wire x1="-11" y1="-20.62" x2="-11" y2="12.1" width="0.127" layer="20"/>
 </package>
 <package name="315MHZ_RX_UART">
 <description>&lt;h3&gt;Plated Through Hole - 2x4&lt;/h3&gt;
@@ -485,6 +484,56 @@ by exp-lbrs.ulp</description>
 <text x="15" y="2" size="1.27" layer="21" rot="R180">ANT</text>
 <text x="-13.716" y="-1.27" size="1.27" layer="21">+5v</text>
 </package>
+<package name="2.54*4">
+<description>&lt;h3&gt;Plated Through Hole - 2x4&lt;/h3&gt;
+&lt;p&gt;Specifications:
+&lt;ul&gt;&lt;li&gt;Pin count:8&lt;/li&gt;
+&lt;li&gt;Pin pitch:0.1"&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;
+&lt;p&gt;Example device(s):
+&lt;ul&gt;&lt;li&gt;CONN_04x2&lt;/li&gt;
+&lt;/ul&gt;&lt;/p&gt;</description>
+<wire x1="-3.045" y1="0.76" x2="-2.41" y2="1.395" width="0.2032" layer="21"/>
+<wire x1="-2.41" y1="1.395" x2="-1.775" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="-0.505" y1="0.76" x2="0.13" y2="1.395" width="0.2032" layer="21"/>
+<wire x1="0.13" y1="1.395" x2="0.765" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="2.035" y1="0.76" x2="2.67" y2="1.395" width="0.2032" layer="21"/>
+<wire x1="-4.315" y1="3.3" x2="-3.045" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="-3.045" y1="3.3" x2="-2.41" y2="2.665" width="0.2032" layer="21"/>
+<wire x1="-2.41" y1="2.665" x2="-1.775" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="-1.775" y1="3.3" x2="-0.505" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="-0.505" y1="3.3" x2="0.13" y2="2.665" width="0.2032" layer="21"/>
+<wire x1="0.13" y1="2.665" x2="0.765" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="0.765" y1="3.3" x2="2.035" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="2.035" y1="3.3" x2="2.67" y2="2.665" width="0.2032" layer="21"/>
+<wire x1="0.765" y1="0.76" x2="2.035" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="-1.775" y1="0.76" x2="-0.505" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="-4.315" y1="0.76" x2="-3.045" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="-4.315" y1="0.506" x2="-3.045" y2="0.506" width="0.2032" layer="21"/>
+<wire x1="-3.045" y1="0.506" x2="-4.315" y2="0.506" width="0.2032" layer="22"/>
+<wire x1="-4.95" y1="1.395" x2="-4.315" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="-4.95" y1="1.395" x2="-4.95" y2="2.665" width="0.2032" layer="21"/>
+<wire x1="-4.95" y1="2.665" x2="-4.315" y2="3.3" width="0.2032" layer="21"/>
+<rectangle x1="-3.934" y1="1.776" x2="-3.426" y2="2.284" layer="51"/>
+<rectangle x1="-1.394" y1="1.776" x2="-0.886" y2="2.284" layer="51"/>
+<rectangle x1="1.146" y1="1.776" x2="1.654" y2="2.284" layer="51"/>
+<rectangle x1="-3.934" y1="1.776" x2="-3.426" y2="2.284" layer="51"/>
+<rectangle x1="-1.394" y1="1.776" x2="-0.886" y2="2.284" layer="51"/>
+<rectangle x1="1.146" y1="1.776" x2="1.654" y2="2.284" layer="51"/>
+<pad name="1" x="-3.68" y="2.03" drill="1.016" diameter="1.8796"/>
+<pad name="2" x="-1.14" y="2.03" drill="1.016" diameter="1.8796"/>
+<pad name="3" x="1.4" y="2.03" drill="1.016" diameter="1.8796"/>
+<wire x1="2.67" y1="1.395" x2="3.305" y2="0.76" width="0.2032" layer="21"/>
+<wire x1="4.575" y1="0.76" x2="5.21" y2="1.395" width="0.2032" layer="21"/>
+<wire x1="2.67" y1="2.665" x2="3.305" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="3.305" y1="3.3" x2="4.575" y2="3.3" width="0.2032" layer="21"/>
+<wire x1="4.575" y1="3.3" x2="5.21" y2="2.665" width="0.2032" layer="21"/>
+<wire x1="5.21" y1="2.665" x2="5.21" y2="1.395" width="0.2032" layer="21"/>
+<wire x1="3.305" y1="0.76" x2="4.575" y2="0.76" width="0.2032" layer="21"/>
+<rectangle x1="3.686" y1="1.776" x2="4.194" y2="2.284" layer="51"/>
+<rectangle x1="3.686" y1="1.776" x2="4.194" y2="2.284" layer="51"/>
+<pad name="4" x="3.94" y="2.03" drill="1.016" diameter="1.8796"/>
+</package>
 </packages>
 </library>
 </libraries>
@@ -514,21 +563,21 @@ design rules under a new name.</description>
 <param name="layerSetup" value="(1*16)"/>
 <param name="mtCopper" value="0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm 0.035mm"/>
 <param name="mtIsolate" value="1.5mm 0.15mm 0.2mm 0.15mm 0.2mm 0.15mm 0.2mm 0.15mm 0.2mm 0.15mm 0.2mm 0.15mm 0.2mm 0.15mm 0.2mm"/>
-<param name="mdWireWire" value="30mil"/>
-<param name="mdWirePad" value="30mil"/>
-<param name="mdWireVia" value="30mil"/>
-<param name="mdPadPad" value="30mil"/>
-<param name="mdPadVia" value="30mil"/>
-<param name="mdViaVia" value="30mil"/>
-<param name="mdSmdPad" value="30mil"/>
-<param name="mdSmdVia" value="30mil"/>
-<param name="mdSmdSmd" value="30mil"/>
+<param name="mdWireWire" value="10mil"/>
+<param name="mdWirePad" value="10mil"/>
+<param name="mdWireVia" value="10mil"/>
+<param name="mdPadPad" value="10mil"/>
+<param name="mdPadVia" value="10mil"/>
+<param name="mdViaVia" value="10mil"/>
+<param name="mdSmdPad" value="10mil"/>
+<param name="mdSmdVia" value="10mil"/>
+<param name="mdSmdSmd" value="10mil"/>
 <param name="mdViaViaSameLayer" value="8mil"/>
 <param name="mnLayersViaInSmd" value="2"/>
 <param name="mdCopperDimension" value="40mil"/>
 <param name="mdDrill" value="8mil"/>
 <param name="mdSmdStop" value="0mil"/>
-<param name="msWidth" value="30mil"/>
+<param name="msWidth" value="10mil"/>
 <param name="msDrill" value="24mil"/>
 <param name="msMicroVia" value="9.99mm"/>
 <param name="msBlindViaRatio" value="0.5"/>
@@ -583,7 +632,7 @@ design rules under a new name.</description>
 <pass name="Default">
 <param name="RoutingGrid" value="50mil"/>
 <param name="AutoGrid" value="1"/>
-<param name="Efforts" value="0"/>
+<param name="Efforts" value="2"/>
 <param name="TopRouterVariant" value="1"/>
 <param name="tpViaShape" value="round"/>
 <param name="PrefDir.1" value="a"/>
@@ -681,6 +730,7 @@ design rules under a new name.</description>
 <element name="POWER" library="rx" package="AC_DC_SIDE" value="" x="57.1" y="17.1" rot="R90"/>
 <element name="J" library="rx" package="OUT_HEAD_4_AC_2CH" value="" x="27" y="7" rot="R180"/>
 <element name="U" library="rx" package="ESP8266_MINI_SIDE" value="" x="11" y="48" rot="R270"/>
+<element name="J1" library="rx" package="2.54*4" value="" x="6" y="62" rot="R90"/>
 </elements>
 <signals>
 <signal name="N">
@@ -702,7 +752,9 @@ design rules under a new name.</description>
 <contactref element="RELAY" pad="1"/>
 <contactref element="RX" pad="4"/>
 <contactref element="U" pad="1"/>
+<contactref element="J1" pad="4"/>
 <wire x1="12.53" y1="58.61" x2="39.23" y2="61.32" width="0" layer="19" extent="1-1"/>
+<wire x1="3.97" y1="65.94" x2="12.53" y2="58.61" width="0" layer="19" extent="1-1"/>
 <wire x1="54.42" y1="30.31" x2="39.23" y2="61.32" width="0" layer="19" extent="1-1"/>
 <wire x1="12.32" y1="22.75" x2="12.53" y2="58.61" width="0" layer="19" extent="1-1"/>
 </signal>
@@ -711,7 +763,13 @@ design rules under a new name.</description>
 <contactref element="RELAY" pad="2"/>
 <contactref element="RX" pad="1"/>
 <contactref element="U" pad="2"/>
+<contactref element="J1" pad="1"/>
+<contactref element="J1" pad="3"/>
+<contactref element="J1" pad="2"/>
 <wire x1="12.53" y1="56.07" x2="34.15" y2="61.32" width="0" layer="19" extent="1-1"/>
+<wire x1="3.97" y1="58.32" x2="12.53" y2="56.07" width="0" layer="19" extent="1-1"/>
+<wire x1="3.97" y1="60.86" x2="3.97" y2="58.32" width="0" layer="19" extent="1-1"/>
+<wire x1="3.97" y1="63.4" x2="3.97" y2="60.86" width="0" layer="19" extent="1-1"/>
 <wire x1="54.42" y1="35.39" x2="34.15" y2="61.32" width="0" layer="19" extent="1-1"/>
 <wire x1="12.32" y1="15.13" x2="12.53" y2="56.07" width="0" layer="19" extent="1-1"/>
 </signal>
@@ -727,27 +785,27 @@ design rules under a new name.</description>
 </signal>
 <signal name="D1">
 <contactref element="U" pad="6"/>
+<contactref element="RX" pad="3"/>
+<wire x1="12.32" y1="20.21" x2="12.53" y2="45.91" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="D2">
 <contactref element="U" pad="5"/>
-<contactref element="RX" pad="3"/>
-<wire x1="12.32" y1="20.21" x2="12.53" y2="48.45" width="0" layer="19" extent="1-1"/>
+<contactref element="RELAY" pad="3"/>
+<wire x1="12.53" y1="48.45" x2="29.07" y2="61.32" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="D3">
 <contactref element="U" pad="4"/>
-<contactref element="RELAY" pad="3"/>
-<wire x1="12.53" y1="50.99" x2="29.07" y2="61.32" width="0" layer="19" extent="1-1"/>
+<contactref element="RELAY" pad="4"/>
+<wire x1="12.53" y1="50.99" x2="23.99" y2="61.32" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="D4">
 <contactref element="U" pad="3"/>
-<contactref element="RELAY" pad="4"/>
-<wire x1="12.53" y1="53.53" x2="23.99" y2="61.32" width="0" layer="19" extent="1-1"/>
-</signal>
-<signal name="N$16">
-<contactref element="U" pad="7"/>
 </signal>
 <signal name="N$17">
 <contactref element="U" pad="8"/>
+</signal>
+<signal name="RX">
+<contactref element="U" pad="7"/>
 </signal>
 </signals>
 </board>

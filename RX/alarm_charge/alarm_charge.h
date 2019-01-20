@@ -796,7 +796,7 @@ bool _esp8266_getch(char * RetData)
 		if (SoftSerial.available() > 0)
 		{
 			*RetData = SoftSerial.read();
-			//Serial.write(*RetData);
+			Serial.write(*RetData);
 			return true;
 		}
 		NonStopTask();
