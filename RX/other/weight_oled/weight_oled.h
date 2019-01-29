@@ -29,6 +29,7 @@ unsigned char Alarm;
 int Weight;
 
 unsigned long TimeOutForDrink;
+unsigned long TimeOutEmpty = 0;
 int LastWeight = 0;
 int AccumulatedDrinking = 0;
 //bool Pause = false;
@@ -38,7 +39,7 @@ void OnSecond();
 void ProcessWeight();
 void ShowState();
 void Beep();
-
+void Beep3();
 
 
 void setup()
@@ -121,6 +122,11 @@ void OnSecond()
 	{
 		Beep();
 	}
+	
+	if(TimeOutEmpty == 300)
+	{
+		Beep3();
+	}
 
 
 }
@@ -143,15 +149,22 @@ void ProcessWeight()
 
 	if (StableWeightCounter < STABLECOUNTER)
 	{
-		//printf("no Stable, counter =  %d \r\n ",StableWeightCounter);
+		//printf("no Stable, counter =  %d \r\n",StableWeightCounter);
 		return;
 	}
 
 	if (Weight < MIN_CUP_WEIGHT)
 	{
-		//printf("Empty, weight =  %d \r\n ",Weight);
+		
+		TimeOutEmpty ++ ;
+		//printf("Empty, weight =  %d TimeOutEmpty = %d \r\n",Weight,TimeOutEmpty);
 		return;
 	}
+	else
+	{
+		TimeOutEmpty = 0;
+	}
+	
 
 	//printf("Stable, weight =  %d \r\n ",Weight);
 
@@ -213,6 +226,21 @@ void ShowState()
 
 void Beep()
 {
+	digitalWrite(BUZZ, HIGH);
+	delay(50);
+	digitalWrite(BUZZ, LOW);
+}
+
+void Beep3()
+{
+	digitalWrite(BUZZ, HIGH);
+	delay(50);
+	digitalWrite(BUZZ, LOW);
+	delay(50);
+	digitalWrite(BUZZ, HIGH);
+	delay(50);
+	digitalWrite(BUZZ, LOW);
+	delay(50);
 	digitalWrite(BUZZ, HIGH);
 	delay(50);
 	digitalWrite(BUZZ, LOW);
