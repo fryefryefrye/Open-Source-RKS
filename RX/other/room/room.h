@@ -98,7 +98,7 @@ tRoomData RoomData;
 #define RF_COMMAND_KEY_COUNTER 5
 #define RF_COMMAND_FUNCTION_COUNTER 4
 unsigned char RelayPin[LIGHT_NUMBER] = {RELAY1,RELAY2};
-unsigned char RoomIndex = 0;
+unsigned char RoomIndex = 0xFF;
 
 
 unsigned char PreSetRfCommand[ROOM_NUMBER][RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
@@ -245,12 +245,12 @@ void setup()
 	}
 
 
-	if (RoomIndex == 0)
+	if (RoomIndex == ROOM_BALCONY)
 	{
 			LOCAL_CONTROL = D5;
 					pinMode(LOCAL_CONTROL, INPUT_PULLUP);
 	} 
-	else if(RoomIndex == 2)
+	else if(RoomIndex == ROOM_SOUTH)
 	{
 			AC_POWER = D5;
 
@@ -411,7 +411,7 @@ void OnSecond()
 	//MyPrintf("AcTemperature = %d  AcMode = %d \r\n",RoomData.AcTemperature,RoomData.AcMode);
 
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.beginPacket("fryefryefrye.myds.me", 5050);
 	m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
 	m_WiFiUDP.endPacket(); 
 
@@ -490,7 +490,7 @@ void OnTenthSecond()
 	}
 
 
-	if (RoomIndex == 0)
+	if (RoomIndex == ROOM_BALCONY)
 	{
 		bool LocalControl = digitalRead(LOCAL_CONTROL);
 		if (LastLocalControl != LocalControl)
@@ -607,15 +607,15 @@ void CheckRfCommand(unsigned char * RfCommand)
 					else
 					{
 
-						if ((j == 3)&&(RoomIndex == 2))
+						if ((j == 3)&&(RoomIndex == ROOM_SOUTH))
 						{
 							swSer.enableRx(false);
 							IsSoftwareSerialOn = false;
 							AcOperation(AC_OP_ON_OFF);
 						}
-						if ((j == 2)&&(RoomIndex == 0))
+						if ((j == 2)&&(RoomIndex == ROOM_BALCONY))
 						{
-							MyPrintf("Execute j == RoomIndex == 0 light OFF r\n");
+							MyPrintf("Execute light OFF r\n");
 							RoomData.Light[0] = 0 ;
 							digitalWrite(RelayPin[0], !RoomData.Light[0]);
 						}
@@ -1018,7 +1018,7 @@ void MyPrintf(const char *fmt, ...)
 	pDebugData->RoomId = RoomIndex;
 	pDebugData->Length = n;
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.beginPacket("fryefryefrye.myds.me", 5050);
 	m_WiFiUDP.write((const char*)send_buf, sizeof(tDebugData)+n);
 	m_WiFiUDP.endPacket(); 
 
