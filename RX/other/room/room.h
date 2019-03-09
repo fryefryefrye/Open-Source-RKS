@@ -1,6 +1,6 @@
 
 
-
+#define SERVER_ADDRESS "192.168.0.17"
 
 
 //D0 = GPIO16; 
@@ -411,7 +411,7 @@ void OnSecond()
 	//MyPrintf("AcTemperature = %d  AcMode = %d \r\n",RoomData.AcTemperature,RoomData.AcMode);
 
 
-	m_WiFiUDP.beginPacket("fryefryefrye.myds.me", 5050);
+	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 	m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
 	m_WiFiUDP.endPacket(); 
 
@@ -1018,7 +1018,7 @@ void MyPrintf(const char *fmt, ...)
 	pDebugData->RoomId = RoomIndex;
 	pDebugData->Length = n;
 
-	m_WiFiUDP.beginPacket("fryefryefrye.myds.me", 5050);
+	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 	m_WiFiUDP.write((const char*)send_buf, sizeof(tDebugData)+n);
 	m_WiFiUDP.endPacket(); 
 

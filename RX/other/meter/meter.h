@@ -16,7 +16,7 @@
 //D10 = GPIO1; UART TX
 //LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
 
-
+#define SERVER_ADDRESS "fryefryefrye.myds.me"
 
 #define SOFT_SERIAL_RX		D6
 #define SOFT_SERIAL_TX		D7
@@ -62,36 +62,10 @@ unsigned char Request[REQUEST_NUMBER][REQUEST_LEN] = {
 	,{0x33,0x34,0x34,0x35,0xF6,0x16}
 };
 
+#define MAX_RESPONE 24
 
-//读功率
-//发
-
-//unsigned char RequestPower[REQUEST_LEN] = {0x33,0x36,0x35,0xF7,0x16};
-
-//33 36 35 F7 16
-//回
-//FE FE FE FE 68 16 01 12 03 15 00 68 91 07 33 33 36 35 A3 35 33 85 16 
-//70 02 00
-//00.027kW
-//
-//读电流
-//发
-// 34 35 35 F7 16
-//回
-//FE FE FE FE 68 16 01 12 03 15 00 68 91 07 33 34 35 35 4B 35 33 2D 16 
-//18 02 00
-//0.218A
-//
-//读电压
-//发
-// 34 34 35 F6 16
-//回
-//FE FE FE FE 68 16 01 12 03 15 00 68 91 06 33 34 34 35 5A 55 27 16 
-//27 22 00
-//222.7v
-
-unsigned char Respone[24];
-unsigned char ResponeHeadCounter = 0;
+unsigned char Respone[MAX_RESPONE];
+unsigned char ResponeCounter = 0;
 bool isResponeHead = false;
 unsigned char ResponeLen;
 unsigned char RequestIndex = 0;
@@ -222,36 +196,42 @@ void loop()
 
 		if (isResponeHead)
 		{
-			Respone[ResponeHeadCounter] = recvdata;
-			if (ResponeHeadCounter == 13)
+			Respone[ResponeCounter] = recvdata;
+			if (ResponeCounter == 13)
 			{
 				ResponeLen = BCDToDec(Respone+13,1);
 				//printf("ResponeLen = %d \n",ResponeLen);
 			}
-			ResponeHeadCounter ++;
+			ResponeCounter ++;
 
-			if (ResponeHeadCounter>13+ResponeLen)
+			if (ResponeCounter>13+ResponeLen)
 			{
 				isResponeHead = false;
 				ProcessData();
+				ResponeCounter = 0;
 
 				//printf("data = %d \n",BCDToDec(Respone+18,ResponeLen-4));
+			}
+			if (ResponeCounter>=MAX_RESPONE)
+			{
+				isResponeHead = false;
+				ResponeCounter = 0;
 			}
 		} 
 		else
 		{
 			if (recvdata == 0xFE)
 			{
-				Respone[ResponeHeadCounter] = recvdata;
-				ResponeHeadCounter ++;
-				if (ResponeHeadCounter == 4)
+				Respone[ResponeCounter] = recvdata;
+				ResponeCounter ++;
+				if (ResponeCounter == 4)
 				{
 					isResponeHead = true;
 				}
 			}
 			else
 			{
-				ResponeHeadCounter = 0;
+				ResponeCounter = 0;
 			}
 		}
 
@@ -362,7 +342,7 @@ void OnSecond()
 
 
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 	m_WiFiUDP.write((const char*)&MeterData, sizeof(tMeterData));
 	m_WiFiUDP.endPacket(); 
 
@@ -437,7 +417,7 @@ void MyPrintf(const char *fmt, ...)
 	pDebugData->RoomId = RoomIndex;
 	pDebugData->Length = n;
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 	m_WiFiUDP.write((const char*)send_buf, sizeof(tDebugData)+n);
 	m_WiFiUDP.endPacket(); 
 
