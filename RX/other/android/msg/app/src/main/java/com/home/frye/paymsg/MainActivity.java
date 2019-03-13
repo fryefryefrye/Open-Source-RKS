@@ -85,15 +85,14 @@ public class MainActivity extends AppCompatActivity {
 
                                 int amountStart = temp[2].indexOf("到账");
                                 int amountStop = temp[2].indexOf("元");
-                                if ((amountStart != -1)&&(amountStop != -1))
+                                int amountDot = temp[2].indexOf(".");
+                                if ((amountStart != -1)&&(amountStop != -1)&&(amountDot != -1))
                                 {
                                     Log.d("Pay", "确认支付消息");
-                                    String Amount =  temp[2].substring(amountStart+2,amountStop);
+                                    String Amount =  temp[2].substring(amountStart+2,amountDot)+temp[2].substring(amountDot+1,amountStop);
                                     Log.d("Pay", "支付金额---" + Amount + "---元");
-
-                                    float fAmount =  Float.parseFloat(Amount);
                                     PayData[1] = 1;
-                                    PayData[2] = (int)(fAmount*100);
+                                    PayData[2] = Integer.parseInt(Amount);
                                 }
                             }
                             if(temp[0].equals("com.eg.android.AlipayGphone"))
@@ -102,15 +101,15 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("Pay", "确认alipay消息");
                                 int amountStart = temp[1].indexOf("收款");
                                 int amountStop = temp[1].indexOf("元");
-                                if ((amountStart != -1)&&(amountStop != -1))
+                                int amountDot = temp[1].indexOf(".");
+                                if ((amountStart != -1)&&(amountStop != -1)&&(amountDot != -1))
                                 {
                                     Log.d("Pay", "确认支付消息");
-                                    String Amount =  temp[1].substring(amountStart+2,amountStop);
+                                    //String Amount =  temp[1].substring(amountStart+2,amountStop);
+                                    String Amount =  temp[1].substring(amountStart+2,amountDot)+temp[1].substring(amountDot+1,amountStop);
                                     Log.d("Pay", "支付金额---" + Amount + "---元");
-
-                                    float fAmount =  Float.parseFloat(Amount);
                                     PayData[1] = 0;
-                                    PayData[2] = (int)(fAmount*100);
+                                    PayData[2] = Integer.parseInt(Amount);
                                 }
                             }
 

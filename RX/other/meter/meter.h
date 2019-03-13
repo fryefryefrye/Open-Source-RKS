@@ -21,7 +21,7 @@
 #define SOFT_SERIAL_RX		D6
 #define SOFT_SERIAL_TX		D7
 
-#include <SoftwareSerialEven.h>
+#include "SoftwareSerialEven.h"
 SoftwareSerialEven swSer(SOFT_SERIAL_RX, SOFT_SERIAL_TX, false, 256);
 
 
