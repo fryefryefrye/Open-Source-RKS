@@ -2,6 +2,12 @@
 
 #include "TimeLib.h"
 
+#include "Z:\bt\web\datastruct.h"
+
+
+tWeatherRequest WeatherRequest;
+tWeatherData WeatherData;
+
 
 void Hdot();
 void hc595senddata(byte data,byte data2,byte data3,byte data4);//�������°�������һ�����ݡ�
@@ -24,6 +30,7 @@ void StartNTP();
 void CheckNTP();
 bool bNTPRunning = false;
 
+bool GetWeather();
 
 bool GetNow();
 bool GetAir();
@@ -70,7 +77,8 @@ unsigned char DateLine2[10] = {32,32,32,32,32,32,32,32,32,32};//{'w','e','a','t'
 unsigned char WeatherDay[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'d','a','y','1',' ',' ','T','e','m','p'};
 unsigned char WeatherTemp[2][10] = {{32,32,32,32,32,32,32,32,32,32},{32,32,32,32,32,32,32,32,32,32}};//{'w','e','a','t','h','e','r','n','T','p'};
 
-unsigned char WeatherCode[2][3];
+//unsigned char WeatherCode[2][3];
+unsigned char WeatherCode[2];
 
 //Serial data
 int comdata ;
@@ -729,245 +737,344 @@ bool GetAir()
 
 
 }
-bool GetNow()
+
+bool GetWeather()
 {
-	TimeOut = 2;
-	//	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
-	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+	unsigned char data;
+	unsigned char dataIndex = 0;
+	unsigned char *dataPoint;
+
+	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\","));
+	WIFI_SERIAL.print(F("\"192.168.0.17\""));
+	WIFI_SERIAL.print(F(",5050\r\n"));
 	if(!_esp8266_waitFor("OK\r\n")) return false;
 
-
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
-	WIFI_SERIAL.print(sizeof(HttpNow));
+	WIFI_SERIAL.print(sizeof(tWeatherRequest));
 	WIFI_SERIAL.print(F("\r\n"));
 
 	if(!_esp8266_waitFor("OK\r\n>")) return false;
 
-	for(unsigned char i = 0; i<sizeof(HttpNow) ; i++)
+	WeatherRequest.DataType = 8;
+
+	for(unsigned char i = 0; i<(sizeof(tWeatherRequest)) ; i++)
 	{
-		WIFI_SERIAL.print(HttpNow[i]);
+		data = *(((char*)(&WeatherRequest))+i);
+		WIFI_SERIAL.write(data);
 	}
 
-	if(!_esp8266_waitFor("200 OK")) return false;
+	if(!_esp8266_waitFor(":")) return false;
 
+	dataPoint = (unsigned char *)&WeatherData;
 
-
-
-	//_esp8266_getValue("text\":\"",DateLine2,&InfoLen,0,7); 
-	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
-	if (InfoLen == 1)
+	while(1)
 	{
-		DateLine2[1] = ' ';
+
+		if (_esp8266_getch((char *)&data))
+		{
+			dataPoint[dataIndex] = data;
+			dataIndex++;
+
+			if (dataIndex>=sizeof(tWeatherData))
+			{
+				break;
+			}
+		}
+		else
+		{
+			printf("can not wait more data\r\n");
+			return false;
+		}
+	}
+	printf("\r\nget full weather data\r\n");
+ 
+
+	//for (unsigned char i = 0;i<3;i++)
+	//{
+	//	printf("High =%d \r\n" ,WeatherData.TemperatureHigh[i]);
+	//	printf("Low =%d \r\n" ,WeatherData.TemperatureLow[i]);
+	//	printf("Code =%d \r\n" ,WeatherData.WeatherCode[i]);
+	//}
+
+	printf("char = %c\r\n",WeatherData.TemperatureNow[0]);
+	printf("char = %c\r\n",WeatherData.TemperatureNow[1]);
+
+	unsigned char i;
+	unsigned char j;
+	for (i = 0;i<3;i++)
+	{
+		//WeatherData.TemperatureHigh[i] = atoi(WeatherHigh[i]);
+		//WeatherData.TemperatureLow[i] = atoi(WeatherLow[i]);
+		//WeatherData.WeatherCode[i] = atoi(WeatherCode[i]);
+
+		for (j = 0;j<5;j++)
+		{
+			printf("char = %c\r\n",WeatherData.WeatherDate[i][j]);
+		}
+
+
+		printf("char = %c\r\n",WeatherData.WeatherCode[i]);
+
+		for (j = 0;j<2;j++)
+		{
+			printf("char = %c\r\n",WeatherData.WeatherHigh[i][j]);
+		}
+		for (j = 0;j<2;j++)
+		{
+			printf("char = %c\r\n",WeatherData.WeatherLow[i][j]);
+		}
 	}
 
 
-	_esp8266_waitFor("CLOSED\r\n");
-
-}
-bool GetForcast(unsigned char Day,unsigned char Postion)
-{
-
-	HttpForcast[90]=Day+0x30;
+	WIFI_SERIAL.print(F("AT+CIPCLOSE\r\n"));
 
 
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
 	if(!_esp8266_waitFor("OK\r\n")) return false;
-
-	WIFI_SERIAL.print(F("AT+CIPSEND="));
-	WIFI_SERIAL.print(sizeof(HttpForcast));
-	WIFI_SERIAL.print(F("\r\n"));
-
-	if(!_esp8266_waitFor("OK\r\n>")) return false;
-
-	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
-	{
-		WIFI_SERIAL.print(HttpForcast[i]);
-	}
-
-	if(!_esp8266_waitFor("200 OK")) return false;
-
-	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherCode[Postion][1] = 0;
-	}
-	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][4] = ' ';
-	}
-	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][1] = ' ';
-	}
-
-	//Weather[Postion][2] = '~';
-
-	_esp8266_waitFor("CLOSED\r\n");
-
-}
-
-
-bool GetAvaForcast(unsigned char StartDay)
-{
-
-	unsigned char Postion = 0;
-	unsigned char Temp = 0;
-	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
-	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
-	_esp8266_waitFor("OK\r\n");
-
-	WIFI_SERIAL.print(F("AT+CIPSEND="));
-	WIFI_SERIAL.print(sizeof(HttpAva));
-	WIFI_SERIAL.print(F("\r\n"));
-
-	_esp8266_waitFor("OK\r\n>");
-
-	for(unsigned char i = 0; i<sizeof(HttpAva) ; i++)
-	{
-		WIFI_SERIAL.print(HttpAva[i]);
-	}
-
-	if(!_esp8266_waitFor("200 OK")) return false;
-
-	TimeOut = 2;
-
-	OnRevicedTcpDate = true;
-
-	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		DateLine2[1] = ' ';
-	}
-
-	//_esp8266_waitFor("ture\":\""); 
-
-	_esp8266_waitFor("weather\""); 
-
-
-
-	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-	_esp8266_waitFor("dawn\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][1] = ' ';
-	}
-
-	_esp8266_waitFor("day\""); 
-	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherCode[Postion][1] = 0;
-	}
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][4] = ' ';
-	}
-
-
-	if (StartDay == 0)
-	{
-		Postion++;
-	} 
-
-	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-	_esp8266_waitFor("dawn\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][1] = ' ';
-	}
-
-	_esp8266_waitFor("day\""); 
-	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-	if (InfoLen == 1)
-	{
-		WeatherCode[Postion][1] = 0;
-	}
-	_esp8266_waitFor("\""); 
-	_esp8266_waitFor("\""); 
-	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
-	if (InfoLen == 1)
-	{
-		WeatherTemp[Postion][4] = ' ';
-	}
-
-
-	if (StartDay == 1)
-	{
-
-		Postion++;
-
-
-
-
-		_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
-		_esp8266_waitFor("dawn\""); 
-		_esp8266_waitFor("\""); 
-		_esp8266_waitFor("\""); 
-		_esp8266_waitFor("\""); 
-		_esp8266_waitFor("\""); 
-		_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
-		if (InfoLen == 1)
-		{
-			WeatherTemp[Postion][1] = ' ';
-		}
-
-		_esp8266_waitFor("day\""); 
-		_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
-		if (InfoLen == 1)
-		{
-			WeatherCode[Postion][1] = 0;
-		}
-		_esp8266_waitFor("\""); 
-		_esp8266_waitFor("\""); 
-		_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
-		if (InfoLen == 1)
-		{
-			WeatherTemp[Postion][4] = ' ';
-		}
-
-	} 
-
-
-
-	_esp8266_getValue("pm25\":\"",DateLine2+3,&InfoLen,0,3); 
-	if (InfoLen == 1)
-	{
-		DateLine2[4] = ' ';
-		DateLine2[5] = ' ';
-	}
-	if (InfoLen == 2)
-	{
-		DateLine2[5] = ' ';
-	}
-
-
-	OnRevicedTcpDate = false;
-
-
-	_esp8266_waitFor("CLOSED\r\n");
 
 	return true;
 
+
 }
+//bool GetNow()
+//{
+//	TimeOut = 2;
+//	//	WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.seniverse.com\",443\r\n"));
+//	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"free-api.heweather.com\",443\r\n"));
+//	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+//	if(!_esp8266_waitFor("OK\r\n")) return false;
+//
+//
+//	WIFI_SERIAL.print(F("AT+CIPSEND="));
+//	WIFI_SERIAL.print(sizeof(HttpNow));
+//	WIFI_SERIAL.print(F("\r\n"));
+//
+//	if(!_esp8266_waitFor("OK\r\n>")) return false;
+//
+//	for(unsigned char i = 0; i<sizeof(HttpNow) ; i++)
+//	{
+//		WIFI_SERIAL.print(HttpNow[i]);
+//	}
+//
+//	if(!_esp8266_waitFor("200 OK")) return false;
+//
+//
+//
+//
+//	//_esp8266_getValue("text\":\"",DateLine2,&InfoLen,0,7); 
+//	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		DateLine2[1] = ' ';
+//	}
+//
+//
+//	_esp8266_waitFor("CLOSED\r\n");
+//
+//}
 
+//bool GetForcast(unsigned char Day,unsigned char Postion)
+//{
+//
+//	HttpForcast[90]=Day+0x30;
+//
+//
+//	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+//	if(!_esp8266_waitFor("OK\r\n")) return false;
+//
+//	WIFI_SERIAL.print(F("AT+CIPSEND="));
+//	WIFI_SERIAL.print(sizeof(HttpForcast));
+//	WIFI_SERIAL.print(F("\r\n"));
+//
+//	if(!_esp8266_waitFor("OK\r\n>")) return false;
+//
+//	for(unsigned char i = 0; i<sizeof(HttpForcast) ; i++)
+//	{
+//		WIFI_SERIAL.print(HttpForcast[i]);
+//	}
+//
+//	if(!_esp8266_waitFor("200 OK")) return false;
+//
+//	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+//	_esp8266_getValue("e_day\":\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherCode[Postion][1] = 0;
+//	}
+//	_esp8266_getValue("high\":\"",&WeatherTemp[Postion][3],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][4] = ' ';
+//	}
+//	_esp8266_getValue("low\":\"",&WeatherTemp[Postion][0],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][1] = ' ';
+//	}
+//
+//	//Weather[Postion][2] = '~';
+//
+//	_esp8266_waitFor("CLOSED\r\n");
+//
+//}
+//
 
+//bool GetAvaForcast(unsigned char StartDay)
+//{
+//
+//	unsigned char Postion = 0;
+//	unsigned char Temp = 0;
+//	//WIFI_SERIAL.print(F("AT+CIPSTART=\"SSL\",\"api.avatardata.cn\",443\r\n"));
+//	WIFI_SERIAL.print(F("AT+CIPSTART=\"TCP\",\"192.168.0.17\",440\r\n"));
+//	_esp8266_waitFor("OK\r\n");
+//
+//	WIFI_SERIAL.print(F("AT+CIPSEND="));
+//	WIFI_SERIAL.print(sizeof(HttpAva));
+//	WIFI_SERIAL.print(F("\r\n"));
+//
+//	_esp8266_waitFor("OK\r\n>");
+//
+//	for(unsigned char i = 0; i<sizeof(HttpAva) ; i++)
+//	{
+//		WIFI_SERIAL.print(HttpAva[i]);
+//	}
+//
+//	if(!_esp8266_waitFor("200 OK")) return false;
+//
+//	TimeOut = 2;
+//
+//	OnRevicedTcpDate = true;
+//
+//	_esp8266_getValue("ture\":\"",DateLine2,&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		DateLine2[1] = ' ';
+//	}
+//
+//	//_esp8266_waitFor("ture\":\""); 
+//
+//	_esp8266_waitFor("weather\""); 
+//
+//
+//
+//	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+//	_esp8266_waitFor("dawn\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][1] = ' ';
+//	}
+//
+//	_esp8266_waitFor("day\""); 
+//	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherCode[Postion][1] = 0;
+//	}
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][4] = ' ';
+//	}
+//
+//
+//	if (StartDay == 0)
+//	{
+//		Postion++;
+//	} 
+//
+//	_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+//	_esp8266_waitFor("dawn\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][1] = ' ';
+//	}
+//
+//	_esp8266_waitFor("day\""); 
+//	_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+//	if (InfoLen == 1)
+//	{
+//		WeatherCode[Postion][1] = 0;
+//	}
+//	_esp8266_waitFor("\""); 
+//	_esp8266_waitFor("\""); 
+//	_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+//	if (InfoLen == 1)
+//	{
+//		WeatherTemp[Postion][4] = ' ';
+//	}
+//
+//
+//	if (StartDay == 1)
+//	{
+//
+//		Postion++;
+//
+//
+//
+//
+//		_esp8266_getValue("date\":\"",&(WeatherDay[Postion][0]),&InfoLen,5,5); 
+//		_esp8266_waitFor("dawn\""); 
+//		_esp8266_waitFor("\""); 
+//		_esp8266_waitFor("\""); 
+//		_esp8266_waitFor("\""); 
+//		_esp8266_waitFor("\""); 
+//		_esp8266_getValue("\"",&WeatherTemp[Postion][0],&InfoLen,0,2); //low temp
+//		if (InfoLen == 1)
+//		{
+//			WeatherTemp[Postion][1] = ' ';
+//		}
+//
+//		_esp8266_waitFor("day\""); 
+//		_esp8266_getValue("\"",&WeatherCode[Postion][0],&InfoLen,0,2); 
+//		if (InfoLen == 1)
+//		{
+//			WeatherCode[Postion][1] = 0;
+//		}
+//		_esp8266_waitFor("\""); 
+//		_esp8266_waitFor("\""); 
+//		_esp8266_getValue("\"",&WeatherTemp[Postion][3],&InfoLen,0,2); //high temp
+//		if (InfoLen == 1)
+//		{
+//			WeatherTemp[Postion][4] = ' ';
+//		}
+//
+//	} 
+//
+//
+//
+//	_esp8266_getValue("pm25\":\"",DateLine2+3,&InfoLen,0,3); 
+//	if (InfoLen == 1)
+//	{
+//		DateLine2[4] = ' ';
+//		DateLine2[5] = ' ';
+//	}
+//	if (InfoLen == 2)
+//	{
+//		DateLine2[5] = ' ';
+//	}
+//
+//
+//	OnRevicedTcpDate = false;
+//
+//
+//	_esp8266_waitFor("CLOSED\r\n");
+//
+//	return true;
+//
+//}
+//
+//
 
 void HourlyUpdate()
 {
@@ -998,28 +1105,64 @@ void HourlyUpdate()
 
 
 
-	Serial.println(F("before GetNow!\r\n"));
-	if(!GetNow())
+	Serial.println(F("before Getweather!\r\n"));
+
+
+
+
+
+	if(!GetWeather())
 	{
 		DateLine2[0] = '-';
 		DateLine2[1] = '-';
-		Serial.println(F("GetNow failed!\r\n"));
+		Serial.println(F("GetWeather failed!\r\n"));
+		return;
+	}
+	else
+	{
+		DateLine2[0] = WeatherData.TemperatureNow[0];
+		DateLine2[1] = WeatherData.TemperatureNow[0];
 	}
 
 	//GetAir();
 
 	if (hour(t+8*3600)<18)
 	{
-		if (!GetForcast(0,0))
+
+		WeatherCode[0] = WeatherData.WeatherCode[0];
+		WeatherCode[1] = WeatherData.WeatherCode[1];
+
+		for (unsigned char j = 0;j<5;j++)
 		{
-			DateLine2[0] = '-';
-			DateLine2[1] = '-';
+			WeatherDay[0][j] = WeatherData.WeatherDate[0][j];
+			WeatherDay[1][j] = WeatherData.WeatherDate[1][j];
 		}
-		if (!GetForcast(1,1))
-		{
-			DateLine2[0] = '-';
-			DateLine2[1] = '-';
-		}
+
+		WeatherTemp[0][0] = WeatherData.WeatherLow[0][0];
+		WeatherTemp[0][1] = WeatherData.WeatherLow[0][1];
+		WeatherTemp[0][2] = ' ';
+		WeatherTemp[0][3] = WeatherData.WeatherHigh[0][0];
+		WeatherTemp[0][4] = WeatherData.WeatherHigh[0][1];
+
+		WeatherTemp[1][0] = WeatherData.WeatherLow[1][0];
+		WeatherTemp[1][1] = WeatherData.WeatherLow[1][1];
+		WeatherTemp[1][2] = ' ';
+		WeatherTemp[1][3] = WeatherData.WeatherHigh[1][0];
+		WeatherTemp[1][4] = WeatherData.WeatherHigh[1][1];
+
+
+		//if (!GetForcast(0,0))
+		//{
+		//	DateLine2[0] = '-';
+		//	DateLine2[1] = '-';
+		//}
+		//if (!GetForcast(1,1))
+		//{
+		//	DateLine2[0] = '-';
+		//	DateLine2[1] = '-';
+		//}
+
+
 		/* 		if (!GetAvaForcast(0))
 		{
 		DateLine2[0] = '-';
@@ -1029,16 +1172,39 @@ void HourlyUpdate()
 	} 
 	else
 	{
-		if (!GetForcast(1,0))
+		WeatherCode[0] = WeatherData.WeatherCode[1];
+		WeatherCode[1] = WeatherData.WeatherCode[2];
+
+		for (unsigned char j = 0;j<5;j++)
 		{
-			DateLine2[0] = '-';
-			DateLine2[1] = '-';
+			WeatherDay[0][j] = WeatherData.WeatherDate[1][j];
+			WeatherDay[1][j] = WeatherData.WeatherDate[2][j];
 		}
-		if (!GetForcast(2,1))
-		{
-			DateLine2[0] = '-';
-			DateLine2[1] = '-';
-		}
+
+		WeatherTemp[0][0] = WeatherData.WeatherLow[1][0];
+		WeatherTemp[0][1] = WeatherData.WeatherLow[1][1];
+		WeatherTemp[0][2] = ' ';
+		WeatherTemp[0][3] = WeatherData.WeatherHigh[1][0];
+		WeatherTemp[0][4] = WeatherData.WeatherHigh[1][1];
+
+		WeatherTemp[1][0] = WeatherData.WeatherLow[2][0];
+		WeatherTemp[1][1] = WeatherData.WeatherLow[2][1];
+		WeatherTemp[1][2] = ' ';
+		WeatherTemp[1][3] = WeatherData.WeatherHigh[2][0];
+		WeatherTemp[1][4] = WeatherData.WeatherHigh[2][1];
+		//if (!GetForcast(1,0))
+		//{
+		//	DateLine2[0] = '-';
+		//	DateLine2[1] = '-';
+		//}
+		//if (!GetForcast(2,1))
+		//{
+		//	DateLine2[0] = '-';
+		//	DateLine2[1] = '-';
+		//}
+
+
+
 		/* 		if (!GetAvaForcast(1))
 		{
 		DateLine2[0] = '-';
@@ -1071,11 +1237,11 @@ void HourlyUpdate()
 	printf("\r\n");
 
 
-	for (int i=0; i<3; i++)
-	{
-		printf("%c",WeatherCode[0][i]);
-	}
-	printf("\r\n");
+	//for (int i=0; i<3; i++)
+	//{
+	//	printf("%c",WeatherCode[0][i]);
+	//}
+	//printf("\r\n");
 
 
 
@@ -1092,11 +1258,11 @@ void HourlyUpdate()
 	}
 	printf("\r\n");
 
-	for (int i=0; i<3; i++)
-	{
-		printf("%c",WeatherCode[1][i]);
-	}
-	printf("\r\n");
+	//for (int i=0; i<3; i++)
+	//{
+	//	printf("%c",WeatherCode[1][i]);
+	//}
+	//printf("\r\n");
 
 
 
@@ -1280,13 +1446,13 @@ void HourlyUpdate()
 
 
 	//WeatherCode2ChartIndex(20,ChartIndex);
-	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[0]),ChartIndex);
+	WeatherCode2ChartIndex(WeatherCode[0],ChartIndex);
 
 	ShowChart(ChartIndex[0],4+8,16);
 	ShowChart(ChartIndex[1],6+8,16);
 
 	//WeatherCode2ChartIndex(28,ChartIndex);
-	WeatherCode2ChartIndex(atoi((const char*)WeatherCode[1]),ChartIndex);
+	WeatherCode2ChartIndex(WeatherCode[1],ChartIndex);
 
 	ShowChart(ChartIndex[0],4,16);
 	ShowChart(ChartIndex[1],6,16);

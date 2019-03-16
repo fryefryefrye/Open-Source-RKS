@@ -293,7 +293,7 @@ void ProcessData()
 	switch(*pDataType)
 	{
 	case 0:
-		PayChargerData.TotalEnergy = BCDToDec(Respone+18,ResponeLen-4);
+		PayChargerData.CurrentEnergy = BCDToDec(Respone+18,ResponeLen-4);
 		//MyPrintf("TotalEnergy = %.2f kWh  \n",(float)MeterData.TotalEnergy/100);
 		break;
 		//case 720896:
