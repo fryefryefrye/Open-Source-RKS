@@ -117,9 +117,7 @@ void loop()
 				t = (unsigned long)t +8*3600 - 18;//+10*365*24*3600+5*24*3600;
 				//t = (unsigned long)t +10*365*24*3600;
 			}
-
 			//Serial.write(comdata);
-
 		}
 
 
@@ -213,9 +211,9 @@ void OnSeconds()
 	//	printf("Numbers = %d\r\n",Numbers[i]);
 	//}
 
-	for(int i = 0; i < MAX_LED;i++)
+	for(int i = 0; i < 14;i++)
 	{
-		if(DIGITAL_DISPLAY[Numbers[i/7+2]][i%7] == 1)
+		if(DIGITAL_DISPLAY[Numbers[i/7]][i%7] == 1)
 		{
 			val = 10;
 		}
@@ -226,25 +224,46 @@ void OnSeconds()
 		color = strip.Color(val, val, val);
 		strip.setPixelColor(i, color);
 	}
+	for(int i = 14; i < MAX_LED;i++)
+	{
+		val = 0;
+		color = strip.Color(val, val, val);
+		strip.setPixelColor(i, color);
+	}
 	strip.show();
 
-	if(DIGITAL_DISPLAY[Numbers[4]][6] == 1)//2=分，各位
-	{
-		LED_PWM = 10;
-	}
-	else
-	{
-		LED_PWM = 0;
-	}
-	analogWrite(LED2, LED_PWM);
+	//for(int i = 0; i < MAX_LED;i++)
+	//{
+	//	if(DIGITAL_DISPLAY[Numbers[i/7+2]][i%7] == 1)
+	//	{
+	//		val = 10;
+	//	}
+	//	else
+	//	{
+	//		val = 0;
+	//	}
+	//	color = strip.Color(val, val, val);
+	//	strip.setPixelColor(i, color);
+	//}
+	//strip.show();
 
-	if(Numbers[5]>0)
-	{
-		LED_PWM = 10;
-	}
-	else
-	{
-		LED_PWM = 0;
-	}
-	analogWrite(LED1, LED_PWM);
+	//if(DIGITAL_DISPLAY[Numbers[4]][6] == 1)//2=分，各位
+	//{
+	//	LED_PWM = 10;
+	//}
+	//else
+	//{
+	//	LED_PWM = 0;
+	//}
+	//analogWrite(LED2, LED_PWM);
+
+	//if(Numbers[5]>0)
+	//{
+	//	LED_PWM = 10;
+	//}
+	//else
+	//{
+	//	LED_PWM = 0;
+	//}
+	//analogWrite(LED1, LED_PWM);
 }

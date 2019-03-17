@@ -5,14 +5,20 @@
 bool GpsUpdate(unsigned char k);
 void OnSeconds();
 
+unsigned char CurrentOn = 0; //1 GPS   2 GPRS
+void ChangeToGprs();
+void ChangeToGps();
+
 bool _esp8266_waitFor(const char *string);
 bool _esp8266_getch(char * RetData);
 void NonStopTask();
 bool InitGprs();
 bool SendGprsUpdate();
+
 bool GprsOK = false;
 bool NeedSendUpdate = false;
 bool SendingUpdate = false;
+
 unsigned char SendFailCounter = 0;
 
 #include "Z:\bt\web\datastruct.h"
@@ -29,6 +35,7 @@ struct tGpsData
 
 tGpsData GpsData;
 unsigned char * pGpsData;
+bool NeedTimeUpdate = false;
 
 //Serial data
 int comdata ;
@@ -40,6 +47,7 @@ unsigned char GPS_data_head_array[GPS_HEAD_LEN] =  {0xB5, 0x62, 0x01, 0x06, 0x34
 unsigned char GPS_data_Index = 0;
 
 time_t t;
+tmElements_t tm;
 bool bGPS_Valid;
 unsigned long SecondsSinceStart = 0;
 unsigned long TenthSecondsSinceStart = 0;
@@ -47,10 +55,11 @@ unsigned long LastMillis;
 unsigned long CurrentMillis;
 
 #include <SoftwareSerial.h>
-//SoftwareSerial GpsSerial(2, 3); //rx 2,tx 3
-//SoftwareSerial GprsSerial(4, 5); //rx 4,tx 5
 
-SoftwareSerial GprsSerial(2, 3); //rx 2,tx 3
+
+
+SoftwareSerial GprsSerial(10, 11); //rx 7,tx 8
+SoftwareSerial GpsSerial(2, 3); //rx 2,tx 3
 unsigned long WaitForTimeOut = 300; //0.1s
 
 
@@ -60,24 +69,12 @@ unsigned long WaitForTimeOut = 300; //0.1s
 #define LED1  5
 #define LED2  6
 unsigned char LED_PWM;
-int val = 0;
-int LedOn = 0;
-uint32_t color_array[MAX_LED];
 uint32_t color;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel( MAX_LED, PIN, NEO_RGB + NEO_KHZ800 );
-//unsigned char DIGITAL_DISPLAY[10][8] = { //设置0-9数字所对应数组
-//	{ 1,0,0,0,0,1,0,0 }, // = 0
-//	{ 1,0,0,1,1,1,1,1 }, // = 1
-//	{ 1,1,0,0,1,0,0,0 }, // = 2
-//	{ 1,0,0,0,1,0,1,0 }, // = 3
-//	{ 1,0,0,1,0,0,1,1 }, // = 4
-//	{ 1,0,1,0,0,0,1,0 }, // = 5
-//	{ 1,0,1,0,0,0,0,0 }, // = 6
-//	{ 1,0,0,0,1,1,1,1 }, // = 7
-//	{ 1,0,0,0,0,0,0,0 }, // = 8
-//	{ 1,0,0,0,0,0,1,0 } // = 9
+unsigned long GetRGB(unsigned long ColorIndex,unsigned long Brightness);
 
-unsigned char DIGITAL_DISPLAY[10][7] = { //设置0-9数字所对应数组
+//0-9数字所对应数组
+unsigned char DIGITAL_DISPLAY[10][7] = { 
 	{ 1,1,1,1,1,1,0 }, // = 0
 	{ 1,1,0,0,0,0,0 }, // = 1
 	{ 1,0,1,1,0,1,1 }, // = 2
@@ -88,16 +85,6 @@ unsigned char DIGITAL_DISPLAY[10][7] = { //设置0-9数字所对应数组
 	{ 1,1,0,0,0,1,0 }, // = 7
 	{ 1,1,1,1,1,1,1 }, // = 8
 	{ 1,1,1,0,1,1,1 }, // = 9
-	//{ 1,1,0,0,0,0,0 }, // = 1
-	//{ 1,0,1,1,0,1,1 }, // = 2
-	//{ 1,1,1,0,0,1,1 }, // = 3
-	//{ 1,1,0,0,1,0,1 }, // = 4
-	//{ 0,1,0,0,0,1,0 }, // = 5
-	//{ 1,1,0,0,0,0,0 }, // = 6
-	//{ 1,0,0,1,1,1,1 }, // = 7
-	//{ 0,0,0,0,0,0,0 }, // = 8
-	//{ 0,0,0,0,0,1,0 } // = 9
-
 };
 
 void setup()
@@ -105,11 +92,13 @@ void setup()
 
 
 	Serial.begin(115200);
-	//Serial.println(F("GPS_Time"));
+	Serial.println(F("GPRS_LED_Time"));
 	printf_begin();
-	printf("sizeof(tGpsData) = %d \r\n",sizeof(tGpsData));
-	//GpsSerial.begin(38400);
+
+	GpsSerial.begin(38400);
+	GpsSerial.stopListening();
 	GprsSerial.begin(9600);
+	GprsSerial.stopListening();
 
 	pinMode(LED1,OUTPUT);
 	pinMode(LED2,OUTPUT);
@@ -121,91 +110,77 @@ void setup()
 
 	pGpsData = (unsigned char *)&GpsData;
 
+	ChangeToGprs();
 
+	LedTimeData.Brightness = 10;
+	LedTimeData.ColorIndex = 7;
+	color = GetRGB(LedTimeData.ColorIndex,LedTimeData.Brightness);
 
-	
-
-
-
+	//color = strip.Color(10, 10, 10);
 }
 
 void loop()
 {
-
-		//if (GpsSerial.available() > 0)
-		//{
-		//	comdata = GpsSerial.read();
-		//	if (GpsUpdate(comdata))
-		//	{
-		//		
-
-		//		t = (unsigned long)GpsData.week*7*24*3600+GpsData.iTOW/1000;
-		//		t = (unsigned long)t +8*3600 - 18;//+10*365*24*3600+5*24*3600;
-		//		//t = (unsigned long)t +10*365*24*3600;
-		//	}
-
-		//	//Serial.write(comdata);
-
-		//}
-
-		//if (GprsSerial.available() > 0)
-		//{
-		//	comdata = GprsSerial.read();
-
-		//	Serial.write(comdata);
-
-		//}
-
-	if (!GprsOK)
+	if (NeedTimeUpdate)
 	{
-		if (InitGprs())
+		ChangeToGps();
+		if (GpsSerial.available() > 0)
 		{
-			printf("InitGprs ok\r\n");
-			GprsOK = true;
-		}
-		else
-		{
-			printf("InitGprs failed\r\n");
-
-		}
-
-	}
-
-	if ((GprsOK)&&(NeedSendUpdate))
-	{
-
-		SendingUpdate = true;
-		NeedSendUpdate =false;
-		if (SendGprsUpdate())
-		{
-			//printf("\r\n Send Gprs Update ok\r\n");
-			//printf("Get command = %d",LedTimeCommand.Triger);
-			SendFailCounter = 0;
-		} 
-		else
-		{
-			SendFailCounter ++;
-			printf("Send Gprs Update failed = %d\r\n",SendFailCounter);
-
-			if (SendFailCounter > 20)
+			comdata = GpsSerial.read();
+			if (GpsUpdate(comdata))
 			{
-				printf("Re InitGprs \r\n");
-				GprsOK = false;
+				t = (unsigned long)GpsData.week*7*24*3600+GpsData.iTOW/1000;
+				t = (unsigned long)t +8*3600 - 18;//+10*365*24*3600+5*24*3600;
+				//t = (unsigned long)t +10*365*24*3600+5*24*3600;
+
+				//t = (unsigned long)GpsData.week*7*24*3600+GpsData.iTOW/1000+8*3600 - 18;
+				printf("Date Time = %d-%02d-%02d %02d:%02d:%02d fix = %x \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),GpsData.fix);
+				NeedTimeUpdate = false;
+				ChangeToGprs();
+			}
+			//Serial.write(comdata);
+		}
+	} 
+	else
+	{
+		if (!GprsOK)
+		{
+			printf("start InitGprs\r\n");
+			if (InitGprs())
+			{
+				printf("InitGprs ok\r\n");
+				GprsOK = true;
+			}
+			else
+			{
+				printf("InitGprs failed\r\n");
 			}
 		}
-		SendingUpdate = false;
 
+		if ((GprsOK)&&(NeedSendUpdate))
+		{
+			SendingUpdate = true;
+			NeedSendUpdate =false;
+			if (SendGprsUpdate())
+			{
+				//printf("\r\n Send Gprs Update ok\r\n");
+				SendFailCounter = 0;
+			} 
+			else
+			{
+				SendFailCounter ++;
+				printf("Send Gprs Update failed = %d\r\n",SendFailCounter);
+
+				if (SendFailCounter > 20)
+				{
+					printf("Re InitGprs \r\n");
+					GprsOK = false;
+				}
+			}
+			SendingUpdate = false;
+		}
 	}
-
-
-
 	NonStopTask();
-
-
-
-
-
-
 }
 
 void NonStopTask()
@@ -226,10 +201,11 @@ void NonStopTask()
 
 bool InitGprs()
 {
-	
+
 	WaitForTimeOut = 300;
 
 	GprsSerial.print(F("AT+CPOF\r\n"));
+
 	if (!_esp8266_waitFor("SMS Ready")) return false;
 	printf("\r\nSMS Ready\r\n");
 
@@ -258,15 +234,8 @@ bool InitGprs()
 	if (!_esp8266_waitFor("T OK")) return false;
 	printf("\r\n connect server ok\r\n");
 
-
 	WaitForTimeOut = 10;
-
-
-	
-
 	return true;
-
-
 }
 
 bool SendGprsUpdate()
@@ -284,7 +253,9 @@ bool SendGprsUpdate()
 	if(!_esp8266_waitFor(">")) return false;
 
 	LedTimeData.DataType = 9;
-	LedTimeData.Data++;
+	LedTimeData.RunningDateTime = (unsigned long)t-3600*8;
+	LedTimeData.Brightness = LedTimeCommand.Brightness;
+	LedTimeData.ColorIndex = LedTimeCommand.ColorIndex;
 
 	for(unsigned char i = 0; i<(sizeof(tLedTimeData)) ; i++)
 	{
@@ -292,7 +263,7 @@ bool SendGprsUpdate()
 		GprsSerial.write(data);
 	}
 
-	WaitForTimeOut = 150;
+	WaitForTimeOut = 50;
 
 	if(!_esp8266_waitFor("SEND OK")) return false;
 
@@ -315,6 +286,7 @@ bool SendGprsUpdate()
 			if (dataIndex>=sizeof(tLedTimeCommand))
 			{
 				//break;
+				color = GetRGB(LedTimeCommand.ColorIndex,LedTimeCommand.Brightness);
 				return true;
 			}
 		}
@@ -325,19 +297,63 @@ bool SendGprsUpdate()
 		}
 	}
 
-	
+
 
 }
 
-
-
-
-
+//bool GetGprsTime()
+//{
+//
+//	unsigned char data;
+//	unsigned char dataIndex = 0;
+//
+//
+//	WaitForTimeOut = 300;
+//
+//	//GprsSerial.print(F("AT+QLTS\r\n"));
+//
+//	if(!_esp8266_waitFor("+NITZ:")) return false;
+//
+//	while(1)
+//	{
+//
+//		if (_esp8266_getch((char *)&data))
+//		{
+//			TimeString[dataIndex] = data;
+//			dataIndex++;
+//
+//			if (dataIndex>=TIME_STRING_LEN)
+//			{
+//				//break;
+//				TimeString[dataIndex] = 0;
+//
+//				//Update time to UTC
+//				tm.Hour = (TimeString[9]-0x30)*10+(TimeString[10]-0x30);
+//				tm.Minute = (TimeString[12]-0x30)*10+(TimeString[13]-0x30);
+//				tm.Second = (TimeString[15]-0x30)*10+(TimeString[16]-0x30);
+//				tm.Day = (TimeString[6]-0x30)*10+(TimeString[7]-0x30);
+//				tm.Month = (TimeString[3]-0x30)*10+(TimeString[4]-0x30);
+//				tm.Year = (TimeString[0]-0x30)*10+(TimeString[1]-0x30)+30;
+//				t = makeTime(tm);
+//
+//				t = t + 3600*8;
+//
+//
+//				return true;
+//			}
+//		}
+//		else
+//		{
+//			printf("can not wait more data\r\n");
+//			return false;
+//		}
+//	}
+//
+//
+//}
 
 bool GpsUpdate(unsigned char k)
 {
-	//static unsigned char SepIndex = 0;
-	//static unsigned char LastSeconds = 0;
 	if (is_GPS_data)
 	{
 		GPS_data_Index++;
@@ -347,7 +363,7 @@ bool GpsUpdate(unsigned char k)
 		{
 			GPS_data_Index=0;
 			is_GPS_data=false;
-			//printf("GPS_data got\r\n");
+			printf("GPS_data got\r\n");
 			return true;
 		}
 	}
@@ -370,19 +386,32 @@ bool GpsUpdate(unsigned char k)
 	return false;
 }
 
+void ChangeToGprs()
+{
+	//1 GPS   2 GPRS
+
+	if (CurrentOn !=2 )
+	{
+		GpsSerial.stopListening();
+		GprsSerial.listen();
+		CurrentOn = 2;
+	}
+
+}
+void ChangeToGps()
+{
+	if (CurrentOn !=1 )
+	{
+		GprsSerial.stopListening();
+		GpsSerial.listen();
+		CurrentOn = 1;
+	}
+}
+
 void OnSeconds()
 {
 	unsigned char Numbers[6];
-
 	unsigned char Hour;
-
-
-	//static unsigned char LED_PWM = 0;
-	//LED_PWM = LED_PWM + 10;
-	//printf("LED_PWM = %d \r\n",LED_PWM);
-	//analogWrite(LED1, LED_PWM);
-	//analogWrite(LED2, LED_PWM);
-
 
 	if (SecondsSinceStart%1 == 0)
 	{
@@ -392,9 +421,13 @@ void OnSeconds()
 		}
 	}
 
+	if (SecondsSinceStart%60 == 0)
+	{
+		NeedTimeUpdate = true;
+		//printf("NeedTimeUpdate = true \r\n");
+	}
 
-
-
+	t++;
 	//printf("Date Time = %d-%02d-%02d %02d:%02d:%02d fix = %x \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),GpsData.fix);
 
 	Numbers[0] = second(t)%10;
@@ -417,41 +450,30 @@ void OnSeconds()
 	//{
 	//	printf("Numbers = %d\r\n",Numbers[i]);
 	//}
-
-	for(int i = 0; i < MAX_LED;i++)
+	for(int i = 0; i < 14;i++)
 	{
-		if(DIGITAL_DISPLAY[Numbers[i/7+2]][i%7] == 1)
+		if(DIGITAL_DISPLAY[Numbers[i/7]][i%7] == 1)
 		{
-			val = 10;
+			//val = 10;
+			strip.setPixelColor(i, color);
 		}
 		else
 		{
-			val = 0;
+			//val = 0;
+			strip.setPixelColor(i, 0);
 		}
-		color = strip.Color(val, val, val);
-		strip.setPixelColor(i, color);
+		//color = strip.Color(val, val, val);
+		//strip.setPixelColor(i, color);
+	}
+	for(int i = 14; i < MAX_LED;i++)
+	{
+		//val = 0;
+		//color = strip.Color(val, val, val);
+		strip.setPixelColor(i, 0);
 	}
 	strip.show();
 
-	if(DIGITAL_DISPLAY[Numbers[4]][6] == 1)//2=分，各位
-	{
-		LED_PWM = 10;
-	}
-	else
-	{
-		LED_PWM = 0;
-	}
-	analogWrite(LED2, LED_PWM);
-
-	if(Numbers[5]>0)
-	{
-		LED_PWM = 10;
-	}
-	else
-	{
-		LED_PWM = 0;
-	}
-	analogWrite(LED1, LED_PWM);
+	
 }
 
 
@@ -493,4 +515,52 @@ bool _esp8266_getch(char * RetData)
 			return false;
 		}
 	}
+}
+
+unsigned long GetRGB(unsigned long ColorIndex,unsigned long Brightness)
+{
+	//{"黑","红","绿","蓝","黄","紫","青","白"};
+
+	//RGB 实际顺序： 蓝红绿
+
+	//color = GetRGB(LedTimeCommand.ColorIndex,LedTimeCommand.Brightness);
+
+	//color = strip.Color(10, 10, 10);
+
+	unsigned long ColorBrightness = 0;
+
+	Brightness = Brightness/3;
+
+	switch(ColorIndex)
+	{
+	case 0:
+		return 0;
+		break;
+	case 3:
+		ColorBrightness = strip.Color(255*Brightness/100, 0*Brightness/100, 0*Brightness/100);;//蓝
+		break;
+	case 1:
+		ColorBrightness = strip.Color(0*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//红
+		break;
+	case 2:
+		ColorBrightness = strip.Color(0*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//绿
+		break;
+	case 5:
+		ColorBrightness = strip.Color(255*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//紫
+		break;
+	case 6:
+		ColorBrightness = strip.Color(255*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//青
+		break;
+	case 4:
+		ColorBrightness = strip.Color(0*Brightness/100, 255*Brightness/100, 255*Brightness/100);;//黄
+		break;
+	case 7:
+		ColorBrightness = strip.Color(255*Brightness/100, 255*Brightness/100, 255*Brightness/100);
+		break;
+	default:
+		break;
+	}
+
+	return ColorBrightness;
+	//ColorBrightness = ColorBrightness&0xFF
 }
