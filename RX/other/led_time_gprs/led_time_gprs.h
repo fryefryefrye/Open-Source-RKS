@@ -14,12 +14,18 @@ bool _esp8266_getch(char * RetData);
 void NonStopTask();
 bool InitGprs();
 bool SendGprsUpdate();
+unsigned long cal_crc(unsigned char *ptr, unsigned char len);
+unsigned long RestartGprsSeconds = 0;
+bool RestartGprsTask();
+
+
 
 bool GprsOK = false;
 bool NeedSendUpdate = false;
 bool SendingUpdate = false;
 
 unsigned char SendFailCounter = 0;
+unsigned char InitGprsFailCounter = 0;
 
 #include "Z:\bt\web\datastruct.h"
 tLedTimeData LedTimeData;
@@ -66,8 +72,9 @@ unsigned long WaitForTimeOut = 300; //0.1s
 #include "Adafruit_NeoPixel.h"
 #define PIN 4
 #define MAX_LED 21
-#define LED1  5
-#define LED2  6
+#define RELAY  5
+//#define LED1  5
+//#define LED2  6
 unsigned char LED_PWM;
 uint32_t color;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel( MAX_LED, PIN, NEO_RGB + NEO_KHZ800 );
@@ -100,8 +107,16 @@ void setup()
 	GprsSerial.begin(9600);
 	GprsSerial.stopListening();
 
-	pinMode(LED1,OUTPUT);
-	pinMode(LED2,OUTPUT);
+	//pinMode(LED1,OUTPUT);
+	//pinMode(LED2,OUTPUT);
+
+	pinMode(RELAY,OUTPUT);
+	digitalWrite(RELAY,LOW);
+	delay(5000);
+	digitalWrite(RELAY,HIGH);
+	
+
+
 
 	// ³õÊ¼»¯¿â
 	strip.begin();
@@ -129,11 +144,12 @@ void loop()
 			comdata = GpsSerial.read();
 			if (GpsUpdate(comdata))
 			{
-				t = (unsigned long)GpsData.week*7*24*3600+GpsData.iTOW/1000;
-				t = (unsigned long)t +8*3600 - 18;//+10*365*24*3600+5*24*3600;
-				//t = (unsigned long)t +10*365*24*3600+5*24*3600;
-
-				//t = (unsigned long)GpsData.week*7*24*3600+GpsData.iTOW/1000+8*3600 - 18;
+				t = (unsigned long)(GpsData.week+522)*7*24*3600+GpsData.iTOW/1000;
+				t = (unsigned long)t +8*3600 - 18;
+				t = (unsigned long)t +64800;
+				t = (unsigned long)t +64800;
+				t = (unsigned long)t +64800;
+				t = (unsigned long)t +64800;
 				printf("Date Time = %d-%02d-%02d %02d:%02d:%02d fix = %x \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),GpsData.fix);
 				NeedTimeUpdate = false;
 				ChangeToGprs();
@@ -143,17 +159,26 @@ void loop()
 	} 
 	else
 	{
-		if (!GprsOK)
+		if ((!GprsOK)&&(RestartGprsSeconds == 0))
 		{
 			printf("start InitGprs\r\n");
 			if (InitGprs())
 			{
 				printf("InitGprs ok\r\n");
+				InitGprsFailCounter = 0;
 				GprsOK = true;
 			}
 			else
 			{
-				printf("InitGprs failed\r\n");
+				InitGprsFailCounter++;
+				printf("Init Gprs failed = %d\r\n",InitGprsFailCounter);
+				if (InitGprsFailCounter > 3)
+				{
+					InitGprsFailCounter = 0;
+					printf("Re start Gprs  \r\n");
+					RestartGprsSeconds = SecondsSinceStart;
+					GprsOK = false;
+				}
 			}
 		}
 
@@ -173,6 +198,7 @@ void loop()
 
 				if (SendFailCounter > 20)
 				{
+					SendFailCounter = 0;
 					printf("Re InitGprs \r\n");
 					GprsOK = false;
 				}
@@ -180,6 +206,11 @@ void loop()
 			SendingUpdate = false;
 		}
 	}
+	if (RestartGprsSeconds !=0)
+	{
+		RestartGprsTask();
+	}
+
 	NonStopTask();
 }
 
@@ -196,7 +227,23 @@ void NonStopTask()
 			OnSeconds();
 		}
 		//printf("SecondsSinceStart = %d \r\n",SecondsSinceStart);
+		//printf("LedTimeCommand.Brightness = %d \r\n",LedTimeCommand.Brightness);
 	}
+}
+
+bool RestartGprsTask()
+{
+	if (SecondsSinceStart-RestartGprsSeconds<2)
+	{
+		digitalWrite(RELAY,LOW);
+	}
+
+	if (SecondsSinceStart-RestartGprsSeconds>10)
+	{
+		digitalWrite(RELAY,HIGH);
+		RestartGprsSeconds = 0;
+	}
+
 }
 
 bool InitGprs()
@@ -245,6 +292,7 @@ bool SendGprsUpdate()
 	unsigned char *pCommand;
 
 	WaitForTimeOut = 10;
+	printf("\r\n");
 
 	GprsSerial.print(F("AT+CIPSEND="));
 	GprsSerial.print(sizeof(tLedTimeData));
@@ -254,8 +302,11 @@ bool SendGprsUpdate()
 
 	LedTimeData.DataType = 9;
 	LedTimeData.RunningDateTime = (unsigned long)t-3600*8;
+
 	LedTimeData.Brightness = LedTimeCommand.Brightness;
 	LedTimeData.ColorIndex = LedTimeCommand.ColorIndex;
+
+	LedTimeData.Sum = cal_crc((unsigned char *)&LedTimeData,sizeof(tLedTimeData)-4);
 
 	for(unsigned char i = 0; i<(sizeof(tLedTimeData)) ; i++)
 	{
@@ -273,7 +324,8 @@ bool SendGprsUpdate()
 
 	if(!_esp8266_waitFor(":")) return false;
 
-	pCommand = (unsigned char *)&LedTimeCommand;
+	tLedTimeCommand TempLedTimeCommand;
+	pCommand = (unsigned char *)&TempLedTimeCommand;
 
 	while(1)
 	{
@@ -286,7 +338,16 @@ bool SendGprsUpdate()
 			if (dataIndex>=sizeof(tLedTimeCommand))
 			{
 				//break;
-				color = GetRGB(LedTimeCommand.ColorIndex,LedTimeCommand.Brightness);
+				unsigned long crc_should = cal_crc((unsigned char *)&TempLedTimeCommand,sizeof(tLedTimeCommand)-4);
+				if (TempLedTimeCommand.Sum == crc_should)
+				{
+					memcpy(&LedTimeCommand,&TempLedTimeCommand,sizeof(tLedTimeCommand));
+					color = GetRGB(LedTimeCommand.ColorIndex,LedTimeCommand.Brightness);
+				}
+				else
+				{
+					printf("Command crc check failed. should:0x%04X recv:0x%04X\r\n",crc_should,TempLedTimeCommand.Sum);
+				}
 				return true;
 			}
 		}
@@ -356,16 +417,16 @@ bool GpsUpdate(unsigned char k)
 {
 	if (is_GPS_data)
 	{
-		GPS_data_Index++;
-		pGpsData[GPS_data_Index-GPS_HEAD_LEN-1] = k;
+		pGpsData[GPS_data_Index-GPS_HEAD_LEN] = k;
 
-		if (GPS_data_Index - GPS_HEAD_LEN -1 > sizeof(tGpsData))
+		if (GPS_data_Index - GPS_HEAD_LEN >= sizeof(tGpsData)-1)
 		{
 			GPS_data_Index=0;
 			is_GPS_data=false;
 			printf("GPS_data got\r\n");
 			return true;
 		}
+		GPS_data_Index++;
 	}
 	else
 	{
@@ -413,6 +474,8 @@ void OnSeconds()
 	unsigned char Numbers[6];
 	unsigned char Hour;
 
+	LedTimeData.SunBrightness = analogRead(0);
+
 	if (SecondsSinceStart%1 == 0)
 	{
 		if (!SendingUpdate)
@@ -424,7 +487,6 @@ void OnSeconds()
 	if (SecondsSinceStart%60 == 0)
 	{
 		NeedTimeUpdate = true;
-		//printf("NeedTimeUpdate = true \r\n");
 	}
 
 	t++;
@@ -462,13 +524,10 @@ void OnSeconds()
 			//val = 0;
 			strip.setPixelColor(i, 0);
 		}
-		//color = strip.Color(val, val, val);
-		//strip.setPixelColor(i, color);
 	}
 	for(int i = 14; i < MAX_LED;i++)
 	{
-		//val = 0;
-		//color = strip.Color(val, val, val);
+
 		strip.setPixelColor(i, 0);
 	}
 	strip.show();
@@ -505,7 +564,11 @@ bool _esp8266_getch(char * RetData)
 		if (GprsSerial.available() > 0)
 		{
 			*RetData = GprsSerial.read();
-			Serial.write(*RetData);
+			if ((*RetData>31)&&(*RetData<127))
+			{
+				Serial.write(*RetData);
+			}
+			
 			//printf("get char: 0x%02X\r\n",*RetData);
 			return true;
 		}
@@ -523,13 +586,14 @@ unsigned long GetRGB(unsigned long ColorIndex,unsigned long Brightness)
 
 	//RGB Êµ¼ÊË³Ðò£º À¶ºìÂÌ
 
-	//color = GetRGB(LedTimeCommand.ColorIndex,LedTimeCommand.Brightness);
+	unsigned long ColorBrightInfo = 0;
 
-	//color = strip.Color(10, 10, 10);
+	if (Brightness>100)
+	{
+		return strip.Color(10, 10, 10);
+	}
 
-	unsigned long ColorBrightness = 0;
-
-	Brightness = Brightness/3;
+	Brightness = Brightness/5;
 
 	switch(ColorIndex)
 	{
@@ -537,30 +601,55 @@ unsigned long GetRGB(unsigned long ColorIndex,unsigned long Brightness)
 		return 0;
 		break;
 	case 3:
-		ColorBrightness = strip.Color(255*Brightness/100, 0*Brightness/100, 0*Brightness/100);;//À¶
+		ColorBrightInfo = strip.Color(255*Brightness/100, 0*Brightness/100, 0*Brightness/100);;//À¶
 		break;
 	case 1:
-		ColorBrightness = strip.Color(0*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//ºì
+		ColorBrightInfo = strip.Color(0*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//ºì
 		break;
 	case 2:
-		ColorBrightness = strip.Color(0*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//ÂÌ
+		ColorBrightInfo = strip.Color(0*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//ÂÌ
 		break;
 	case 5:
-		ColorBrightness = strip.Color(255*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//×Ï
+		ColorBrightInfo = strip.Color(255*Brightness/100, 255*Brightness/100, 0*Brightness/100);;//×Ï
 		break;
 	case 6:
-		ColorBrightness = strip.Color(255*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//Çà
+		ColorBrightInfo = strip.Color(255*Brightness/100, 0*Brightness/100, 255*Brightness/100);;//Çà
 		break;
 	case 4:
-		ColorBrightness = strip.Color(0*Brightness/100, 255*Brightness/100, 255*Brightness/100);;//»Æ
+		ColorBrightInfo = strip.Color(0*Brightness/100, 255*Brightness/100, 255*Brightness/100);;//»Æ
 		break;
 	case 7:
-		ColorBrightness = strip.Color(255*Brightness/100, 255*Brightness/100, 255*Brightness/100);
+		ColorBrightInfo = strip.Color(255*Brightness/100, 255*Brightness/100, 255*Brightness/100);
 		break;
 	default:
+		ColorBrightInfo = strip.Color(10, 10, 10);
 		break;
 	}
 
-	return ColorBrightness;
-	//ColorBrightness = ColorBrightness&0xFF
+	return ColorBrightInfo;
+}
+#define crc_mul 0x1021  //Éú³É¶àÏîÊ½
+unsigned long cal_crc(unsigned char *ptr, unsigned char len)
+{
+	unsigned char i;
+	unsigned long crc=0;
+	while(len-- != 0)
+	{
+		for(i=0x80; i!=0; i>>=1)
+		{
+			if((crc&0x8000)!=0)
+			{
+				crc<<=1;
+				crc^=(crc_mul);
+			}else{
+				crc<<=1;
+			}
+			if((*ptr&i)!=0)
+			{
+				crc ^= (crc_mul);
+			}
+		}
+		ptr ++;
+	}
+	return (crc);
 }

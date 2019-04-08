@@ -16,7 +16,7 @@
 //D10 = GPIO1; UART TX
 //LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
 
-#define SERVER_ADDRESS "fryefryefrye.myds.me"
+#include "D:\GitHub\Private\address.h"
 
 #define SOFT_SERIAL_RX		D6
 #define SOFT_SERIAL_TX		D7
@@ -38,8 +38,7 @@ CN_SSD1306_Wire Displayer;//HardWare I2C
 #define timezone 8
 
 
-const char* ssid = "frye";  //Wifi名称
-const char* password = "52150337";  //Wifi密码
+
 WiFiUDP m_WiFiUDP;
 
 
@@ -88,8 +87,7 @@ unsigned long PayServerUpdate = 0;
 void StateDispaly();
 void BalanceDispaly();
 void BalanceReduce();
-
-
+unsigned long cal_crc(unsigned char *ptr, unsigned char len);
 void MyPrintf(const char *fmt, ...);
 
 
@@ -262,21 +260,33 @@ void loop()
 
 		//printf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
 		tPayChargerCommand tempPayChargerCommand;
-		m_WiFiUDP.read((char *)&tempPayChargerCommand,sizeof(tRoomCommand));
-
-		CenterServerUpdate = 0;
-		PayServerUpdate = tempPayChargerCommand.PayServerUpdate;
-
-		//printf("PayChargerCommand.Triger = %d \r\n",tempPayChargerCommand.Triger);
-		//printf("PayChargerCommand.TopUp = %d fen\r\n",tempPayChargerCommand.TopUp);
+		m_WiFiUDP.read((char *)&tempPayChargerCommand,sizeof(tPayChargerCommand));
 
 
-		if (tempPayChargerCommand.Triger == true)
+		if (tempPayChargerCommand.Sum == cal_crc((unsigned char *)&tempPayChargerCommand,sizeof(tPayChargerCommand)-4))
 		{
-			//PayChargerData.Balance = PayChargerData.Balance + tempPayChargerCommand.TopUp;
-			PayChargerData.Balance = tempPayChargerCommand.TopUp;
-			printf("PayChargerCommand.TopUp = %.2f \r\n",(float)tempPayChargerCommand.TopUp/100);
+			CenterServerUpdate = 0;
+			PayServerUpdate = tempPayChargerCommand.PayServerUpdate;
+
+			if (tempPayChargerCommand.Seq != PayChargerData.LastGetSeq)
+			{
+				PayChargerData.LastGetSeq = tempPayChargerCommand.Seq;
+
+				if (tempPayChargerCommand.TopUp != 0)
+				{
+					//PayChargerData.Balance = PayChargerData.Balance + tempPayChargerCommand.TopUp;
+					PayChargerData.Balance = tempPayChargerCommand.TopUp;
+					printf("PayChargerCommand.TopUp = %.2f \r\n",(float)tempPayChargerCommand.TopUp/100);
+				}
+			}
 		}
+		else
+		{
+			MyPrintf("PayChargerCommand crc check failed \r\n");
+		}
+
+
+
 	}
 }
 
@@ -370,6 +380,8 @@ void OnSecond()
 
 	}
 
+
+	PayChargerData.Sum = cal_crc((unsigned char *)&PayChargerData,sizeof(tPayChargerData)-4);
 
 	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 	m_WiFiUDP.write((const char*)&PayChargerData, sizeof(tPayChargerData));
@@ -553,4 +565,31 @@ unsigned long  BCDToDec(const unsigned char *bcd, int length)
 	} 
 
 	return dec; 
+}
+
+
+#define crc_mul 0x1021  //生成多项式
+unsigned long cal_crc(unsigned char *ptr, unsigned char len)
+{
+	unsigned char i;
+	unsigned long crc=0;
+	while(len-- != 0)
+	{
+		for(i=0x80; i!=0; i>>=1)
+		{
+			if((crc&0x8000)!=0)
+			{
+				crc<<=1;
+				crc^=(crc_mul);
+			}else{
+				crc<<=1;
+			}
+			if((*ptr&i)!=0)
+			{
+				crc ^= (crc_mul);
+			}
+		}
+		ptr ++;
+	}
+	return (crc);
 }

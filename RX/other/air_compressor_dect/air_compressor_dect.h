@@ -18,6 +18,7 @@
 
 
 #define RELAY				D0
+#define DETECTOR			D1
 
 
 
@@ -45,7 +46,9 @@ char H1,H2,M1,M2,S1,S2;
 tCompressorData CompressorData;
 unsigned char RoomIndex = 20;
 bool FullReached = false;
-unsigned long RunningCounter = 0;
+unsigned long RunningCounter = 60;
+unsigned long LastRunningFinishTenthSeconds;
+unsigned long LastDetectorGotoIdelTenthSeconds;
 
 
 unsigned long TenthSecondsSinceStart = 0;
@@ -61,7 +64,9 @@ void setup()
 {       
 
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
-	digitalWrite(RELAY, LOW);
+	digitalWrite(RELAY, HIGH);
+	pinMode(DETECTOR,INPUT_PULLUP);
+	
 
 	CompressorData.DataType = 4;
 	CompressorData.isOn = false;
@@ -164,20 +169,20 @@ void loop()
 	TenthSecondsSinceStartTask();
 
 
-	m_WiFiUDP.parsePacket(); 
-	unsigned int UdpAvailable = m_WiFiUDP.available();
-	if (UdpAvailable == sizeof(tCompressorCommand))
-	{
-		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		tCompressorCommand tempCompressorCommand;
-		m_WiFiUDP.read((char *)&tempCompressorCommand,sizeof(tRoomCommand));
+	//m_WiFiUDP.parsePacket(); 
+	//unsigned int UdpAvailable = m_WiFiUDP.available();
+	//if (UdpAvailable == sizeof(tCompressorCommand))
+	//{
+	//	//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+	//	tCompressorCommand tempCompressorCommand;
+	//	m_WiFiUDP.read((char *)&tempCompressorCommand,sizeof(tRoomCommand));
 
-		if (tempCompressorCommand.Triger == true)
-		{
-			RunningCounter = 90;
-			MyPrintf("get Compressor trig from control\r\n");
-		}
-	}
+	//	if (tempCompressorCommand.Triger == true)
+	//	{
+	//		RunningCounter = 60;
+	//		MyPrintf("get Compressor trig from control\r\n");
+	//	}
+	//}
 }
 
 
@@ -214,94 +219,179 @@ void OnSecond()
 	unsigned char Minute = timenow->tm_min;
 
 
-	//every minute
-	if (now%60 == 0)
+	static bool LastDetectorState;
+	static unsigned long LastDetectorChangeTenthSeconds;
+	bool ThisDetectorState;
+
+
+	ThisDetectorState = digitalRead(DETECTOR);
+
+	if (ThisDetectorState != LastDetectorState)
 	{
 
-		//printf("Hour = %d   Minute = %d  \r\n",Hour,Minute);
-
-		if ((Hour > 5)&&(Hour < 22))
+		//MyPrintf("DetectorState goto %d    %d   .\r\n",ThisDetectorState,(TenthSecondsSinceStart-LastDetectorChangeTenthSeconds)/10);
+		if(!ThisDetectorState)
 		{
-			if (Minute == 0)
-			{
-				CompressorData.isOn = true;
-			}
-			if (Minute == 2)
-			{
-				CompressorData.isOn = false;
-			}
-
-			//if (Minute == 59)
-			//{
-			//	MyPrintf("Pressure = %d mBar \r\n",CompressorData.Pressure);
-			//}
-
-			//if (Minute == 2)
-			//{
-			//	MyPrintf("Pressure = %d mBar \r\n",CompressorData.Pressure);
-			//}
+			LastDetectorGotoIdelTenthSeconds = TenthSecondsSinceStart;
 		}
-
-	}
-
-
-	unsigned long AnalogValue= analogRead(A0);
-	//printf("AnalogValue = %d  \r\n",AnalogValue);
-	//printf("Volt = %d  \r\n",AnalogValue*3*1000/1024);
-	CompressorData.Pressure = abs(AnalogValue*3*1000/1024-425)/4*10;
-	//printf("Pressure = %d mBar \r\n",CompressorData.Pressure);
-
-
-
-
-	if ((CompressorData.Pressure>5500)&&(!FullReached))
-	{
-		MyPrintf("Reached 5.5 Bar \r\n");
-		FullReached = true;
-	}
-
-
-	if ((CompressorData.Pressure<4000)&&(FullReached))
-	{
-		if ((Hour > 5)&&(Hour < 22))
+		else
 		{
-			MyPrintf("In day time, running for 60s \r\n");
-			RunningCounter = 90;
-			FullReached = false;
+			LastDetectorGotoIdelTenthSeconds = 0;
 		}
+		LastDetectorChangeTenthSeconds = TenthSecondsSinceStart;
+		LastDetectorState = ThisDetectorState;
 	}
+
+
+	//if (now%300 == 0)
+	//{
+	//	RunningCounter = 60;
+	//	MyPrintf("RunningCounter = 60 on 300s\r\n");
+	//}
+
+
+	if ((TenthSecondsSinceStart - LastRunningFinishTenthSeconds > 6000)//in 0.1s
+		&&(RunningCounter == 0)
+		&&(Hour > 5)
+		&&(Hour < 22))
+	{
+		RunningCounter = 60;
+		MyPrintf("RunningCounter = 60 after last running 10mins\r\n");
+	}
+
+
 
 	if (RunningCounter > 0)
 	{
-		CompressorData.isOn = true;
-		RunningCounter--;
-		if (RunningCounter == 0)
+		if ((LastDetectorGotoIdelTenthSeconds!=0)&&(TenthSecondsSinceStart - LastDetectorGotoIdelTenthSeconds)>600)
 		{
-			MyPrintf("Running for 60s finished \r\n");
-			CompressorData.isOn = false;
+			RunningCounter--;
+			if (RunningCounter == 0)
+			{
+				if (CompressorData.isOn)
+				{
+					LastRunningFinishTenthSeconds = TenthSecondsSinceStart;
+					CompressorData.isOn = false;
+					MyPrintf("CompressorData.isOn = false. when timeout\r\n");
+				}
+			} 
+			else
+			{
+							if (!CompressorData.isOn)
+			{
+				CompressorData.isOn = true;
+				MyPrintf("CompressorData.isOn = true\r\n");
+			}
+			}
+
+		}
+		else
+		{
+			if (CompressorData.isOn)
+			{
+				CompressorData.isOn = false;
+				MyPrintf("CompressorData.isOn = false. when Detected\r\n");
+			}
 		}
 	}
+	else
+	{
+
+	}
+
+
+	//	//printf("Hour = %d   Minute = %d  \r\n",Hour,Minute);
+
+	//	if ((Hour > 5)&&(Hour < 22))
+	//	{
+	//		if (Minute == 0)
+	//		{
+	//			CompressorData.isOn = true;
+	//		}
+	//		if (Minute == 1)
+	//		{
+	//			CompressorData.isOn = false;
+	//		}
+
+	//		//if (Minute == 59)
+	//		//{
+	//		//	MyPrintf("Pressure = %d mBar \r\n",CompressorData.Pressure);
+	//		//}
+
+	//		//if (Minute == 2)
+	//		//{
+	//		//	MyPrintf("Pressure = %d mBar \r\n",CompressorData.Pressure);
+	//		//}
+	//	}
+
+	//}
+
+
+	//unsigned long AnalogValue= analogRead(A0);
+	////printf("AnalogValue = %d  \r\n",AnalogValue);
+	////printf("Volt = %d  \r\n",AnalogValue*3*1000/1024);
+	//CompressorData.Pressure = abs(AnalogValue*3*1000/1024-425)/4*10;
+	////printf("Pressure = %d mBar \r\n",CompressorData.Pressure);
+
+
+
+
+	//if ((CompressorData.Pressure>5500)&&(!FullReached))
+	//{
+	//	MyPrintf("Reached 5.5 Bar \r\n");
+	//	FullReached = true;
+	//}
+
+
+	//if ((CompressorData.Pressure<4000)&&(FullReached))
+	//{
+	//	if ((Hour > 5)&&(Hour < 22))
+	//	{
+	//		MyPrintf("In day time, running for 60s \r\n");
+	//		RunningCounter = 60;
+	//		FullReached = false;
+	//	}
+	//}
+
+	//if (RunningCounter > 0)
+	//{
+	//	CompressorData.isOn = true;
+	//	RunningCounter--;
+	//	if (RunningCounter == 0)
+	//	{
+	//		MyPrintf("Running for 60s finished \r\n");
+	//		CompressorData.isOn = false;
+	//	}
+	//}
 
 
 	if (CompressorData.isOn)
 	{
-		digitalWrite(RELAY,HIGH);
+		digitalWrite(RELAY,LOW);
 	}
 	else
 	{
-		digitalWrite(RELAY,LOW);
+		digitalWrite(RELAY,HIGH);
 	}
 	
 
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&CompressorData, sizeof(tCompressorData));
-	m_WiFiUDP.endPacket(); 
+	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	//m_WiFiUDP.write((const char*)&CompressorData, sizeof(tCompressorData));
+	//m_WiFiUDP.endPacket(); 
 
 }
 
 void OnTenthSecond()
 {
+
+
+
+
+
+
+
+
 
 	if (TenthSecondsSinceStart%10 == 0)
 	{

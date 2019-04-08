@@ -78,38 +78,40 @@ public class MainActivity extends AppCompatActivity {
 
                             Log.d("Pay", "msg from:" + temp[0]);
 
-                            if(temp[0].equals("com.tencent.mm"))
-                            {
 
-                                Log.d("Pay", "确认微信消息");
+                            Log.d("Pay", "字符串用：分割出"+temp.length+"个");
+                            if(temp.length == 3) {
+                                if (temp[0].equals("com.tencent.mm")) {
 
-                                int amountStart = temp[2].indexOf("到账");
-                                int amountStop = temp[2].indexOf("元");
-                                int amountDot = temp[2].indexOf(".");
-                                if ((amountStart != -1)&&(amountStop != -1)&&(amountDot != -1))
-                                {
-                                    Log.d("Pay", "确认支付消息");
-                                    String Amount =  temp[2].substring(amountStart+2,amountDot)+temp[2].substring(amountDot+1,amountStop);
-                                    Log.d("Pay", "支付金额---" + Amount + "---元");
-                                    PayData[1] = 1;
-                                    PayData[2] = Integer.parseInt(Amount);
+                                    Log.d("Pay", "确认微信消息");
+
+                                    int amountStart = temp[2].indexOf("到账");
+                                    int amountStop = temp[2].indexOf("元");
+                                    int amountDot = temp[2].indexOf(".");
+                                    if ((amountStart != -1) && (amountStop != -1) && (amountDot != -1)) {
+                                        Log.d("Pay", "确认支付消息");
+                                        String Amount = temp[2].substring(amountStart + 2, amountDot) + temp[2].substring(amountDot + 1, amountStop);
+                                        Log.d("Pay", "支付金额---" + Amount + "---元");
+                                        PayData[1] = 1;
+                                        PayData[2] = Integer.parseInt(Amount);
+                                    }
                                 }
                             }
-                            if(temp[0].equals("com.eg.android.AlipayGphone"))
-                            {
+                            if(temp.length == 2) {
+                                if (temp[0].equals("com.eg.android.AlipayGphone")) {
 
-                                Log.d("Pay", "确认alipay消息");
-                                int amountStart = temp[1].indexOf("收款");
-                                int amountStop = temp[1].indexOf("元");
-                                int amountDot = temp[1].indexOf(".");
-                                if ((amountStart != -1)&&(amountStop != -1)&&(amountDot != -1))
-                                {
-                                    Log.d("Pay", "确认支付消息");
-                                    //String Amount =  temp[1].substring(amountStart+2,amountStop);
-                                    String Amount =  temp[1].substring(amountStart+2,amountDot)+temp[1].substring(amountDot+1,amountStop);
-                                    Log.d("Pay", "支付金额---" + Amount + "---元");
-                                    PayData[1] = 0;
-                                    PayData[2] = Integer.parseInt(Amount);
+                                    Log.d("Pay", "确认alipay消息");
+                                    int amountStart = temp[1].indexOf("收款");
+                                    int amountStop = temp[1].indexOf("元");
+                                    int amountDot = temp[1].indexOf(".");
+                                    if ((amountStart != -1) && (amountStop != -1) && (amountDot != -1)) {
+                                        Log.d("Pay", "确认支付消息");
+                                        //String Amount =  temp[1].substring(amountStart+2,amountStop);
+                                        String Amount = temp[1].substring(amountStart + 2, amountDot) + temp[1].substring(amountDot + 1, amountStop);
+                                        Log.d("Pay", "支付金额---" + Amount + "---元");
+                                        PayData[1] = 0;
+                                        PayData[2] = Integer.parseInt(Amount);
+                                    }
                                 }
                             }
 

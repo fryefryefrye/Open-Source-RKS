@@ -1121,7 +1121,7 @@ void HourlyUpdate()
 	else
 	{
 		DateLine2[0] = WeatherData.TemperatureNow[0];
-		DateLine2[1] = WeatherData.TemperatureNow[0];
+		DateLine2[1] = WeatherData.TemperatureNow[1];
 	}
 
 	//GetAir();
