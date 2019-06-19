@@ -44,7 +44,7 @@ char H1,H2,M1,M2,S1,S2;
 
 #include "Z:\bt\web\datastruct.h"
 tCompressorData CompressorData;
-unsigned char RoomIndex = 20;
+unsigned char RoomIndex = 21;
 bool FullReached = false;
 unsigned long RunningCounter = 60;
 unsigned long LastRunningFinishTenthSeconds;
@@ -64,7 +64,7 @@ void setup()
 {       
 
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
-	digitalWrite(RELAY, HIGH);
+	digitalWrite(RELAY, LOW);
 	pinMode(DETECTOR,INPUT_PULLUP);
 	
 
@@ -242,6 +242,15 @@ void OnSecond()
 		LastDetectorState = ThisDetectorState;
 	}
 
+	//if (now%10 == 0)
+	//{
+	//	CompressorData.isOn = true;
+	//}
+
+	//if (now%10 == 5)
+	//{
+	//	CompressorData.isOn = false;
+	//}
 
 	//if (now%300 == 0)
 	//{
@@ -261,7 +270,7 @@ void OnSecond()
 
 
 
-	if (RunningCounter > 0)
+	if ((RunningCounter > 0)&&(true))
 	{
 		if ((LastDetectorGotoIdelTenthSeconds!=0)&&(TenthSecondsSinceStart - LastDetectorGotoIdelTenthSeconds)>600)
 		{
@@ -367,11 +376,11 @@ void OnSecond()
 
 	if (CompressorData.isOn)
 	{
-		digitalWrite(RELAY,LOW);
+		digitalWrite(RELAY,HIGH);
 	}
 	else
 	{
-		digitalWrite(RELAY,HIGH);
+		digitalWrite(RELAY,LOW);
 	}
 	
 

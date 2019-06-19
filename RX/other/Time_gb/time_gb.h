@@ -97,7 +97,7 @@ unsigned char ElementIndex = 0;
 unsigned char Time_request_array[10] =  {'+','I','P','D',',','1',',','4','8',':'};
 tmElements_t tm;
 time_t t;
-bool bGPS_Valid;
+bool bGPS_Valid = false;
 
 //const char Http[]   ="GET /Aqi/LookUp?key=7e24c5e18e054287907124acf2b1aa9f&city=%E5%8D%97%E4%BA%AC HTTP/1.1\r\nHost: api.avatardata.cn\r\nUser-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.6)\r\nConnection: Keep-Alive\r\n\r\n";
 
@@ -2026,7 +2026,7 @@ void OnSeconds()
 	}
 	else
 	{
-		bGPS_Valid = false;
+		//bGPS_Valid = false;
 		TimeLine[2] = ':';
 		TimeLine[5] = '.';
 	}

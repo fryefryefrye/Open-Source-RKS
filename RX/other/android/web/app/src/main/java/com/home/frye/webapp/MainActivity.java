@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         webView.setInitialScale(200);
 
         //webView.loadUrl("http://fryefryefrye.myds.me:8084/weather");
-        webView.loadUrl("http://fryefryefrye.myds.me:8084/");
+        webView.loadUrl("http://fryefryefrye.myds.me:8084/homeindex");
 
     }
 }

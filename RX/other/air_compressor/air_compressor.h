@@ -222,14 +222,14 @@ void OnSecond()
 
 		if ((Hour > 5)&&(Hour < 22))
 		{
-			if (Minute == 0)
-			{
-				CompressorData.isOn = true;
-			}
-			if (Minute == 2)
-			{
-				CompressorData.isOn = false;
-			}
+			//if (Minute == 0)
+			//{
+			//	CompressorData.isOn = true;
+			//}
+			//if (Minute == 2)
+			//{
+			//	CompressorData.isOn = false;
+			//}
 
 			//if (Minute == 59)
 			//{
@@ -261,12 +261,12 @@ void OnSecond()
 	}
 
 
-	if ((CompressorData.Pressure<4000)&&(FullReached))
+	if ((CompressorData.Pressure<3000)&&(FullReached))
 	{
-		if ((Hour > 5)&&(Hour < 22))
+		if ((Hour > 6)&&(Hour < 22))
 		{
-			MyPrintf("In day time, running for 60s \r\n");
-			RunningCounter = 90;
+			MyPrintf("In day time, running for 120s \r\n");
+			RunningCounter = 120;
 			FullReached = false;
 		}
 	}
