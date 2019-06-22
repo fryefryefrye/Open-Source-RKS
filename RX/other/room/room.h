@@ -96,7 +96,7 @@ char H1,H2,M1,M2,S1,S2;
 #include "Z:\bt\web\datastruct.h"
 tRoomData RoomData;
 unsigned char RelayPin[LIGHT_NUMBER];// = {RELAY1,RELAY2};
-unsigned char RoomIndex = 0xFF;
+
 
 
 //Radio remote control
@@ -223,25 +223,28 @@ void setup()
 		RoomData.Mac[i] = mac[i];
 	}
 
+	RoomData.RoomId = 0xFF;
+
 	for (unsigned char i = 0;i<ROOM_NUMBER;i++)
 	{
 		if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
 		{
 			MyPrintf("room ID=%d \r\n",i);
-			RoomIndex = i;
+			RoomData.RoomId = i;
+			
 			break;
 		}
 	}
 
 
 
-	if (RoomIndex == ROOM_BALCONY)
+	if (RoomData.RoomId == ROOM_BALCONY)
 	{
 		LOCAL_CONTROL = D5;
 		pinMode(LOCAL_CONTROL, INPUT_PULLUP);
 		LastLocalControl = digitalRead(LOCAL_CONTROL);
 	} 
-	else if(RoomIndex == ROOM_SOUTH)
+	else if(RoomData.RoomId == ROOM_SOUTH)
 	{
 		AC_POWER_PULSE_INPUT_PIN = D5;
 
@@ -250,7 +253,7 @@ void setup()
 	}
 
 
-	if (RoomIndex == ROOM_86BOX)
+	if (RoomData.RoomId == ROOM_86BOX)
 	{
 		RelayPin[1] =		D3;
 		RelayPin[0] =		D2;
@@ -287,7 +290,7 @@ void setup()
 
 
 	//Serial port
-	if(RoomIndex == ROOM_SMALL)
+	if((RoomData.RoomId == ROOM_SMALL)||(RoomData.RoomId == ROOM_CANTEEN))
 	{
 		p_swSer = new SoftwareSerial(SOFT_SERIAL_RX, D5, false, 256);
 
@@ -382,7 +385,7 @@ void loop()
 	while (p_swSer->available() > 0) {
 		unsigned char recvdata = p_swSer->read();
 
-		if(RoomIndex == ROOM_SMALL)
+		if((RoomData.RoomId == ROOM_SMALL)||(RoomData.RoomId == ROOM_CANTEEN))
 		{
 			//process modbus response
 			CheckModebus(recvdata);
@@ -526,7 +529,7 @@ void OnSecond()
 
 
 	//Ac Power ROOM_SMALL
-	if(RoomIndex == ROOM_SMALL)
+	if((RoomData.RoomId == ROOM_SMALL)||(RoomData.RoomId == ROOM_CANTEEN))
 	{
 		//send modbus request to read power
 		for (unsigned char i = 0; i<MODBUS_REQUEST_LEN ; i++)
@@ -536,7 +539,7 @@ void OnSecond()
 	}
 
 	//Ac Power ROOM_SOUTH
-	if(RoomIndex == ROOM_SOUTH)
+	if(RoomData.RoomId == ROOM_SOUTH)
 	{
 		if (GotPower)
 		{
@@ -591,7 +594,7 @@ void OnTenthSecond()
 	}
 
 
-	if (RoomIndex == ROOM_BALCONY)
+	if (RoomData.RoomId == ROOM_BALCONY)
 	{
 		LocalControl = digitalRead(LOCAL_CONTROL);
 		if (LastLocalControl != LocalControl)
@@ -648,7 +651,7 @@ void CheckRfCommand(unsigned char * RfCommand)
 		for (byte i=0;i<RF_COMMAND_KEY_COUNTER;i++)
 		{
 			//MyPrintf("Check with 0x%02X 0x%02X 0x%02X\r\n",PreSetRfCommand[i][0],PreSetRfCommand[i][1],PreSetRfCommand[i][2]);
-			if(memcmp(RfCommand,PreSetRfCommand[RoomIndex][j][i],RF_COMMAND_LEN)==0)
+			if(memcmp(RfCommand,PreSetRfCommand[RoomData.RoomId][j][i],RF_COMMAND_LEN)==0)
 			{
 
 				if (TenthSecondsSinceStart - LastTrigerTimer > RF_COMMAND_DELAY)
@@ -664,13 +667,13 @@ void CheckRfCommand(unsigned char * RfCommand)
 					else
 					{
 
-						if ((j == 3)&&(RoomIndex == ROOM_SOUTH))
+						if ((j == 3)&&(RoomData.RoomId == ROOM_SOUTH))
 						{
 							p_swSer->enableRx(false);
 							IsSoftwareSerialOn = false;
 							AcOperation(AC_OP_SUMMER);
 						}
-						if ((j == 2)&&(RoomIndex == ROOM_BALCONY))
+						if ((j == 2)&&(RoomData.RoomId == ROOM_BALCONY))
 						{
 							MyPrintf("Execute balcony light OFF\n");
 							RoomData.Light[0] = 0 ;
@@ -792,7 +795,9 @@ void AcOperation(unsigned char OpCode)
 		break;
 	}
 
+	p_swSer->enableRx(false);
 	p_IRMideaAC->send();
+	p_swSer->enableRx(true);
 }
 
 void AC_Power_INT()//中断函数
@@ -828,7 +833,7 @@ void IR_DEconde_INT()//中断函数
 
 
 
-	if (RoomIndex == ROOM_SOUTH)//with 38k modulation
+	if (RoomData.RoomId == ROOM_SOUTH)//with 38k modulation
 	{
 		if (BitCounter<SAMPLE_NUMBER)
 		{
@@ -900,7 +905,7 @@ void IR_DEconde_INT()//中断函数
 			}
 		}
 	} 
-	else if (RoomIndex == ROOM_SMALL)//without 38k modulation
+	else if((RoomData.RoomId == ROOM_SMALL)||(RoomData.RoomId == ROOM_CANTEEN))//without 38k modulation
 	{
 		if (BitCounter<SAMPLE_NUMBER)
 		{
@@ -1175,7 +1180,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = RoomData.RoomId;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
