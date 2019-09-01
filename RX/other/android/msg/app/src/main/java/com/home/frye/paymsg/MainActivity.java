@@ -1,8 +1,12 @@
 package com.home.frye.paymsg;
 
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.Settings;
@@ -34,7 +38,20 @@ public class MainActivity extends AppCompatActivity {
 
     String date;
 
-    int PayData[] = {6, 0, 0};// data type, pay type, pay amount
+
+    BatteryReceiver m_receiver;
+
+    int PayData[] = {6, 0, 0, 0
+    ,0,0,0,0,0,0};// data type, pay type, pay amount, battery
+
+    String MacAddress;
+    String[] Mac;
+    public static String getLocalMacAddressFromWifiInfo(Context context){
+        WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        WifiInfo winfo = wifi.getConnectionInfo();
+        String mac =  winfo.getMacAddress();
+        return mac;
+    }
 
 
     @Override
@@ -50,6 +67,22 @@ public class MainActivity extends AppCompatActivity {
         startService(intent);//启动服务
         final SharedPreferences sp = getSharedPreferences("msg", MODE_PRIVATE);
 
+
+        IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        m_receiver = new BatteryReceiver();
+        registerReceiver(m_receiver, intentFilter);
+
+
+        MacAddress = getLocalMacAddressFromWifiInfo((Context)this);
+        String delimeter = ":";  // 指定分割字符
+        Mac = MacAddress.split(delimeter); // 分割字符串
+
+        for (byte i = 0; i < 6; i++) {
+            PayData[i+4] = Integer.parseInt(Mac[i],16);
+        }
+
+
+
         try {
             socket = new DatagramSocket();
             serverAddress = InetAddress.getByName("192.168.0.17");
@@ -62,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss"); //获取系系时间
                 date = sDateFormat.format(new java.util.Date());
-                Log.d("Date", "发送时间" + date);
+                Log.d("Date", "发送时间" + date +"电池"+ PayData[3] + "MAC:" + Mac[0]+ Mac[1]+ Mac[2]+ Mac[3]+ Mac[4]+ Mac[5]);
 
 
                 new Thread(new Runnable() {
@@ -119,9 +152,11 @@ public class MainActivity extends AppCompatActivity {
 
                         }
 
-                        byte sendData[] = new byte[12];
+                        PayData[3] = m_receiver.getPercent();
 
-                        for (byte i = 0; i < 12; i++) {
+                        byte sendData[] = new byte[40];
+
+                        for (byte i = 0; i < 40; i++) {
                             sendData[i] = (byte) ((PayData[i / 4] >> (i % 4 * 8)) & 0xff);
                         }
 
@@ -174,3 +209,5 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 }
+
+

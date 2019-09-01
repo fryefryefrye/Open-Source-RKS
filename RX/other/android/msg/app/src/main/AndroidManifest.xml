@@ -23,10 +23,12 @@
             android:priority="1000"
             android:label="通知监控"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+
             <intent-filter>
                 <action      android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
     </application>
 
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 </manifest>
