@@ -13,7 +13,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 
 #include <SPI.h>
 #include "RF24.h"
-#include <printf.h>
+#include "printf.h"
 
 
 /* Hardware configuration: Set up nRF24L01 radio on SPI bus plus pins 7 & 8 */

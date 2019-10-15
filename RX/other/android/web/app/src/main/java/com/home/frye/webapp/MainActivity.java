@@ -24,8 +24,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(true);
         settings.setUseWideViewPort(true);
         //webView.setInitialScale(150);//12寸平板，竖屏。
-        //webView.setInitialScale(200);//7寸平板，横屏。
-        webView.setInitialScale(100);//3寸，横屏。
+        webView.setInitialScale(200);//7寸平板，横屏。
+        //webView.setInitialScale(100);//3寸，横屏。
 //
 
         //webView.loadUrl("http://fryefryefrye.myds.me:8084/weather");

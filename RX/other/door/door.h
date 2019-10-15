@@ -14,29 +14,23 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 #define TIME_OUT_READY 300  //0.1s
 
 #define FIX_DISTANCE_IN 800
-#define FIX_DISTANCE_OUT 853
+#define FIX_DISTANCE_OUT 1051
 #define DISTANCE_DIFF 200
 
 
 
-//PIN define
-
-//#define BIKE_CHECK1 2
-//#define BIKE_CHECK2 3
-//#define BIKE_CHECK3 4
-
 
 #include <SoftwareSerial.h>
-SoftwareSerial SoftSerialOut(3, 2); //rx ,tx 
-SoftwareSerial SoftSerialIn(5, 4); //rx ,tx 
+SoftwareSerial SoftSerialOut(5, 4); //rx ,tx 
+SoftwareSerial SoftSerialIn(3, 2); //rx ,tx 
 
 //D7,D8 for RF24
 #define BUZZ			9
 #define CLOSED			10
 
-#define RELAY_OPEN		A0
-#define RELAY_CLOSE		A1
-#define RELAY_UNLOCK	A2
+#define RELAY_OPEN		A2
+#define RELAY_CLOSE		A0
+#define RELAY_UNLOCK	A1
 #define RELAY_LOCK		A3
 #define KEY_OUT1		A4
 #define KEY_OUT2		A5
@@ -47,19 +41,26 @@ SoftwareSerial SoftSerialIn(5, 4); //rx ,tx
 
 unsigned int DistanceIn = 0;
 unsigned int DistanceOut = 0;
-bool bBodyCheckIn = false;
-bool bBodyCheckOut = false;
+bool isBodyExistIn = false;
+bool isBodyExistOut = false;
+
 bool DoorOpening = false;
+bool DoorCloseing = false;
 bool DoorLocking = false;
+bool DoorUnlocking = false;
+
 bool StopOpening = false;
+bool StopCloseing = false;
 bool StopLocking = false;
+bool StopUnlocking = false;
+
 
 bool bWaitAutoClose = false;
 unsigned long DoorOpenedTime;
 #define AUTO_CLOSE_MAX_WAIT 300
 
-enum OpenFrom{IN,OUT};
-OpenFrom eOpenFrom;
+enum From{IN,OUT};
+From eOpenFrom;
 
 
 /*****************************************************/
@@ -85,6 +86,8 @@ unsigned long LastChangeCHTime = 0;
 unsigned long LastReadyOutGetTime = 0;
 unsigned long LastTagGetTime = 0;
 bool Tag = false;
+bool TagHouXiang = false;
+unsigned long LastTagHouXiangGetTime = 0;
 bool ReadyOut = false;
 
 
@@ -107,18 +110,27 @@ void Buzz_task();
 void CheckTag_task();
 void OnTenthSecond();
 void GetDistance_task();
-void CheckBody_task();
+bool CheckBodyLeft(From eWhichBody);
+bool CheckBodyCome(From eWhichBody);
 void CheckKey_task();
 void KeyPressed(unsigned char KeyIndex);
 bool KeyState(unsigned char KeyIndex);
-void DoorOpen_Task();
-void DoorLock_Task();
+
+
+
 void UnlockRelay(bool on);
 void LockRelay(bool on);
 void OpenRelay(bool on);
 void CloseRelay(bool on);
 bool IsDoorClosed();
+
+
 void CheckDoor_task();
+void DoorOpen_Task();
+void DoorClose_Task();
+void DoorLock_Task();
+void DoorUnlock_Task();
+void AutoClose_task();
 
 void setup()
 {
@@ -161,7 +173,7 @@ void setup()
 
 #ifdef DEGBUG_OUTPUT
 	Serial.begin(115200);
-	Serial.println(F("RF24_Bike_Read"));
+	Serial.println(F("RF24_AutoDoor"));
 	printf_begin();
 #endif
 
@@ -206,39 +218,64 @@ void loop()
 
 void OnTenthSecond()
 {
-	CheckBody_task();
 	CheckKey_task();
 	CheckTag_task();
 	CheckDoor_task();
 	DoorOpen_Task();
+	DoorClose_Task();
 	DoorLock_Task();
+	DoorUnlock_Task();
+	AutoClose_task();
+
+
 
 }
-//void AutoClose_task()
-//{
-//
-//	if (bWaitAutoClose)
-//	{
-//		if (TenthSecondsSinceStart - DoorOpenedTime < AUTO_CLOSE_MAX_WAIT)
-//		{
-//			if (eOpenFrom == IN)
-//			{
-//				if (bBodyCheckOut)
-//				{
-//					printf("Auto Door close \r\n");
-//					DoorLocking = true;
-//					bWaitAutoClose= false;
-//				}
-//			} 
-//
-//		} 
-//		else
-//		{
-//			bWaitAutoClose= false;
-//		}
-//	} 
-//
-//}
+void AutoClose_task()
+{
+
+	if (bWaitAutoClose)
+	{
+
+		if (eOpenFrom == OUT)
+		{
+			if(CheckBodyCome(IN))
+			{
+				DoorCloseing = true;
+				bWaitAutoClose = false;
+				printf("Auto Door close.From out, Body IN  \r\n");
+			}
+		}
+
+		if (eOpenFrom == IN)
+		{
+			if(CheckBodyCome(OUT))
+			{
+				DoorCloseing = true;
+				bWaitAutoClose = false;
+				printf("Auto Door close.From IN, Body OUT  \r\n");
+			}
+		}
+		
+		//if (TenthSecondsSinceStart - DoorOpenedTime < AUTO_CLOSE_MAX_WAIT)
+		//{
+		//	if (eOpenFrom == IN)
+		//	{
+		//		if (isBodyExistOut))
+		//		{
+		//			printf("Auto Door close \r\n");
+		//			DoorLocking = true;
+		//			bWaitAutoClose= false;
+		//		}
+		//	} 
+
+		//} 
+		//else
+		//{
+		//	bWaitAutoClose= false;
+		//}
+	} 
+
+}
 
 void CheckDoor_task()
 {
@@ -252,7 +289,7 @@ void CheckDoor_task()
 
 		if (bLastDoorClosed)
 		{
-			DoorLocking = true;
+			//DoorLocking = true;
 		}
 	}
 
@@ -280,6 +317,24 @@ void CheckTag_task()
 		Tag = false;
 	}
 
+	if (TenthSecondsSinceStart - LastTagHouXiangGetTime < TIME_OUT_KEY)
+	{
+		if (TagHouXiang == false)
+		{
+			printf("Get TagHouXiang \r\n");
+		}
+		TagHouXiang = true;
+	} 
+	else
+	{
+		if (TagHouXiang == true)
+		{
+			printf("Lost TagHouXiang \r\n");
+		}
+		TagHouXiang = false;
+	}
+
+
 
 	if (TenthSecondsSinceStart - LastReadyOutGetTime < TIME_OUT_READY)
 	{
@@ -298,28 +353,80 @@ void CheckTag_task()
 		ReadyOut = false;
 	}
 }
-void CheckBody_task()
+bool CheckBodyCome(From eWhichBody)
 {
 	static bool bLastBodyCheckIn;
 	static bool bLastBodyCheckOut;
-	if (bBodyCheckIn != bLastBodyCheckIn)
+	if (eWhichBody == IN)
 	{
-		bLastBodyCheckIn = bBodyCheckIn;
-		//printf("Body check in change to %d. timestamp = %d \r\n",bBodyCheckIn,TenthSecondsSinceStart);
-		//Buzz++;
+		if (isBodyExistIn != bLastBodyCheckIn)
+		{
+			bLastBodyCheckIn = isBodyExistIn;
+			printf("Body check in change to %d. timestamp = %d \r\n",isBodyExistIn,TenthSecondsSinceStart);
+			if (isBodyExistIn)
+			{
+				return true;
+			}
+
+		}
 	}
 
-	if (bBodyCheckOut != bLastBodyCheckOut)
+
+	if (eWhichBody == OUT)
 	{
-		bLastBodyCheckOut = bBodyCheckOut;
-		//printf("Body check Out change to %d .timestamp = %d\r\n",bBodyCheckOut,TenthSecondsSinceStart);
-		//Buzz++;
+		if (isBodyExistOut != bLastBodyCheckOut)
+		{
+			bLastBodyCheckOut = isBodyExistOut;
+			printf("Body check Out change to %d .timestamp = %d\r\n",isBodyExistOut,TenthSecondsSinceStart);
+			if (isBodyExistOut)
+			{
+				return true;
+			}
+		}
 	}
+	return false;
+}
+
+bool CheckBodyLeft(From eWhichBody)
+{
+	static bool bLastBodyCheckIn;
+	static bool bLastBodyCheckOut;
+	if (eWhichBody == IN)
+	{
+		if (isBodyExistIn != bLastBodyCheckIn)
+		{
+			bLastBodyCheckIn = isBodyExistIn;
+			printf("Body check in change to %d. timestamp = %d \r\n",isBodyExistIn,TenthSecondsSinceStart);
+			if (!isBodyExistIn)
+			{
+				return true;
+			}
+
+		}
+	}
+
+
+	if (eWhichBody == OUT)
+	{
+		if (isBodyExistOut != bLastBodyCheckOut)
+		{
+			bLastBodyCheckOut = isBodyExistOut;
+			printf("Body check Out change to %d .timestamp = %d\r\n",isBodyExistOut,TenthSecondsSinceStart);
+			if (!isBodyExistOut)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 void GetDistance_task()
 {
 	static unsigned char Step = 1;
 	static unsigned long LastCheckMillis;
+
+	static unsigned char BodyDisappearCounterIn = 0;
+	static unsigned char BodyDisappearCounterOut = 0;
 
 
 
@@ -342,34 +449,25 @@ void GetDistance_task()
 				DistanceOut = SoftSerialOut.read()<<8;
 				DistanceOut = DistanceOut + SoftSerialOut.read();
 				SoftSerialOut.read();
+				//printf("DistanceOut = %d mm. \r\n",DistanceOut);
 			}
 			if((DistanceOut < FIX_DISTANCE_OUT - DISTANCE_DIFF)||(DistanceOut > FIX_DISTANCE_OUT + DISTANCE_DIFF))
 			{
-				bBodyCheckOut = true;
+				isBodyExistOut = true;
+				BodyDisappearCounterOut = 0;
 				printf("DistanceOut = %d mm. \r\n",DistanceOut);
 			}
 			else
 			{
-				bBodyCheckOut = false;
+				if (BodyDisappearCounterOut>3)
+				{
+					isBodyExistOut = false;
+				}
+				else
+				{
+					BodyDisappearCounterOut++;
+				}
 			}
-			//while (1)
-			//{
-			//	if (SoftSerialOut.available()> 1)
-			//	{
-			//		DistanceOut = SoftSerialOut.read()<<8;
-			//		DistanceOut = DistanceOut + SoftSerialOut.read();
-			//	}
-			//	else
-			//	{
-			//		break;
-			//	}
-			//}
-
-
-			//		//while (SoftSerialOut.available() > 0) {
-			//		//	unsigned char inByte = SoftSerialOut.read();
-			//		//	printf("SoftSerialOut get: 0x%02X \n",inByte);
-			//		//}
 			Step++;
 			break;
 		case 2:
@@ -384,19 +482,23 @@ void GetDistance_task()
 				DistanceIn = DistanceIn + SoftSerialIn.read();
 				SoftSerialIn.read();
 			}
-			//		//while (SoftSerialIn.available() > 0) {
-			//		//	unsigned char inByte = SoftSerialIn.read();
-			//		//	printf("SoftSerialIn get: 0x%02X \n",inByte);
-			//		//}
 			Step = 0;
 			if((DistanceIn < FIX_DISTANCE_IN - DISTANCE_DIFF)||(DistanceIn > FIX_DISTANCE_IN + DISTANCE_DIFF))
 			{
-				bBodyCheckIn = true;
+				isBodyExistIn = true;
+				BodyDisappearCounterIn = 0;
 				printf("DistanceIn = %d mm. \r\n",DistanceIn);
 			}
 			else
 			{
-				bBodyCheckIn = false;
+				if (BodyDisappearCounterIn>10)
+				{
+					isBodyExistIn = false;
+				}
+				else
+				{
+					BodyDisappearCounterIn++;
+				}
 			}
 
 			//printf("DistanceOut = %d mm.DistanceIn = %d mm. \r\n",DistanceOut,DistanceIn);
@@ -457,28 +559,46 @@ void KeyPressed(unsigned char KeyIndex)
 	case 1:
 		printf("Key Out! \r\n");
 		//if (Tag&&ReadyOut&&IsDoorClosed())
-		/*if (Tag&&bBodyCheckOut&&IsDoorClosed())*/
-		if (Tag&&IsDoorClosed())
+		//*if (Tag&&bBodyCheckOut&&IsDoorClosed())*/
+
+		if (TagHouXiang&&IsDoorClosed())
 		{
 			Buzz = 1;
 			DoorOpening = true;
+			bWaitAutoClose = true;
 			eOpenFrom = OUT;
 			printf("open from Out! \r\n");
+		}
+		else if (Tag&&IsDoorClosed())
+		{
+			Buzz = 1;
+			DoorUnlocking = true;
+			//eOpenFrom = OUT;
+			printf("unlock from Out! \r\n");
 		}
 		else
 		{
 			Buzz = 3;
 		}
+
+
+
 		break;
 	case 2:
-		//printf("Key In! \r\n");
-		//if (IsDoorClosed())
-		//{
-		//	printf("open from In! \r\n");
-		//	DoorOpening = true;
-		//	eOpenFrom = IN;
-		//	Buzz = 5;
-		//} 
+		printf("Key In! \r\n");
+		if (IsDoorClosed())
+		{
+			printf("open from In! \r\n");
+			DoorOpening = true;
+			eOpenFrom = IN;
+			bWaitAutoClose = true;
+			Buzz = 10;
+		}
+		else
+		{
+			printf("close from In! \r\n");
+			DoorCloseing = true;
+		}
 		//else
 		//{	
 		//	if (DoorOpening)
@@ -487,6 +607,16 @@ void KeyPressed(unsigned char KeyIndex)
 		//	}
 		//	DoorLocking = true;
 		//}
+
+		//OpenRelay(true);
+		//delay(3000);
+		//OpenRelay(false);
+		//delay(500);
+		//CloseRelay(true);
+		//delay(500);
+		//CloseRelay(false);
+		//delay(500);
+
 
 		break;
 	case 3:
@@ -539,6 +669,11 @@ void nRFTask()
 		if (GotData[0] == 0)
 		{
 			LastTagGetTime = TenthSecondsSinceStart;
+
+			if (GotData[1] == 3)
+			{
+				LastTagHouXiangGetTime = TenthSecondsSinceStart;
+			}
 		}
 		//		else if (GotData[0] == 1)
 		//		{
@@ -610,6 +745,7 @@ void Buzz_task()
 	static signed int BuzzOff;
 	static bool BuzzHigh;
 
+
 	if (Buzz > 0)
 	{
 		if (BuzzHigh)
@@ -636,6 +772,14 @@ void Buzz_task()
 	}
 	else
 	{
+		//if (TagHouXiang&&(isBodyExistOut||isBodyExistIn))
+		//{
+		//	digitalWrite(BUZZ, LOW);
+		//}
+		//else
+		//{
+		//	digitalWrite(BUZZ, HIGH);
+		//}
 	}
 }
 
@@ -658,32 +802,187 @@ void DoorOpen_Task()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 30)
+				if(TenthSecondsSinceStart -StartTime > 3)//Unlock for 200ms
 				{
+					OpenRelay(true);
+					Step ++;
+					StartTime = TenthSecondsSinceStart;
+				}
+			}
+			//if (Step == 2)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 6)//open for 200ms
+			//	{
+			//		OpenRelay(false);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			//if (Step == 3)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 0)//pause open for 200ms
+			//	{
+			//		OpenRelay(true);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			if (Step == 2)
+			{
+				if(TenthSecondsSinceStart -StartTime > 6)//open for 200ms
+				{
+					OpenRelay(false);
 					UnlockRelay(false);
 					Step = 0;
 					DoorOpening = false;
-					printf("Door unlock finished.\r\n");
+					printf("DoorOpening finished\r\n");
 				}
-				//else
-				//{
-				//	if (!IsDoorClosed())
-				//	{
-				//		UnlockRelay(false);
-				//		Step = 0;
-				//		DoorOpening = false;
-				//		printf("Door unlock finished.\r\n");
-				//	}
-				//}
 			}
+
 		}
 		else
 		{
+			OpenRelay(false);
 			UnlockRelay(false);
 			StopOpening = false;
 			Step = 0;
 			DoorOpening = false;
 			printf("DoorOpening canceled.\r\n");
+		}
+	} 
+}
+
+
+void DoorClose_Task()
+{
+	static unsigned char Step = 0;
+	static unsigned long StartTime = 0;
+	if (DoorCloseing)
+	{
+		if (!StopCloseing)
+		{
+			//if (bLastDoorClosed)
+			//{
+			//	StopCloseing = true;
+			//}
+
+			if (Step == 0)
+			{
+				printf("DoorCloseing start.\r\n");
+				Step = 1;
+				StartTime = TenthSecondsSinceStart;
+				CloseRelay(true);
+			}
+			if (Step == 1)
+			{
+				if(TenthSecondsSinceStart -StartTime > 10)//Close for n*100ms
+				{
+					CloseRelay(false);
+					Step ++;
+					StartTime = TenthSecondsSinceStart;
+				}
+			}
+			if (Step == 2)
+			{
+				if(TenthSecondsSinceStart -StartTime > 20)//pause for n*100ms
+				{
+					CloseRelay(true);
+					Step ++;
+					StartTime = TenthSecondsSinceStart;
+				}
+			}			
+			//if (Step == 3)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 0)//Close for n*100ms
+			//	{
+			//		CloseRelay(false);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			//if (Step == 4)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 0)//pause for n*100ms
+			//	{
+			//		CloseRelay(true);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			//if (Step == 5)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 0)//Close for n*100ms
+			//	{
+			//		CloseRelay(false);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			//if (Step == 6)
+			//{
+			//	if(TenthSecondsSinceStart -StartTime > 0)//pause for n*100ms
+			//	{
+			//		CloseRelay(true);
+			//		Step ++;
+			//		StartTime = TenthSecondsSinceStart;
+			//	}
+			//}
+			if (Step == 3)
+			{
+				if(TenthSecondsSinceStart -StartTime > 5)//Close for n*100ms
+				{
+					CloseRelay(false);
+					Step = 0;
+					DoorCloseing = false;
+					printf("DoorCloseing finished\r\n");
+				}
+			}
+
+		}
+		else
+		{
+			CloseRelay(false);
+			StopCloseing = false;
+			Step = 0;
+			DoorCloseing = false;
+			printf("DoorCloseing canceled.\r\n");
+		}
+	} 
+}
+
+void DoorUnlock_Task()
+{
+	static unsigned char Step = 0;
+	static unsigned long StartTime = 0;
+	if (DoorUnlocking)
+	{
+		if (!StopUnlocking)
+		{
+			if (Step == 0)
+			{
+				printf("DoorUnlocking start.\r\n");
+				Step = 1;
+				StartTime = TenthSecondsSinceStart;
+				UnlockRelay(true);
+			}
+			if (Step == 1)
+			{
+				if(TenthSecondsSinceStart -StartTime > 30)
+				{
+					UnlockRelay(false);
+					Step = 0;
+					DoorUnlocking = false;
+					printf("Door unlock finished.\r\n");
+				}
+			}
+		}
+		else
+		{
+			UnlockRelay(false);
+			StopUnlocking = false;
+			Step = 0;
+			DoorUnlocking = false;
+			printf("DoorUnlocking canceled.\r\n");
 		}
 	} 
 }
@@ -704,7 +1003,7 @@ void DoorLock_Task()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 10)
+				if(TenthSecondsSinceStart -StartTime > 20)
 				{
 					LockRelay(true);
 					Step = 2;

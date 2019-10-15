@@ -17,7 +17,12 @@
 //LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
 
 
-#define RELAY				D4
+#define RELAY_CLOSE			D5
+#define RELAY_OPEN			D6
+#define BUZZ				D7
+#define KEY					D2
+
+#define GAS_LIMIT			12
 
 
 
@@ -43,17 +48,25 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 22;
-tUsbChargeData UsbChargeData;
-tUsbChargeCommand UsbChargeCommand;
-unsigned long LastAndroidBatteryUpdate;
-
+unsigned char RoomIndex = 24;
+tMethaneGasData MethaneGasData;
 
 
 unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
 void OnSecond();
+
+void CheckGasTask();
+void KeyTask();
+void RelayBuzzTask();
+void CloseVavle();
+void OpenVavle();
+//bool isCloseVavle = false;
+//bool isOpenVavle = false;
+unsigned long VavleStartTime = 0;
+bool isVavleOpened = true;
+
 
 
 void MyPrintf(const char *fmt, ...);
@@ -62,11 +75,17 @@ void MyPrintf(const char *fmt, ...);
 void setup() 
 {       
 
-	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
-	digitalWrite(RELAY, LOW);
+	pinMode(RELAY_CLOSE, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_CLOSE, LOW);
+	pinMode(RELAY_OPEN, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_OPEN, LOW);
+	pinMode(BUZZ, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(BUZZ, LOW);
 
-	UsbChargeData.DataType = 12;
-	UsbChargeData.isOn = false;
+	pinMode(KEY,INPUT_PULLUP);
+
+	MethaneGasData.DataType = 16;
+
 
 
 	delay(50);                      
@@ -104,7 +123,7 @@ void setup()
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
-		UsbChargeData.Mac[i] = mac[i];
+		//UsbChargeData.Mac[i] = mac[i];
 	}
 
 	//for (unsigned char i = 0;i<ROOM_NUMBER;i++)
@@ -164,18 +183,80 @@ void loop()
 	ArduinoOTA.handle();
 
 	TenthSecondsSinceStartTask();
+	//RelayTask();
 
 
-	m_WiFiUDP.parsePacket(); 
-	unsigned int UdpAvailable = m_WiFiUDP.available();
-	if (UdpAvailable == sizeof(tUsbChargeCommand))
+
+
+
+	//m_WiFiUDP.parsePacket(); 
+	//unsigned int UdpAvailable = m_WiFiUDP.available();
+	//if (UdpAvailable == sizeof(tUsbChargeCommand))
+	//{
+	//	//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+	//	tUsbChargeCommand tempUsbChargeCommand;
+	//	m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
+	//}
+}
+
+void RelayBuzzTask()
+{
+	if (VavleStartTime!=0)
 	{
-		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		tUsbChargeCommand tempUsbChargeCommand;
-		m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
+		if (TenthSecondsSinceStart - VavleStartTime > 70)
+		{
+			digitalWrite(RELAY_CLOSE, LOW);
+			digitalWrite(RELAY_OPEN, LOW);
+			VavleStartTime = 0;
+		}
 
-		LastAndroidBatteryUpdate = 0;
+
+		if (TenthSecondsSinceStart%10 == 0)
+		{
+			digitalWrite(BUZZ, HIGH);
+		}
+
+
+		if (TenthSecondsSinceStart%10 == 2)
+		{
+			digitalWrite(BUZZ, LOW);
+		}
 	}
+	else
+	{
+		//beep when off
+		if (!isVavleOpened)
+		{
+			if (TenthSecondsSinceStart%30 == 0)
+			{
+				digitalWrite(BUZZ, HIGH);
+			}
+
+
+			if (TenthSecondsSinceStart%30 == (MethaneGasData.Percentage > GAS_LIMIT ? 10:0))
+			{
+				digitalWrite(BUZZ, LOW);
+			}
+		}
+		else
+		{
+			digitalWrite(BUZZ, LOW);
+		}
+
+	}
+}
+
+void CloseVavle()
+{
+	isVavleOpened = false;
+	digitalWrite(RELAY_CLOSE, HIGH);
+	VavleStartTime = TenthSecondsSinceStart;
+}
+void OpenVavle()
+{
+	isVavleOpened = true;
+	digitalWrite(RELAY_OPEN, HIGH);
+	VavleStartTime = TenthSecondsSinceStart;
 }
 
 
@@ -211,103 +292,91 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	LastAndroidBatteryUpdate++;
 
-
-
-
-	//if (now%10 == 0)
-	//{
-	//	UsbChargeData.isOn = true;
-	//}
-
-	//if (now%10 == 5)
-	//{
-	//	UsbChargeData.isOn = false;
-	//}
-
-
-	//if (now%10 == 0)
-	//{
-	//	MyPrintf("Usb chager P=%d TO=%d TO=%d \r\n"
-	//		,UsbChargeCommand.BatteryPercentage
-	//		,UsbChargeCommand.AndroidTimeout
-	//		,LastAndroidBatteryUpdate);
-	//}
-
-
-	/*
-	testlog
-	15 min in 1 hour		not enough
-	25 min in 1 hour		enough
-
-	
-	*/
-
-	if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
+	unsigned long AnalogValue= analogRead(A0);
+	MethaneGasData.Percentage = AnalogValue*100/1024;
+	if (MethaneGasData.Percentage > 10)
 	{
-		if (now%3600 <= 40*60)
-		{
-			if (!UsbChargeData.isOn)
-			{
-				MyPrintf("Usb chager offline ON \r\n");
-				UsbChargeData.isOn = true;
-			}	
-		}
-		else
-		{
-			if (UsbChargeData.isOn)
-			{
-				UsbChargeData.isOn = false;
-				MyPrintf("Usb chager offline OFF \r\n");
-			}
-		}
-	} 
-	else
-	{
-		if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
-		{
-			MyPrintf("Usb chager online ON \r\n");
-			UsbChargeData.isOn = true;
-		}	
-		else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
-		{
-			MyPrintf("Usb chager online OFF \r\n");
-			UsbChargeData.isOn = false;
-		}	
+		//MyPrintf("AnalogValue = %d Percentage = %d  TenthSecondsSinceStart = %d \r\n",AnalogValue,MethaneGasData.Percentage,TenthSecondsSinceStart);
 	}
 
 
+	//MyPrintf("digitalRead(KEY) = %d  \r\n",digitalRead(KEY));
 
-
-
-
-	if (UsbChargeData.isOn)
-	{
-		digitalWrite(RELAY,HIGH);
-	}
-	else
-	{
-		digitalWrite(RELAY,LOW);
-	}
-	
 
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&UsbChargeData, sizeof(tUsbChargeData));
+	m_WiFiUDP.write((const char*)&MethaneGasData, sizeof(tMethaneGasData));
 	m_WiFiUDP.endPacket(); 
 
 }
 
-void OnTenthSecond()
+void KeyTask()
 {
 
+#define  KEY_PRESS_MIN 2
+#define PAUSE_KEY_PRESS 4
+
+
+	static unsigned char KeyCounter = 0;
+	static unsigned char PauseKeyCounter = PAUSE_KEY_PRESS;
+
+	// key process
+	if (PauseKeyCounter>0)
+	{
+		PauseKeyCounter--;
+	} 
+	else 
+	{
+		if (!(digitalRead(KEY)))
+		{
+
+			KeyCounter++;
+			if (KeyCounter > KEY_PRESS_MIN)
+			{
+				PauseKeyCounter = PAUSE_KEY_PRESS;
+				if (isVavleOpened)
+				{
+					CloseVavle();
+				} 
+				else
+				{
+					OpenVavle();
+				}
+
+				KeyCounter = 0;
+			}
+		}
+		else
+		{
+			KeyCounter = 0;
+		}
+	}
+
+}
+
+void CheckGasTask()
+{
+	if ((MethaneGasData.Percentage > GAS_LIMIT)
+		&&(TenthSecondsSinceStart>1800)
+		&&isVavleOpened)
+	{
+		MyPrintf("Methane over limit. CloseVavle. \n");
+		CloseVavle();
+	}
+}
+void OnTenthSecond()
+{
 
 	if (TenthSecondsSinceStart%10 == 0)
 	{
 		OnSecond();
 	}
-	
+
+
+	RelayBuzzTask();
+	KeyTask();
+	CheckGasTask();
 }
 
 

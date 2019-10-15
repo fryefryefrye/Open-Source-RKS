@@ -50,6 +50,9 @@ void OnTenthSecond();
 void OnSecond();
 void MyPrintf(const char *fmt, ...);
 
+void CraneOP(unsigned long OpIndex);
+bool CheckStop();
+
 #define RF_COMMAND_BASE 0xB37C64
 #define RF_COMMAND_SEP 200 //ms
 
@@ -57,16 +60,129 @@ void MyPrintf(const char *fmt, ...);
 #define RF_WINDOW_COMMAND_COUNTER 2
 unsigned char RfWindow[RF_WINDOW_COMMAND_COUNTER*3][RF_WINDOW_COMMAND_LEN] = 
 {
-{0xF8, 0x41, 0xC1, 0x91, 0x11}
-,{0xF8, 0x41, 0xC1, 0x91, 0x33}
-,{0xF8, 0x41, 0xC1, 0x91, 0x55}
+	{0xF8, 0x41, 0xC1, 0x91, 0x11}
+	,{0xF8, 0x41, 0xC1, 0x91, 0x33}
+	,{0xF8, 0x41, 0xC1, 0x91, 0x55}
 
-,{0x00, 0x00, 0x00, 0x00, 0x00}
-,{0x00, 0x00, 0x00, 0x00, 0x00}
-,{0x00, 0x00, 0x00, 0x00, 0x00}
+	,{0x00, 0x00, 0x00, 0x00, 0x00}
+	,{0x00, 0x00, 0x00, 0x00, 0x00}
+	,{0x00, 0x00, 0x00, 0x00, 0x00}
 
 };
 
+unsigned long RfCrane[6] = 
+{
+	0x4171A1//onoff
+	,0x4171A2//light
+	,0xC37C62//out
+	,0xC37C61//in
+	,0xC37C64//down
+	,0xC37C68//up
+};
+#define RF_COMMAND_CRANE_ON_OFF		0*4
+#define RF_COMMAND_CRANE_LIGHT		1*4
+#define RF_COMMAND_CRANE_OUT		2*4
+#define RF_COMMAND_CRANE_IN			3*4
+#define RF_COMMAND_CRANE_DOWN		4*4
+#define RF_COMMAND_CRANE_UP			5*4
+
+
+
+void CraneOP(unsigned long OpIndex)
+{
+
+#define RF_CRANE_EXPAND_OUT_TIME		60
+#define RF_CRANE_EXPAND_DOWN_TIME		60
+#define RF_CRANE_DOWN_5_TIME			10
+#define RF_CRANE_DOWN_1_TIME			2
+#define RF_CRANE_UP_5_TIME				10
+#define RF_CRANE_UP_1_TIME				2
+
+	unsigned char * pRfCommand24Bit = (unsigned char *)&RfCrane[0];
+
+	switch(OpIndex)
+	{
+	case RF_CRANE_ON_OFF:
+		MyPrintf("Crane on/off.\r\n");
+		RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_ON_OFF,24);
+		break;
+	case RF_CRANE_EXPAND:
+		MyPrintf("Crane expand started. Start out.\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_EXPAND_OUT_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_OUT,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		delay(1000);
+		MyPrintf("Crane out finished,start down.\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_EXPAND_DOWN_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_DOWN,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		MyPrintf("Crane expand finished.\r\n");
+		break;
+
+
+	case RF_CRANE_DOWN_1:
+		MyPrintf("Crane RF_CRANE_DOWN_1 start .\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_DOWN_1_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_DOWN,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		MyPrintf("Crane RF_CRANE_DOWN_1 finished.\r\n");
+		break;
+
+	case RF_CRANE_DOWN_5:
+		MyPrintf("Crane RF_CRANE_DOWN_5 start .\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_DOWN_5_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_DOWN,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		MyPrintf("Crane RF_CRANE_DOWN_5 finished.\r\n");
+		break;
+
+	case RF_CRANE_UP_1:
+		MyPrintf("Crane RF_CRANE_UP_1 start .\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_UP_1_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_UP,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		MyPrintf("Crane RF_CRANE_UP_1 finished.\r\n");
+		break;
+
+	case RF_CRANE_UP_5:
+		MyPrintf("Crane RF_CRANE_UP_5 start .\r\n");
+		for (unsigned long i = 0; i<RF_CRANE_UP_5_TIME ; i++)
+		{
+			RfSwitch315.send(pRfCommand24Bit+RF_COMMAND_CRANE_UP,24);
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&RfData, sizeof(tRfData));
+			m_WiFiUDP.endPacket(); 
+			if (CheckStop()) return;
+		}
+		MyPrintf("Crane RF_CRANE_UP_5 finished.\r\n");
+		break;
+	}
+}
 
 void setup() 
 {       
@@ -194,34 +310,50 @@ void loop()
 			MyPrintf("get RfCommand trig.OpCode = %d \r\n",tempRfCommand.RfOpCode);
 			switch(tempRfCommand.RfOpCode)
 			{
-			case RF_OP_LIGHT_ALL_ON:
-				for(int i = 12; i >= 0; i--)
+				//OpCode
+				//#define RF_OP_CRANE			5
+				//#define RF_OP_OFF			6
+				//#define RF_OP_ON			7
+				//#define RF_OP_ALL			9
+				//index 9 all on
+				//index 8 all off
+			case RF_OP_CRANE:
+				CraneOP(tempRfCommand.RfIndex);
+				break;
+
+			case RF_OP_ALL:
+				if (tempRfCommand.RfIndex == 9)
 				{
-					if ((i !=4 )&&(i<11))
+					for(int i = 12; i >= 0; i--)
+					{
+						if ((i !=4 )&&(i<11))
+						{
+							digitalWrite(BUZZ, HIGH);
+							delay(RF_COMMAND_SEP);
+							digitalWrite(BUZZ, LOW);
+							RfCommand24Bit = RF_COMMAND_BASE+i*3;
+							RfSwitch315.send(pRfCommand24Bit,24);
+							yield();
+						}
+					}
+				}
+				else if (tempRfCommand.RfIndex == 8)
+				{
+					for(int i = 12; i >= 0; i--)
 					{
 						digitalWrite(BUZZ, HIGH);
 						delay(RF_COMMAND_SEP);
 						digitalWrite(BUZZ, LOW);
-						RfCommand24Bit = RF_COMMAND_BASE+i*3;
+						RfCommand24Bit = RF_COMMAND_BASE+i*3+1;
 						RfSwitch315.send(pRfCommand24Bit,24);
 						yield();
 					}
 				}
 				break;
-			case RF_OP_LIGHT_ALL_OFF:
-				for(int i = 12; i >= 0; i--)
-				{
-					digitalWrite(BUZZ, HIGH);
-					delay(RF_COMMAND_SEP);
-					digitalWrite(BUZZ, LOW);
-					RfCommand24Bit = RF_COMMAND_BASE+i*3+1;
-					RfSwitch315.send(pRfCommand24Bit,24);
-					yield();
-				}
-				break;
+
 
 			case RF_OP_ON:
-				digitalWrite(BUZZ, HIGH);
+				//digitalWrite(BUZZ, HIGH);
 				if (tempRfCommand.RfIndex< 13)
 				{
 					RfCommand24Bit = RF_COMMAND_BASE+tempRfCommand.RfIndex*3;
@@ -236,7 +368,7 @@ void loop()
 
 				break;
 			case RF_OP_OFF:
-				digitalWrite(BUZZ, HIGH);
+				//digitalWrite(BUZZ, HIGH);
 				if (tempRfCommand.RfIndex< 13)
 				{
 					RfCommand24Bit = RF_COMMAND_BASE+tempRfCommand.RfIndex*3+1;
@@ -250,25 +382,10 @@ void loop()
 
 
 				break;
-			case RF_OP_ON_OFF:
-
-				if (tempRfCommand.RfIndex< 13)
-				{
-					//digitalWrite(BUZZ, HIGH);
-					RfCommand24Bit = RF_COMMAND_BASE+tempRfCommand.RfIndex*3+2;
-					RfSwitch315.send(pRfCommand24Bit,24);
-					digitalWrite(BUZZ, LOW);
-				}
-				else if (tempRfCommand.RfIndex >= 13)
-				{
-					RfSwitch433.send_duya(RfWindow[(tempRfCommand.RfIndex-13)*3+2],39);
-				}
 
 
-				break;
-			//case RF_OP_433:
 
-			//	break;
+
 			}
 
 
@@ -276,6 +393,31 @@ void loop()
 	}
 }
 
+bool CheckStop()
+{
+	m_WiFiUDP.parsePacket(); 
+	unsigned int UdpAvailable = m_WiFiUDP.available();
+	if (UdpAvailable == sizeof(tRfCommand))
+	{
+		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+		tRfCommand tempRfCommand;
+		m_WiFiUDP.read((char *)&tempRfCommand,sizeof(tRfCommand));
+		if (tempRfCommand.Triger == true)
+		{
+			switch(tempRfCommand.RfOpCode)
+			{
+			case RF_OP_CRANE:
+				if (tempRfCommand.RfIndex == RF_CRANE_STOP)
+				{
+					MyPrintf("Got crane stop.\r\n");
+					return true;
+				}
+				break;
+			}
+		}
+	}
+	return false;
+}
 
 unsigned long LastMillis = 0;
 void TenthSecondsSinceStartTask()

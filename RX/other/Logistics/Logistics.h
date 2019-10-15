@@ -17,8 +17,7 @@
 //LED_BUILTIN = GPIO16 (auxiliary constant for the board LED, not a board pin);
 
 
-#define RELAY				D4
-
+#define RELAY				D0
 
 
 
@@ -43,10 +42,12 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 22;
-tUsbChargeData UsbChargeData;
-tUsbChargeCommand UsbChargeCommand;
-unsigned long LastAndroidBatteryUpdate;
+tLogisticsUpdate LogisticsUpdate;
+tLogisticsData LogisticsData;
+tLogisticsCommand LogisticsCommand;
+unsigned long LastSentUpdateSeq;
+
+unsigned char RoomIndex = 25;
 
 
 
@@ -65,8 +66,10 @@ void setup()
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(RELAY, LOW);
 
-	UsbChargeData.DataType = 12;
-	UsbChargeData.isOn = false;
+	LogisticsUpdate.DataType = 18;
+	LogisticsUpdate.NeedIdList = true;
+	LogisticsUpdate.JustOpend = false;
+
 
 
 	delay(50);                      
@@ -102,10 +105,10 @@ void setup()
 	WiFi.softAPmacAddress(mac);
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	for (byte i=0;i<6;i++)
-	{
-		UsbChargeData.Mac[i] = mac[i];
-	}
+	//for (byte i=0;i<6;i++)
+	//{
+	//	RoomData.Mac[i] = mac[i];
+	//}
 
 	//for (unsigned char i = 0;i<ROOM_NUMBER;i++)
 	//{
@@ -168,13 +171,26 @@ void loop()
 
 	m_WiFiUDP.parsePacket(); 
 	unsigned int UdpAvailable = m_WiFiUDP.available();
-	if (UdpAvailable == sizeof(tUsbChargeCommand))
+	if (UdpAvailable == sizeof(tLogisticsData))
 	{
-		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		tUsbChargeCommand tempUsbChargeCommand;
-		m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
+		m_WiFiUDP.read((char *)&LogisticsData,sizeof(tLogisticsData));
+		LogisticsUpdate.NeedIdList = false;
+	}
+	if (UdpAvailable == sizeof(tLogisticsCommand))
+	{
+		m_WiFiUDP.read((char *)&LogisticsCommand,sizeof(tLogisticsCommand));
+		LogisticsUpdate.LastGetCommandSeq = LogisticsCommand.Seq;
 
-		LastAndroidBatteryUpdate = 0;
+		if(LogisticsCommand.LastGetUpdateSeq == LastSentUpdateSeq)
+		{
+			LogisticsUpdate.JustOpend = false;
+			LastSentUpdateSeq++;
+		}
+
+		if (LogisticsCommand.ManualTriger == true)
+		{
+			MyPrintf("get open trig from control\r\n");
+		}
 	}
 }
 
@@ -188,7 +204,6 @@ void TenthSecondsSinceStartTask()
 		LastMillis = CurrentMillis;
 		TenthSecondsSinceStart++;
 		OnTenthSecond();
-		//MyPrintf("TenthSecondsSinceStart = %d \r\n",TenthSecondsSinceStart);
 		//MyPrintf("TenthSecondsSinceStart = %d \r\n",TenthSecondsSinceStart);
 	}
 }
@@ -211,90 +226,24 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	LastAndroidBatteryUpdate++;
-
-
-
-
-	//if (now%10 == 0)
-	//{
-	//	UsbChargeData.isOn = true;
-	//}
-
-	//if (now%10 == 5)
-	//{
-	//	UsbChargeData.isOn = false;
-	//}
-
-
-	//if (now%10 == 0)
-	//{
-	//	MyPrintf("Usb chager P=%d TO=%d TO=%d \r\n"
-	//		,UsbChargeCommand.BatteryPercentage
-	//		,UsbChargeCommand.AndroidTimeout
-	//		,LastAndroidBatteryUpdate);
-	//}
-
-
-	/*
-	testlog
-	15 min in 1 hour		not enough
-	25 min in 1 hour		enough
-
-	
-	*/
-
-	if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
+	if (now%(3600*24) == 3600+1200) //running at 1:20 AM every day
 	{
-		if (now%3600 <= 40*60)
-		{
-			if (!UsbChargeData.isOn)
-			{
-				MyPrintf("Usb chager offline ON \r\n");
-				UsbChargeData.isOn = true;
-			}	
-		}
-		else
-		{
-			if (UsbChargeData.isOn)
-			{
-				UsbChargeData.isOn = false;
-				MyPrintf("Usb chager offline OFF \r\n");
-			}
-		}
-	} 
-	else
-	{
-		if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
-		{
-			MyPrintf("Usb chager online ON \r\n");
-			UsbChargeData.isOn = true;
-		}	
-		else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
-		{
-			MyPrintf("Usb chager online OFF \r\n");
-			UsbChargeData.isOn = false;
-		}	
+		LogisticsUpdate.NeedIdList = true;
 	}
 
+	//if (CompressorData.isOn)
+	//{
+	//	digitalWrite(RELAY,HIGH);
+	//}
+	//else
+	//{
+	//	digitalWrite(RELAY,LOW);
+	//}
 
-
-
-
-
-	if (UsbChargeData.isOn)
-	{
-		digitalWrite(RELAY,HIGH);
-	}
-	else
-	{
-		digitalWrite(RELAY,LOW);
-	}
-	
-
-
+	LogisticsUpdate.Seq = LastSentUpdateSeq;
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&UsbChargeData, sizeof(tUsbChargeData));
+	m_WiFiUDP.write((const char*)&LogisticsUpdate, sizeof(tLogisticsUpdate));
+	LogisticsUpdate.JustOpend = false;
 	m_WiFiUDP.endPacket(); 
 
 }
@@ -302,12 +251,12 @@ void OnSecond()
 void OnTenthSecond()
 {
 
-
 	if (TenthSecondsSinceStart%10 == 0)
 	{
 		OnSecond();
 	}
 	
+
 }
 
 

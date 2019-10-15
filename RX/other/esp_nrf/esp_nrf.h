@@ -19,6 +19,10 @@
 
 #define RELAY				D4
 
+#include <SPI.h>
+#include "RF24.h"
+RF24 radio(2,4);//D5 D6 D7
+
 
 
 
@@ -32,6 +36,17 @@
 #include<time.h>
 #define timezone 8
 
+#define DATA_LENGTH 4
+unsigned char addresses[6] = {0x55,0x56,0x57,0x58,0x59,0x60};// should be same with tx
+unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on, 0-125. We use 3 channels to hop.should be same with tx
+unsigned char GotData[DATA_LENGTH];
+unsigned long PackageCounter = 0;
+unsigned char CurrCH = 0;
+unsigned long CurrTime = 0;
+unsigned long LastChangeCHTime = 0;
+unsigned long LastTagGetTime = 0;
+unsigned long Volt;   //unit: mV,
+
 
 const char* ssid = "frye";  //Wifi√˚≥∆
 const char* password = "52150337";  //Wifi√‹¬Î
@@ -44,8 +59,8 @@ char H1,H2,M1,M2,S1,S2;
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char RoomIndex = 22;
-tUsbChargeData UsbChargeData;
-tUsbChargeCommand UsbChargeCommand;
+tKeyLessData KeyLessData;
+//tUsbChargeCommand UsbChargeCommand;
 unsigned long LastAndroidBatteryUpdate;
 
 
@@ -54,6 +69,8 @@ unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
 void OnSecond();
+void nRFTask();
+void ChHopTask();
 
 
 void MyPrintf(const char *fmt, ...);
@@ -65,8 +82,8 @@ void setup()
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(RELAY, LOW);
 
-	UsbChargeData.DataType = 12;
-	UsbChargeData.isOn = false;
+	//UsbChargeData.DataType = 12;
+	//UsbChargeData.isOn = false;
 
 
 	delay(50);                      
@@ -104,7 +121,7 @@ void setup()
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
-		UsbChargeData.Mac[i] = mac[i];
+		KeyLessData.Mac[i] = mac[i];
 	}
 
 	//for (unsigned char i = 0;i<ROOM_NUMBER;i++)
@@ -157,6 +174,32 @@ void setup()
 	Serial.println(WiFi.localIP());
 
 
+	radio.begin();
+	radio.setPALevel(RF24_PA_MIN);
+	radio.setAddressWidth(5);
+	radio.setPayloadSize(4);
+	radio.setDataRate(RF24_2MBPS); //RF24_250KBPS  //RF24_2MBPS     //RF24_1MBPS
+	radio.setChannel(105);
+	radio.setCRCLength(RF24_CRC_8); //RF24_CRC_8 for 8-bit or RF24_CRC_16 for 16-bit
+
+	//Open a writing and reading pipe on each radio, with opposite addresses
+	radio.openWritingPipe(addresses);
+	radio.openReadingPipe(0,addresses);
+	radio.closeReadingPipe(1);
+	radio.closeReadingPipe(2);
+	radio.closeReadingPipe(3);
+	radio.closeReadingPipe(4);
+	radio.closeReadingPipe(5);
+	radio.setAutoAck(1,false);
+	radio.setAutoAck(2,false);
+	radio.setAutoAck(3,false);
+	radio.setAutoAck(4,false);
+	radio.setAutoAck(5,false);
+	radio.setAutoAck(0,false);
+	//Start the radio listening for data
+	radio.startListening();
+
+
 }
 
 void loop() 
@@ -164,20 +207,92 @@ void loop()
 	ArduinoOTA.handle();
 
 	TenthSecondsSinceStartTask();
+	nRFTask();
+	ChHopTask();
 
 
-	m_WiFiUDP.parsePacket(); 
-	unsigned int UdpAvailable = m_WiFiUDP.available();
-	if (UdpAvailable == sizeof(tUsbChargeCommand))
-	{
-		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		tUsbChargeCommand tempUsbChargeCommand;
-		m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
+	//m_WiFiUDP.parsePacket(); 
+	//unsigned int UdpAvailable = m_WiFiUDP.available();
+	//if (UdpAvailable == sizeof(tUsbChargeCommand))
+	//{
+	//	//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+	//	tUsbChargeCommand tempUsbChargeCommand;
+	//	m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
 
-		LastAndroidBatteryUpdate = 0;
-	}
+	//	LastAndroidBatteryUpdate = 0;
+	//}
 }
 
+void nRFTask()
+{
+	if (radio.available())
+	{
+		// Variable for the received timestamp
+		while (radio.available())                                     // While there is data ready
+		{
+			radio.read(GotData, DATA_LENGTH);             // Get the payload
+		}
+
+		PackageCounter++;
+
+		Volt = 1.2 * (GotData[DATA_LENGTH - 2] * 256 + GotData[DATA_LENGTH - 1]) * 3 * 1000 / 4096;
+
+		if (GotData[0] == 0)
+		{
+
+			LastTagGetTime = TenthSecondsSinceStart;
+
+		}
+		else if (GotData[0] == 2)
+		{
+			LastTagGetTime = TenthSecondsSinceStart;
+
+		}
+
+		KeyLessData.DataType = 14;
+		KeyLessData.KeyLessData = GotData[0];
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[1];
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[2];
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[3];
+
+
+
+		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+		m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
+		m_WiFiUDP.endPacket(); 
+
+		printf("PackageCounter:%d Data:%d,%d,%d,%d Volt:%d CH:%d\r\n"
+		,PackageCounter
+		,GotData[0]
+		,GotData[1]
+		,GotData[2]
+		,GotData[3]
+		,Volt
+		,CurrCH);
+
+	}
+
+}
+void ChHopTask()
+{
+	if (TenthSecondsSinceStart - LastChangeCHTime > 10)             //RF_HOP every seconds
+	{
+		CurrCH++;
+		if (CurrCH > 2)
+		{
+			CurrCH = 0;
+		}
+		LastChangeCHTime = TenthSecondsSinceStart;
+		radio.stopListening();
+		radio.setChannel(HopCH[CurrCH]);
+		radio.startListening();
+
+		//printf("CH change \r\n");
+	}
+}
 
 unsigned long LastMillis = 0;
 void TenthSecondsSinceStartTask()
@@ -244,58 +359,58 @@ void OnSecond()
 	
 	*/
 
-	if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
-	{
-		if (now%3600 <= 40*60)
-		{
-			if (!UsbChargeData.isOn)
-			{
-				MyPrintf("Usb chager offline ON \r\n");
-				UsbChargeData.isOn = true;
-			}	
-		}
-		else
-		{
-			if (UsbChargeData.isOn)
-			{
-				UsbChargeData.isOn = false;
-				MyPrintf("Usb chager offline OFF \r\n");
-			}
-		}
-	} 
-	else
-	{
-		if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
-		{
-			MyPrintf("Usb chager online ON \r\n");
-			UsbChargeData.isOn = true;
-		}	
-		else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
-		{
-			MyPrintf("Usb chager online OFF \r\n");
-			UsbChargeData.isOn = false;
-		}	
-	}
+	//if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
+	//{
+	//	if (now%3600 <= 40*60)
+	//	{
+	//		if (!UsbChargeData.isOn)
+	//		{
+	//			MyPrintf("Usb chager offline ON \r\n");
+	//			UsbChargeData.isOn = true;
+	//		}	
+	//	}
+	//	else
+	//	{
+	//		if (UsbChargeData.isOn)
+	//		{
+	//			UsbChargeData.isOn = false;
+	//			MyPrintf("Usb chager offline OFF \r\n");
+	//		}
+	//	}
+	//} 
+	//else
+	//{
+	//	if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
+	//	{
+	//		MyPrintf("Usb chager online ON \r\n");
+	//		UsbChargeData.isOn = true;
+	//	}	
+	//	else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
+	//	{
+	//		MyPrintf("Usb chager online OFF \r\n");
+	//		UsbChargeData.isOn = false;
+	//	}	
+	//}
 
 
 
 
 
 
-	if (UsbChargeData.isOn)
-	{
-		digitalWrite(RELAY,HIGH);
-	}
-	else
-	{
-		digitalWrite(RELAY,LOW);
-	}
+	//if (UsbChargeData.isOn)
+	//{
+	//	digitalWrite(RELAY,HIGH);
+	//}
+	//else
+	//{
+	//	digitalWrite(RELAY,LOW);
+	//}
 	
 
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&UsbChargeData, sizeof(tUsbChargeData));
-	m_WiFiUDP.endPacket(); 
+	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	//m_WiFiUDP.write((const char*)&UsbChargeData, sizeof(tUsbChargeData));
+	//m_WiFiUDP.endPacket(); 
 
 }
 
