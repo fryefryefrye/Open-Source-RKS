@@ -38,7 +38,7 @@
 #define timezone 8
 
 
-const char* ssid = "frye";  //WifiÃû³Æ
+const char* ssid = "frye_iot";  //WifiÃû³Æ
 const char* password = "52150337";  //WifiÃÜÂë
 WiFiUDP m_WiFiUDP;
 
@@ -48,7 +48,7 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 24;
+unsigned char DebugLogIndex = 24;
 tMethaneGasData MethaneGasData;
 
 
@@ -399,7 +399,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

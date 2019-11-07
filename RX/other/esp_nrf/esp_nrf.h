@@ -58,7 +58,7 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 22;
+unsigned char DebugLogIndex = 22;
 tKeyLessData KeyLessData;
 //tUsbChargeCommand UsbChargeCommand;
 unsigned long LastAndroidBatteryUpdate;
@@ -445,7 +445,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

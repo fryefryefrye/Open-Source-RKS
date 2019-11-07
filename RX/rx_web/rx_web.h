@@ -85,15 +85,15 @@ unsigned char LatestRecord = 0;
 /**********************************************************/
 
 /*************************Time*******************/
-time_t t;
+//time_t t;
 unsigned long SecondsSinceStart = 0;
-unsigned long Start1970OffSet = 0;
-unsigned long TempSecondsSince1970 = 0;
-unsigned long LastSyncTime = 0;
-signed long LastSyncOffSet = 0;
-bool NtpWorking = false;
-bool NtpSync = false;
-unsigned char NtpDataIndex = 0;
+//unsigned long Start1970OffSet = 0;
+//unsigned long TempSecondsSince1970 = 0;
+//unsigned long LastSyncTime = 0;
+//signed long LastSyncOffSet = 0;
+//bool NtpWorking = false;
+//bool NtpSync = false;
+//unsigned char NtpDataIndex = 0;
 /**********************************************************/
 
 /*************************WiFi*******************/

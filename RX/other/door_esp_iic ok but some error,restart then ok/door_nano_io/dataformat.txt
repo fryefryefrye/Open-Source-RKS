@@ -1,0 +1,20 @@
+·´ÂëÐ£Ñé¡£
+
+Got 1 Byte
+UnlockRelay(c&0x01);
+
+LockRelay((c&0x02)>>1);
+
+OpenRelay((c&0x04)>>2);
+
+CloseRelay((c&0x08)>>3);
+
+
+Return 2 byte
+
+1byte tag. 0-7 
+
+1byte
+null Closed  BodyIn BodyOut key3 key2 key1 key0
+
+

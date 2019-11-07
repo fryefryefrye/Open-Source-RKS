@@ -86,7 +86,7 @@ DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
 SoftwareSerial *p_swSer;
 bool IsSoftwareSerialOn = true; 
 
-const char* ssid = "frye";  //Wifi√˚≥∆
+const char* ssid = "frye_iot";  //Wifi√˚≥∆
 const char* password = "52150337";  //Wifi√‹¬Î
 WiFiUDP m_WiFiUDP;
 
@@ -220,8 +220,6 @@ void setup()
 
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
-	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
 		RoomData.Mac[i] = mac[i];
@@ -233,12 +231,15 @@ void setup()
 	{
 		if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
 		{
-			MyPrintf("room ID=%d \r\n",i);
 			RoomData.RoomId = i;
-			
+			MyPrintf("room ID=%d \r\n",i);
 			break;
 		}
 	}
+
+	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+
 
 
 

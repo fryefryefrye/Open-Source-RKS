@@ -38,9 +38,9 @@ void OnTenthSecond();
 
 //void SendRf();
 
-  #define DUMP_LONG
+ // #define DUMP_LONG
 //  #define DUMP_DECODE
-//  #define DECODE_2622
+  #define DECODE_2622
 
 
 #ifdef DUMP_LONG

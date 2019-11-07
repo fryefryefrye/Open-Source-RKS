@@ -18,6 +18,9 @@
 
 
 #define RELAY				D0
+#define POSTION_OPEN		D1
+#define SOFT_SERIAL_RX		D4
+#define SOFT_SERIAL_TX		D5
 
 
 
@@ -40,6 +43,9 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
+#include <SoftwareSerial.h>
+SoftwareSerial swSer(SOFT_SERIAL_RX, SOFT_SERIAL_TX, false, 256);
+
 
 #include "Z:\bt\web\datastruct.h"
 tLogisticsUpdate LogisticsUpdate;
@@ -47,7 +53,7 @@ tLogisticsData LogisticsData;
 tLogisticsCommand LogisticsCommand;
 unsigned long LastSentUpdateSeq;
 
-unsigned char RoomIndex = 25;
+unsigned char DebugLogIndex = 25;
 
 
 
@@ -59,21 +65,30 @@ void OnSecond();
 
 void MyPrintf(const char *fmt, ...);
 
+void OpenDoor();
+bool ProcessBarCode();
+
 
 void setup() 
 {       
 
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
-	digitalWrite(RELAY, LOW);
+	digitalWrite(RELAY, HIGH);
+
+	pinMode(POSTION_OPEN, INPUT_PULLUP);
 
 	LogisticsUpdate.DataType = 18;
 	LogisticsUpdate.NeedIdList = true;
-	LogisticsUpdate.JustOpend = false;
+	LogisticsUpdate.JustScaned = false;
+
+	strcpy((char*)LogisticsUpdate.LogisticsID,"test");
 
 
 
 	delay(50);                      
 	Serial.begin(115200);
+
+	swSer.begin(9600);
 
 
 	WiFi.disconnect();
@@ -169,26 +184,107 @@ void loop()
 	TenthSecondsSinceStartTask();
 
 
+	static unsigned char swSerlLen = 0;
+	while (swSer.available() > 0) 
+	{
+		unsigned char ReadValue = swSer.read();
+		if ((ReadValue>32)&&(ReadValue<127))//ACSII chart
+		{
+			LogisticsUpdate.LogisticsID[swSerlLen] = ReadValue;
+			swSerlLen++;
+		}
+		else if (ReadValue == 13)
+		{
+			swSer.read();//clear \n
+			LogisticsUpdate.LogisticsID[swSerlLen] = '\0';
+
+
+			MyPrintf("Got Bar code len = %d %s\r\n",swSerlLen,LogisticsUpdate.LogisticsID);
+
+			if (swSerlLen>11)
+			{
+				MyPrintf("swSerlLen  > 11 \r\n");
+				LogisticsUpdate.ScanOpened = ProcessBarCode();
+				MyPrintf("check bar code = %d \r\n",LogisticsUpdate.ScanOpened);
+				LogisticsUpdate.JustScaned = true;
+
+				if(LogisticsUpdate.ScanOpened)
+				{
+					OpenDoor();
+				}
+			}
+			else
+			{
+				MyPrintf("swSerlLen not > 11 \r\n");
+			}
+
+
+			swSerlLen = 0;
+
+		}
+		else
+		{
+			MyPrintf("Got none ACSII char %d \r\n",ReadValue);
+			swSerlLen = 0;
+		}
+		yield();
+	}
+
+
+	//static unsigned char swSerlLen = 0;
+	//while (Serial.available() > 0) {
+	//	unsigned char ReadValue = Serial.read();
+	//	LogisticsUpdate.LogisticsID[swSerlLen] = ReadValue;
+	//	if (LogisticsUpdate.LogisticsID[swSerlLen] == 13)
+	//	{
+	//		LogisticsUpdate.LogisticsID[swSerlLen] = '\0';
+	//		printf("Got code len = %d  %s\r\n",swSerlLen,LogisticsUpdate.LogisticsID);
+	//		Serial.read();//clear \n
+	//		swSerlLen = 0;
+	//		LogisticsUpdate.ScanOpened = ProcessBarCode();
+	//		LogisticsUpdate.JustScaned = true;
+
+	//		if(LogisticsUpdate.ScanOpened)
+	//		{
+	//			OpenDoor();
+	//		}
+	//	}
+	//	else
+	//	{
+	//		swSerlLen++;
+	//	}
+	//}
+
+
+
 	m_WiFiUDP.parsePacket(); 
 	unsigned int UdpAvailable = m_WiFiUDP.available();
 	if (UdpAvailable == sizeof(tLogisticsData))
 	{
 		m_WiFiUDP.read((char *)&LogisticsData,sizeof(tLogisticsData));
 		LogisticsUpdate.NeedIdList = false;
+		LogisticsUpdate.LastGetLogisticsIDListVersion = LogisticsData.LogisticsIDListVersion;
+
+		for(unsigned int i = 0; i<MAX_LOGISTICS_NUMBER; i++)
+		{
+			printf("%s\r\n", LogisticsData.LogisticsID[i]);
+		}
+
 	}
 	if (UdpAvailable == sizeof(tLogisticsCommand))
 	{
 		m_WiFiUDP.read((char *)&LogisticsCommand,sizeof(tLogisticsCommand));
-		LogisticsUpdate.LastGetCommandSeq = LogisticsCommand.Seq;
+		//LogisticsUpdate.LastGetCommandSeq = LogisticsCommand.Seq;
 
 		if(LogisticsCommand.LastGetUpdateSeq == LastSentUpdateSeq)
 		{
-			LogisticsUpdate.JustOpend = false;
-			LastSentUpdateSeq++;
+			LogisticsUpdate.JustScaned = false;
+
 		}
 
 		if (LogisticsCommand.ManualTriger == true)
 		{
+			OpenDoor();
 			MyPrintf("get open trig from control\r\n");
 		}
 	}
@@ -210,7 +306,7 @@ void TenthSecondsSinceStartTask()
 
 void OnSecond()
 {
-	time_t now = time(nullptr); //获取当前时间
+	time_t now = time(nullptr); //获取当前北京时间
 	time_str = ctime(&now);
 	H1 = time_str[11];
 	H2 = time_str[12];
@@ -231,7 +327,7 @@ void OnSecond()
 		LogisticsUpdate.NeedIdList = true;
 	}
 
-	//if (CompressorData.isOn)
+	//if (now%2 == 0)
 	//{
 	//	digitalWrite(RELAY,HIGH);
 	//}
@@ -240,10 +336,17 @@ void OnSecond()
 	//	digitalWrite(RELAY,LOW);
 	//}
 
+
+	if (LogisticsUpdate.JustScaned)
+	{
+		LastSentUpdateSeq++;
+	}
+				
+
+	LogisticsUpdate.Open = digitalRead(POSTION_OPEN);
 	LogisticsUpdate.Seq = LastSentUpdateSeq;
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 	m_WiFiUDP.write((const char*)&LogisticsUpdate, sizeof(tLogisticsUpdate));
-	LogisticsUpdate.JustOpend = false;
 	m_WiFiUDP.endPacket(); 
 
 }
@@ -257,6 +360,110 @@ void OnTenthSecond()
 	}
 	
 
+}
+
+void OpenDoor()
+{
+	yield();
+	digitalWrite(RELAY,LOW);
+	delay(500);
+	yield();
+	digitalWrite(RELAY,HIGH);
+	delay(500);
+	if (digitalRead(POSTION_OPEN))
+	{
+		return;
+	}
+	yield();
+	digitalWrite(RELAY,LOW);
+	delay(500);
+	yield();
+	digitalWrite(RELAY,HIGH);
+	if (digitalRead(POSTION_OPEN))
+	{
+		return;
+	}
+	yield();
+	digitalWrite(RELAY,LOW);
+	delay(500);
+	yield();
+	digitalWrite(RELAY,HIGH);
+}
+bool ProcessBarCode()
+{
+
+
+	if (LogisticsUpdate.NeedIdList)
+	{
+		return true;
+	}
+
+	if (LogisticsCommand.IfNeedCheckLogisticsID)
+	{
+
+		//MyPrintf("strlen((char*)LogisticsUpdate.LogisticsID = %d\r\n", strlen((const char*)LogisticsUpdate.LogisticsID));
+		//do not compare last 4 digits,Tmall more ID for one order
+
+		char a[MAX_LOGISTICS_ID_LEN];
+		unsigned char aLen;
+		char b[MAX_LOGISTICS_ID_LEN];
+		unsigned char bLen;
+
+		bLen = strlen((const char*)LogisticsUpdate.LogisticsID);
+		if (bLen<5)
+		{
+			return false;
+		}
+		strncpy(b,(const char*)LogisticsUpdate.LogisticsID,bLen-4);
+		b[bLen-4] = 0;
+		//MyPrintf("b = %s \r\n", b);
+
+		unsigned int i;
+		for(i = 0; i<MAX_LOGISTICS_NUMBER; i++)
+		{
+			//MyPrintf("before compare %s \r\n", LogisticsData.LogisticsID[i]);
+			aLen = strlen((const char*)LogisticsData.LogisticsID[i]);
+			if (aLen<5)
+			{
+				//MyPrintf("compare taobao %s failed,Len<5 \r\n", LogisticsData.LogisticsID[i]);
+				continue;
+			}
+			strncpy(a,(const char*)LogisticsData.LogisticsID[i],aLen-4);
+			a[aLen-4] = 0;
+			//MyPrintf("a = %s \r\n", a);
+			if(strcmp((const char*)a,(const char*)b) == 0)
+			{
+				MyPrintf("compare taobao %s OK \r\n", LogisticsData.LogisticsID[i]);
+				return true;
+			}
+			else
+			{
+				//MyPrintf("compare %s failed \r\n", LogisticsData.LogisticsID[i]);
+			}
+		}
+
+		//MyPrintf("finish taobao compare i = %d \r\n",i);
+
+
+		for( i = 0; i<MAX_LOGISTICS_NUMBER; i++)
+		{
+			if(strcmp((char*)LogisticsData.TempLogisticsIDList[i],(char*)LogisticsUpdate.LogisticsID) == 0)
+			{
+				MyPrintf("compare temp %s OK \r\n", LogisticsData.TempLogisticsIDList[i]);
+				return true;
+			}
+			else
+			{
+				//printf("compare %s failed \r\n", LogisticsData.LogisticsID[i]);
+			}
+		}
+	}
+	else
+	{
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -279,7 +486,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

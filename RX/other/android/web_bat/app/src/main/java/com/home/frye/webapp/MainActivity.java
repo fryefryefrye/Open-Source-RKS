@@ -79,8 +79,6 @@ public class MainActivity extends AppCompatActivity {
                 date = sDateFormat.format(new java.util.Date());
                 Log.d("Date", "发送时间" + date + " "  );
 
-//                +  BatteryReceiver.getBatteryPercent()
-
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -96,6 +94,19 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             DatagramPacket packet = new DatagramPacket(sendData, sendData.length, serverAddress, 5050);
                             socket.send(packet);
+
+                            byte[] receive = new byte[1024];
+                            DatagramPacket receivePacket = new DatagramPacket(receive, receive.length);
+                            while (true) {
+                               socket.receive(receivePacket);
+                                //String result = new String(receivePacket.getData(), 0, receivePacket.getLength(), "utf-8");
+                                //if (receivePacket.getLength() == 4) {
+                                Log.d("Date", "Got "+receivePacket.getLength()+" bytes");
+                                Log.d("Date", "Got data "+receive[0]+" "+receive[1]+" "+receive[2]+" "+receive[3]);
+
+                                //}
+                            }
+
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

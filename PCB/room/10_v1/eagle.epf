@@ -1,0 +1,20 @@
+[Eagle]
+Version="07 06 00"
+Platform="Windows"
+Serial="62191E841E-LSR-WLM-1EL"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+UsedLibrary="D:/GitHub/Open-Source-RKS/PCB/rx.lbr"
+
+[Win_1]
+Type="Control Panel"
+Loc="0 0 599 399"
+State=2
+Number=0
+
+[Desktop]
+Screen="1920 1080"
+Window="Win_1"

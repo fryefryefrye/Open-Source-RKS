@@ -44,7 +44,7 @@ char H1,H2,M1,M2,S1,S2;
 
 #include "Z:\bt\web\datastruct.h"
 tCompressorData CompressorData;
-unsigned char RoomIndex = 21;
+unsigned char DebugLogIndex = 21;
 bool FullReached = false;
 unsigned long RunningCounter = 60;
 unsigned long LastRunningFinishTenthSeconds;
@@ -430,7 +430,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

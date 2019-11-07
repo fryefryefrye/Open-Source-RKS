@@ -30,7 +30,7 @@
 #define timezone 8
 
 
-const char* ssid = "frye";  //Wifi√˚≥∆
+const char* ssid = "frye_iot";  //Wifi√˚≥∆
 const char* password = "52150337";  //Wifi√‹¬Î
 WiFiUDP m_WiFiUDP;
 
@@ -40,7 +40,7 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 23;
+unsigned char DebugLogIndex = 23;
 tSlidingDoorData SlidingDoorData;
 //tSlidingDoorCommand SlidingDoorCommand;
 
@@ -62,7 +62,6 @@ void MyPrintf(const char *fmt, ...);
 //RF
 #define RF_IN				D6
 void DecodeRf_INT();
-void blink();
 unsigned char RcCommand[3] = {0,0,0};
 bool DecodeFrameOK = false;
 void CheckRf();
@@ -163,9 +162,9 @@ void setup()
 
 	SlidingDoorData.DoorId = 0xFF;
 
-	for (unsigned char i = 0;i<DOOR_NUMBER;i++)
+	for (unsigned char i = 0;i<SLIDING_DOOR_NUMBER;i++)
 	{
-		if (memcmp(&SlidingDoorData.Mac[0],&DoorMacAddress[i][0],sizeof(unsigned long)*6) == 0)
+		if (memcmp(&SlidingDoorData.Mac[0],&SlidingDoorMacAddress[i][0],sizeof(unsigned long)*6) == 0)
 		{
 			MyPrintf("door ID=%d \r\n",i);
 			SlidingDoorData.DoorId = i;
@@ -602,7 +601,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

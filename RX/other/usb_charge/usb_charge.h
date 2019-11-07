@@ -41,9 +41,9 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
-
+#define USB_CHARGE
 #include "Z:\bt\web\datastruct.h"
-unsigned char RoomIndex = 22;
+unsigned char DebugLogIndex = 0xFF;
 tUsbChargeData UsbChargeData;
 tUsbChargeCommand UsbChargeCommand;
 unsigned long LastAndroidBatteryUpdate;
@@ -100,22 +100,23 @@ void setup()
 
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
-	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
 		UsbChargeData.Mac[i] = mac[i];
 	}
+	for (unsigned char i = 0;i<USB_CHARGE_NUMBER;i++)
+	{
+		if (memcmp(&UsbChargeData.Mac[0],&UsbChargeMac[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			DebugLogIndex = 30 + i;
+			break;
+		}
+	}
+	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 
-	//for (unsigned char i = 0;i<ROOM_NUMBER;i++)
-	//{
-	//	if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
-	//	{
-	//		MyPrintf("room ID=%d \r\n",i);
-	//		RoomIndex = i;
-	//		break;
-	//	}
-	//}
+
+
 
 
 	m_WiFiUDP.begin(5050); 
@@ -330,7 +331,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

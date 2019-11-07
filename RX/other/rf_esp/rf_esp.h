@@ -25,7 +25,7 @@
 #define BUZZ				D7
 
 
-const char* ssid = "frye";  //WifiÃû³Æ
+const char* ssid = "frye_iot";  //WifiÃû³Æ
 const char* password = "52150337";  //WifiÃÜÂë
 WiFiUDP m_WiFiUDP;
 
@@ -42,7 +42,7 @@ RCSwitch RfSwitch433 = RCSwitch();
 
 #include "Z:\bt\web\datastruct.h"
 tRfData RfData;
-unsigned char RoomIndex = 255;
+unsigned char DebugLogIndex = 255;
 unsigned long TenthSecondsSinceStart = 0;
 
 void TenthSecondsSinceStartTask();
@@ -500,7 +500,7 @@ void MyPrintf(const char *fmt, ...)
 	printf(sprint_buf);
 
 	pDebugData->DataType = 3;
-	pDebugData->RoomId = RoomIndex;
+	pDebugData->RoomId = DebugLogIndex;
 	pDebugData->Length = n;
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
