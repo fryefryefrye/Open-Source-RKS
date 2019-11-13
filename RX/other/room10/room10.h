@@ -46,8 +46,10 @@ tRoom10Command Room10Command;
 unsigned long LastAndroidBatteryUpdate;
 
 #include <Wire.h>     //The DHT12 uses I2C comunication.
+#include "VL53L0X.h"
 #include "DHT12.h"
 DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
+VL53L0X sensor;
 
 
 unsigned long TenthSecondsSinceStart = 0;
@@ -59,11 +61,12 @@ void OnSecond();
 void MyPrintf(const char *fmt, ...);
 
 
-#define RELAY1				D8
-#define RELAY2				D7
+#define RELAY1				D0
+#define RELAY2				D1
 #define USB_CHARGE			D4
 #define IIC_DAT				D2
 #define IIC_CLK				D7
+#define BUZZ				D8
 
 
 //RF
@@ -84,9 +87,9 @@ bool RfInitialized = false;
 unsigned char PreSetRfCommand[RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
 ={
 
-	//关门
+	//
 	{{0xC3, 0x7c, 0x68},{0x13, 0x06, 0x64},{0x39, 0x92, 0x24},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
-	//开门
+	//
 	,{{0x00, 0x00, 0x00},{0x13, 0x06, 0x62},{0x39, 0x92, 0x23},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
 	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
 	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
@@ -118,7 +121,18 @@ void setup()
 	pinMode(USB_CHARGE, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(USB_CHARGE, LOW);
 
+	pinMode(BUZZ, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(BUZZ, HIGH);
+
+
 	Wire.begin(IIC_DAT,IIC_CLK);
+
+	sensor.setTimeout(500);
+	if (!sensor.init())
+	{
+		printf("Failed to detect and initialize sensor!\r\n");
+	}
+	sensor.startContinuous();
 
 	
 
@@ -242,11 +256,11 @@ void loop()
 		m_WiFiUDP.read((char *)&Room10Command,sizeof(tRoom10Command));
 		Room10Data.DisableRf = Room10Command.DisableRf;
 		LastAndroidBatteryUpdate = 0;
-		printf("DisableRf:%d! Percentage:%d Timeout:%d\r\n"
-			,Room10Command.DisableRf
-			,Room10Command.BatteryPercentage
-			,Room10Command.AndroidTimeout
-			);
+		//printf("DisableRf:%d! Percentage:%d Timeout:%d\r\n"
+		//	,Room10Command.DisableRf
+		//	,Room10Command.BatteryPercentage
+		//	,Room10Command.AndroidTimeout
+		//	);
 	}
 	//else
 	//{
@@ -300,25 +314,46 @@ void OnSecond()
 	//Usb chager update
 	LastAndroidBatteryUpdate++;
 
-	if ((LastAndroidBatteryUpdate>30)||(Room10Command.AndroidTimeout>30))
+	//if ((LastAndroidBatteryUpdate>30)||(Room10Command.AndroidTimeout>30))
+	//{
+	//	if (now%3600 <= 40*60)
+	//	{
+	//		if (!Room10Data.UsbChargeOn)
+	//		{
+	//			MyPrintf("Room10 Usb chager offline ON \r\n");
+	//			Room10Data.UsbChargeOn = true;
+	//		}	
+	//	}
+	//	else
+	//	{
+	//		if (Room10Data.UsbChargeOn)
+	//		{
+	//			Room10Data.UsbChargeOn = false;
+	//			MyPrintf("Room10 Usb chager offline OFF \r\n");
+	//		}
+	//	}
+	//} 
+	//if (Room10Command.AndroidTimeout>2)
+	//{
+	//	if (!Room10Data.UsbChargeOn)
+	//	{
+	//		MyPrintf("Room10 Usb chager ON for active\r\n");
+	//		Room10Data.UsbChargeOn = true;
+	//	}
+	//}
+
+	if (Room10Command.AndroidTimeout>10)
 	{
-		if (now%3600 <= 40*60)
-		{
-			if (!Room10Data.UsbChargeOn)
-			{
-				MyPrintf("Room10 Usb chager offline ON \r\n");
-				Room10Data.UsbChargeOn = true;
-			}	
-		}
-		else
-		{
-			if (Room10Data.UsbChargeOn)
-			{
-				Room10Data.UsbChargeOn = false;
-				MyPrintf("Room10 Usb chager offline OFF \r\n");
-			}
-		}
-	} 
+		digitalWrite(BUZZ, LOW);
+	}
+	else
+	{
+		digitalWrite(BUZZ, HIGH);
+	}
+	
+	if (false)
+	{
+	}
 	else
 	{
 		if ((!Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage<60))
@@ -361,6 +396,44 @@ void OnSecond()
 		,Room10Data.Brightness
 		);
 
+
+	static unsigned char ScreenOffCounter = 0;
+	if (Room10Data.ScreenOn)//current on
+	{
+		if (Room10Data.Brightness > 50)
+		{
+			ScreenOffCounter++;
+			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
+			if (ScreenOffCounter > 15)
+			{
+				Room10Data.ScreenOn = false;
+				printf("ScreenOn to false;\r\n");
+				ScreenOffCounter = 0;
+			}
+		}
+		else
+		{
+			ScreenOffCounter = 0;
+			printf("ScreenOffCounter to 0  \r\n");
+		}
+	}
+	else//current off
+	{
+		if (Room10Data.Brightness < 50)
+		{
+			Room10Data.ScreenOn = true;
+			printf("ScreenOn to true;\r\n");
+		}
+	}
+
+
+	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
+	printf("distance = %d\r\n",Room10Data.Distance);
+
+	//if (sensor.timeoutOccurred()) 
+	//{
+	//	printf("distance TIMEOUT\r\n"); 
+	//}
 
 
 
@@ -409,6 +482,7 @@ void CheckRfCommand(unsigned char * RfCommand)
 
 				if (j == 0)
 				{
+					Room10Data.ScreenOn = !Room10Data.ScreenOn;
 
 				} 
 				else if (j == 1)
@@ -433,7 +507,7 @@ void CheckRf()
 		if (memcmp(LastRf,RcCommand,3) == 0)
 		{
 			//MyPrintf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
-			//printf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
+			printf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
 			CheckRfCommand(RcCommand);
 		} 
 		else

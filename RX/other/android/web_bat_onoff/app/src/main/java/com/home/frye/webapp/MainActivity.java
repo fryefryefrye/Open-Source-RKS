@@ -1,5 +1,7 @@
 package com.home.frye.webapp;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -29,8 +31,12 @@ import java.text.SimpleDateFormat;
 
 public class MainActivity extends AppCompatActivity {
 
+
      WebView webView;
     //BatteryReceiver BatteryReceiver;
+
+
+    private PowerManager.WakeLock mWakeLock;
 
     DatagramSocket socket = null;
     InetAddress serverAddress = null;
@@ -56,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
 
         //getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -103,16 +110,16 @@ public class MainActivity extends AppCompatActivity {
 
                             byte[] receive = new byte[1024];
                             DatagramPacket receivePacket = new DatagramPacket(receive, receive.length);
-                            while (true) {
+//                            while (true) {
                                socket.receive(receivePacket);
                                 //String result = new String(receivePacket.getData(), 0, receivePacket.getLength(), "utf-8");
                                 if (receivePacket.getLength() == 4)
                                 {
-                                    Log.d("Date", "Got "+receivePacket.getLength()+" bytes "+receive[0]+" "+receive[1]+" "+receive[2]+" "+receive[3]);
+                                    //Log.d("Date", "Got "+receivePacket.getLength()+" bytes "+receive[0]+" "+receive[1]+" "+receive[2]+" "+receive[3]);
 
                                     if((isScreenOn) && (receive[0] == 0))
                                     {
-                                        //isScreenOn = false;
+                                        isScreenOn = false;
                                         screenOff();
                                         Log.d("Date", "screenOff()OffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOff");
 
@@ -120,15 +127,22 @@ public class MainActivity extends AppCompatActivity {
 
                                      if((!isScreenOn) && (receive[0] == 1))
                                     {
-                                        //isScreenOn = true;
+                                        isScreenOn = true;
                                         screenOn();
                                         Log.d("Date", "screenOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOn()");
                                     }
                                 }
+//                                if (mWakeLock == null) {
+//                                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//                                    mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+//                                            this.getClass().getCanonicalName());
+//                                    mWakeLock.acquire();
+//                                    mWakeLock.release();
+//                                }
 
 
                                 //}
-                            }
+//                            }
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -137,7 +151,23 @@ public class MainActivity extends AppCompatActivity {
                 }).start();
 
 
+//                if (mWakeLock == null) {
+//                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//                    mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+//                            this.getClass().getCanonicalName());
+//                }
+//                if (mWakeLock != null) {
+//                    mWakeLock.acquire();
+//                }
+
+
                 handler.postDelayed(this, 1000);
+
+
+//                if (mWakeLock != null) {
+//                    mWakeLock.release();
+//                    mWakeLock = null;
+//                }
 
             }
         };
@@ -170,7 +200,6 @@ public class MainActivity extends AppCompatActivity {
             boolean admin = policyManager.isAdminActive(adminReceiver);
             if (admin)
             {
-                isScreenOn = false;
                 policyManager.lockNow();
             }
             else
@@ -178,25 +207,45 @@ public class MainActivity extends AppCompatActivity {
                 android.widget.Toast.makeText(this,"没有设备管理权限",
                         android.widget.Toast.LENGTH_LONG).show();
             }
+
+
+            if(mWakeLock == null) {
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                        this.getClass().getCanonicalName());
+            }
+            if(mWakeLock != null) {
+                mWakeLock.acquire();
+            }
+
+
         }
 
         public void screenOn()
          {
-        // turn on screen
+
+             if(mWakeLock != null) {
+                 mWakeLock.release();
+                 mWakeLock = null;
+             }
+
+             // turn on screen
+
+
+
+
         PowerManager mPowerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        PowerManager.WakeLock mWakeLock2 = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
+        mWakeLock2.acquire();
+        mWakeLock2.release();
 
-       // mPowerManager.setBacklightBrightness();
 
 
-        PowerManager.WakeLock mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "tag");
-        mWakeLock.acquire();
-        mWakeLock.release();
-        isScreenOn = true;
+
 
         KeyguardManager keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
 
-        KeyguardManager.KeyguardLock keyguardLock = keyguardManager.newKeyguardLock("unLock");
-        // 屏幕锁定
+        KeyguardManager.KeyguardLock keyguardLock = keyguardManager.newKeyguardLock("unLock");// 屏幕锁定
         keyguardLock.reenableKeyguard();
         keyguardLock.disableKeyguard(); // 解锁
 

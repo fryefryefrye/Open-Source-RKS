@@ -22,6 +22,7 @@ signed long CompensationMsInOneSecond = 0;
 signed long CompensationOneSecondInXSeconds = 0;
 
 bool SendRequestAndProcessReply();
+bool initESP8266();
 
 void ShowChart(unsigned char ChartIndex,unsigned char PostionX,unsigned char PostionY);
 void WeatherCode2ChartIndex(unsigned char Code,unsigned char * ChartIndex);
@@ -450,12 +451,14 @@ void setup()
 
 	Serial.println(F("before Getweather!\r\n"));
 
+	initESP8266();
+
 	if(!SendRequestAndProcessReply())
 	{
 		DateLine2[0] = '-';
 		DateLine2[1] = '-';
 		Serial.println(F("GetWeather failed!\r\n"));
-		return;
+		//return;
 	}
 	else
 	{
@@ -512,12 +515,8 @@ void SecondsSinceStartTask()
 	}
 }
 
-bool SendRequestAndProcessReply()
+bool initESP8266()
 {
-	unsigned char data;
-	unsigned char dataIndex = 0;
-	unsigned char *dataPoint;
-
 	WIFI_SERIAL.print(F("AT+RST\r\n"));
 	TimeOut = 30;
 	_esp8266_waitFor("GOT IP\r\n");
@@ -527,6 +526,16 @@ bool SendRequestAndProcessReply()
 	WIFI_SERIAL.print(F("\"192.168.0.17\""));
 	WIFI_SERIAL.print(F(",5050\r\n"));
 	if(!_esp8266_waitFor("OK\r\n")) return false;
+}
+
+
+bool SendRequestAndProcessReply()
+{
+	unsigned char data;
+	unsigned char dataIndex = 0;
+	unsigned char *dataPoint;
+
+
 
 	WIFI_SERIAL.print(F("AT+CIPSEND="));
 	WIFI_SERIAL.print(sizeof(tWeatherRequest));
@@ -1286,6 +1295,11 @@ void OnSecond()
 	TimeLine[4]=Minute%10+0x30;
 	TimeLine[6]=Second/10%10+0x30;
 	TimeLine[7]=Second%10+0x30;
+
+	if(SecondsSinceStart%(10000)==600)//
+	{
+		initESP8266();
+	}
 
 	if(SecondsSinceStart%(1000)==0)//update time every 1000s
 	{

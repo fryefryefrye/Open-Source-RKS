@@ -35,7 +35,7 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char DebugLogIndex = 22;
+unsigned char DebugLogIndex = 0xFF;
 tKeyLessData KeyLessData;
 
 

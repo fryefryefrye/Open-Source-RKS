@@ -71,6 +71,8 @@ char H1,H2,M1,M2,S1,S2;
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 24;
+tKeyLessData KeyLessData;
+
 
 #define DOOR_POSRION_NUMBER 50
 bool isIntDataProcessing = false;
@@ -541,7 +543,7 @@ void DoorClose_Speed_Task()
 			{
 			case 0:
 				printf("DoorCloseing start.\r\n");
-				Step = 1;
+				Step = 2;
 				StartTime = TenthSecondsSinceStart;
 				StartPostion = Postion;
 				CloseRelay(true);
@@ -551,18 +553,28 @@ void DoorClose_Speed_Task()
 			//		CloseRelay(false);
 			//		Step ++;
 			//	}
-			case 1:
-				if(StartPostion - Postion > 2)
-				{
-					Step ++;
-				}
-				if(TenthSecondsSinceStart -StartTime > 10)
-				{
-					Step = 5;
-				}
-				break;
+			//	break;
+
+
+			//case 1:
+			//	if(StartPostion != Postion)
+			//	{
+			//		Step ++;
+			//	}
+			//	if(TenthSecondsSinceStart -StartTime > 10)
+			//	{
+			//		Step = 0xFF;
+			//	}
+			//	break;
+
+
 			case 2:
-				if((Postion < 0)||(DoorClosedConfirm)||((TenthSecondsSinceStart -StartTime > 50)))
+				if (TenthSecondsSinceStart - StartTime > 50)
+				{
+					Step = 0xFF;
+					MyPrintf("DoorCloseing timeout 5s.\r\n");
+				}
+				if((Postion < 0)||(DoorClosedConfirm))
 				{
 					Step ++;
 				}
@@ -752,25 +764,25 @@ void CheckDoorClose_task()
 
 		if ((bLastDoorClosed)&&(TenthSecondsSinceStart > 100))
 		{
-			DoorLocking = true;
+			//DoorLocking = true;
 			DoorClosedConfirm = true;
 
 
 
 			Postion = 0;
 
-			char AllStrBuf[1024];
-			AllStrBuf[0]=0;
-			char OneStrBuf[20];
-			OneStrBuf[0]=0;
-			for (char i = 0; i < DOOR_POSRION_NUMBER; i++)
-			{
-				sprintf(OneStrBuf,"%d:	%d	%d\r\n",i,OpenSpeed[i],CloseSpeed[i]);
-				strcat(AllStrBuf,OneStrBuf);
-				OpenSpeed[i] = 0;
-				CloseSpeed[i] = 0;
-			}
-			MyPrintf("Door speed:Open Close\r\n %s ",AllStrBuf);
+			//char AllStrBuf[1024];
+			//AllStrBuf[0]=0;
+			//char OneStrBuf[20];
+			//OneStrBuf[0]=0;
+			//for (char i = 0; i < DOOR_POSRION_NUMBER; i++)
+			//{
+			//	sprintf(OneStrBuf,"%d:	%d	%d\r\n",i,OpenSpeed[i],CloseSpeed[i]);
+			//	strcat(AllStrBuf,OneStrBuf);
+			//	OpenSpeed[i] = 0;
+			//	CloseSpeed[i] = 0;
+			//}
+			//MyPrintf("Door speed:Open Close\r\n %s ",AllStrBuf);
 
 		}
 		MyPrintf("Door close change to %d \r\n",bLastDoorClosed);
@@ -990,6 +1002,7 @@ bool CheckBodyLeft(From eWhichBody)
 void setup() 
 {       
 
+	KeyLessData.DataType = 14;
 
 	pinMode(RELAY_OPEN, OUTPUT);
 	digitalWrite(RELAY_OPEN, HIGH);
@@ -1039,6 +1052,10 @@ void setup()
 
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
+	for (byte i=0;i<6;i++)
+	{
+		KeyLessData.Mac[i] = mac[i];
+	}
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 
@@ -1187,11 +1204,35 @@ void OnSecond()
 	//,IicMasterRecv[4]);
 
 
+	KeyLessData.Triger = false;
+	static bool LastTagExist[MAX_TAG_NUMBER];
+	for(unsigned char i = 0; i<MAX_TAG_NUMBER; i++)
+	{
+		if (LastTagExist[i] != TagExist[i])
+		{
+			LastTagExist[i] = TagExist[i];
+		
+			if (LastTagExist[i])
+			{
+
+				KeyLessData.KeyLessData = i;
+				KeyLessData.KeyLessData = KeyLessData.KeyLessData<<16;
+				KeyLessData.Triger = true;
+
+				m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+				m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
+				m_WiFiUDP.endPacket(); 
+			}
+		}
+	}
+	if (KeyLessData.Triger == false)
+	{
+		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+		m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
+		m_WiFiUDP.endPacket(); 
+	}
 
 
-	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	//m_WiFiUDP.write((const char*)&CompressorData, sizeof(tCompressorData));
-	//m_WiFiUDP.endPacket(); 
 
 }
 
@@ -1510,9 +1551,10 @@ void OpenRelay(bool on)
 			digitalWrite(RELAY_OPEN, HIGH);
 		}
 
-		MyPrintf("Open  Relay to %d Postion:%d Speed:%d Max:%d Min:%d\r\n"
+		MyPrintf("Open  Relay to %d Postion:%d time:%d Speed:%d Max:%d Min:%d\r\n"
 			,on
 			,Postion
+			,TenthSecondsSinceStart
 			,Speed
 			,MaxSpeed
 			,MinSpeed);
@@ -1543,9 +1585,10 @@ void CloseRelay(bool on)
 		{
 			digitalWrite(RELAY_CLOSE, HIGH);
 		}
-		MyPrintf("Close Relay to %d Postion:%d Speed:%d Max:%d Min:%d\r\n"
+		MyPrintf("Close Relay to %d Postion:%d time:%d Speed:%d Max:%d Min:%d\r\n"
 			,on
 			,Postion
+			,TenthSecondsSinceStart
 			,Speed
 			,MaxSpeed
 			,MinSpeed);
