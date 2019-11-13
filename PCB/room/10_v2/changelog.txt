@@ -5,3 +5,4 @@ IIC for distance
 microwave radar decter interface(A0 is also OK)
 volt selector on A0,IIC
 Normal relay 1*2
+All module extend to the PCB eage
