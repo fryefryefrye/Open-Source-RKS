@@ -18,7 +18,7 @@ void BufUpdate();
 void OnSecond();
 void NonStopTask();
 void SecondsSinceStartTask();
-signed long CompensationMsInOneSecond = 0;
+signed long CompensationMsInOneSecond = -8;
 signed long CompensationOneSecondInXSeconds = 0;
 
 bool SendRequestAndProcessReply();
@@ -517,10 +517,14 @@ void SecondsSinceStartTask()
 
 bool initESP8266()
 {
+	//WIFI_SERIAL.print(F("AT+CWJAP=\"frye\",\"52150337\"\r\n"));
 	WIFI_SERIAL.print(F("AT+RST\r\n"));
 	TimeOut = 30;
 	_esp8266_waitFor("GOT IP\r\n");
 	TimeOut = 10;
+
+	
+
 
 	WIFI_SERIAL.print(F("AT+CIPSTART=\"UDP\","));
 	WIFI_SERIAL.print(F("\"192.168.0.17\""));

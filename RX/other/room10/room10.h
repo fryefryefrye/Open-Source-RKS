@@ -430,12 +430,14 @@ void OnSecond()
 	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
 	printf("distance = %d\r\n",Room10Data.Distance);
 
-	//if (sensor.timeoutOccurred()) 
+	//if (Room10Data.Distance < 500)
 	//{
-	//	printf("distance TIMEOUT\r\n"); 
+	//	Room10Data.ScreenOn = true;
+	//} 
+	//else
+	//{
+	//	Room10Data.ScreenOn = false;
 	//}
-
-
 
 
 

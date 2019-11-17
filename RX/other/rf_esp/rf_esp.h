@@ -42,7 +42,7 @@ RCSwitch RfSwitch433 = RCSwitch();
 
 #include "Z:\bt\web\datastruct.h"
 tRfData RfData;
-unsigned char DebugLogIndex = 255;
+unsigned char DebugLogIndex = 26;
 unsigned long TenthSecondsSinceStart = 0;
 
 void TenthSecondsSinceStartTask();
