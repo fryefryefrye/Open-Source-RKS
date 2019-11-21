@@ -1,4 +1,4 @@
-new RF_RX
+﻿new RF_RX
 RF_IN to D6
 Fix hold * 4
 IIC for distance
@@ -7,3 +7,6 @@ volt selector on A0,IIC
 Normal relay 1*2
 All module extend to the PCB eage
 ESP32 prepare.  with nRF24 。 fix screw as touch
+测试无网络操作。
+
+另开一块PCB，贴86空白面板下面，做触摸板(可以亮个灯。或者不需要)。同时放置温度传感器。

@@ -228,6 +228,19 @@ void nRF_task()
 		if ((GotData[0] == 0)&&(GotData[1]<RFID_NUMBER))
 		{
 			LastGetTime[GotData[1]] = SecondsSinceStart;
+			Door_task();
+
+			KeyLessData.KeyLessData = GotData[0];
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[1];
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[2];
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
+			KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[3];
+
+			KeyLessData.DataType = 14;
+			KeyLessData.Triger = true;
+			SendKeyLessData();
 		}
 		else if (GotData[0] == 2)
 		{
@@ -240,21 +253,11 @@ void nRF_task()
 
 		PackageCounter ++;
 
-		Door_task();
 
 
 
-		KeyLessData.KeyLessData = GotData[0];
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[1];
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[2];
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
-		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[3];
 
-		KeyLessData.DataType = 14;
-		KeyLessData.Triger = true;
-		SendKeyLessData();
+
 
 
 #ifdef DEGBUG_OUTPUT

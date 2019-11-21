@@ -1,10 +1,11 @@
-C51 COMPILER V9.00   MAIN                                                                  05/09/2018 19:22:54 PAGE 1   
+C51 COMPILER V9.00   MAIN                                                                  11/20/2019 19:47:48 PAGE 1   
 
 
 C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
 OBJECT MODULE PLACED IN .\Object\main.obj
-COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;hal\nrf24l01p;hal;compi
-                    -ler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\main.lst) OBJECT(.\Object\main.obj)
+COMPILER INVOKED BY: D:\Program Files (x86)\Keilv9\C51\BIN\C51.EXE main.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;h
+                    -al\nrf24l01p;hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\main.lst) OBJECT(.\O
+                    -bject\main.obj)
 
 line level    source
 
@@ -61,9 +62,9 @@ line level    source
   51          uint8_t CurrCH = 0;
   52          
   53          
-  54          void PrintInt16(uint16_t Counter);
-C51 COMPILER V9.00   MAIN                                                                  05/09/2018 19:22:54 PAGE 2   
+C51 COMPILER V9.00   MAIN                                                                  11/20/2019 19:47:48 PAGE 2   
 
+  54          void PrintInt16(uint16_t Counter);
   55          
   56          
   57          void UART0_SendStr( char* str )
@@ -125,9 +126,9 @@ line level    source
  113   1          hal_nrf_set_output_power(RF_POWER);
  114   1          hal_nrf_set_crc_mode(HAL_NRF_CRC_8BIT);
  115   1          hal_nrf_set_address_width(HAL_NRF_AW_5BYTES);
- 116   1          hal_nrf_enable_dynamic_payload(false);
-C51 COMPILER V9.00   MAIN                                                                  05/09/2018 19:22:54 PAGE 3   
+C51 COMPILER V9.00   MAIN                                                                  11/20/2019 19:47:48 PAGE 3   
 
+ 116   1          hal_nrf_enable_dynamic_payload(false);
  117   1          hal_nrf_set_rx_payload_width(0,TX_PAYLOAD);
  118   1          hal_nrf_set_address(HAL_NRF_TX,TX_ADDRESS);
  119   1          hal_nrf_set_auto_retr(0,1500);
@@ -189,9 +190,9 @@ line level    source
  175   1      
  176   1          //hal_uart_putchar('a');
  177   1      
- 178   1          adc_init();
-C51 COMPILER V9.00   MAIN                                                                  05/09/2018 19:22:54 PAGE 4   
+C51 COMPILER V9.00   MAIN                                                                  11/20/2019 19:47:48 PAGE 4   
 
+ 178   1          adc_init();
  179   1          RfCofig();
  180   1      
  181   1      #ifdef  USE_WDT
@@ -253,9 +254,9 @@ line level    source
  237   2              {
  238   3                  PipeAndLen = hal_nrf_read_rx_payload(RxPayload);
  239   3              }
- 240   2              radio_busy = false;
-C51 COMPILER V9.00   MAIN                                                                  05/09/2018 19:22:54 PAGE 5   
+C51 COMPILER V9.00   MAIN                                                                  11/20/2019 19:47:48 PAGE 5   
 
+ 240   2              radio_busy = false;
  241   2          }
  242   1      
  243   1          if(irq_flags & ((1<<HAL_NRF_TX_DS)))                        // transimmter finish

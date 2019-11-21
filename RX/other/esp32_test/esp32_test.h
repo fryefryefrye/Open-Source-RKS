@@ -1,6 +1,14 @@
 #include <TridentTD_EasyFreeRTOS32.h>
 TridentOS   task1;
 
+#include <SimpleKalmanFilter.h>
+
+#include <SPI.h>
+#include "RF24.h"
+RF24 radio(2,4);//D5 D6 D7
+
+
+
 #include<WiFi.h>
 #include<WiFiUdp.h>
 //#include<mDNS.h>
@@ -13,17 +21,20 @@ TridentOS   task1;
 #include "BLEUtils.h"
 #include "BLEScan.h"
 #include "BLEAdvertisedDevice.h"
+#include "BLEBeacon.h"
 
 //#include <BLEDevice.h>
 //#include <BLEUtils.h>
 //#include <BLEScan.h">
 //#include <BLEAdvertisedDevice.h>
+BLEAdvertising *pAdvertising;
 
 
 
 
 
-#define SCAN_TIME 60     // seconds
+#define SCAN_TIME	60     // seconds
+
 
 
 const char* ssid = "frye";  //Wifi名称
@@ -36,12 +47,22 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-//tCompressorData CompressorData;
+tEsp32Data Esp32Data;
 unsigned char DebugLogIndex = 27;
-
-
-
 unsigned long TenthSecondsSinceStart = 0;
+unsigned long SecondsSinceStart = 0;
+//const char* BleNameList[NAME_MAX] = {
+std::string BleNameList[BLE_NAME_NUMBER] = {
+	"HouX"
+	,"HouXB"
+	,"HouSH"
+	,"WangJ"
+};
+//time_t LastGetTime[BLE_NAME_MAX];
+//float LastGetDistance[BLE_NAME_MAX];
+//init Kalman with params, you can modify params to make better result
+SimpleKalmanFilter * pKalman[BLE_NAME_NUMBER];
+bool BleTaskStarted = false;
 
 void MyPrintf(const char *fmt, ...);
 void NonStopTask();
@@ -50,6 +71,7 @@ void TenthSecondsSinceStartTask();
 void OnTenthSecond();
 void OnSecond();
 void SacnBleDevice();
+float calcDistByRSSI(int rssi);
 
 
 void BleTask(void*){
@@ -67,13 +89,6 @@ void BleTask(void*){
 void setup() 
 {       
 
-	//pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
-	//digitalWrite(RELAY, LOW);
-	//pinMode(DETECTOR,INPUT_PULLUP);
-	//
-
-	//CompressorData.DataType = 4;
-	//CompressorData.isOn = false;
 
 
 	delay(50);                      
@@ -103,6 +118,7 @@ void setup()
 	Serial.println("");
 
 
+	m_WiFiUDP.begin(5050); 
 
 
 	byte mac[6];
@@ -125,7 +141,7 @@ void setup()
 	//}
 
 
-	m_WiFiUDP.begin(5050); 
+
 
 	ArduinoOTA.onStart([]() {
 		String type;
@@ -164,13 +180,50 @@ void setup()
 	Serial.println(WiFi.localIP());
 
 
-	task1.start(BleTask);
+	Esp32Data.DataType = 20;
+
+	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
+	{
+		pKalman[i] = new SimpleKalmanFilter(2, 2, 0.01);
+	}
 
 
+	//task1.start(BleTask);
+
+
+
+	//// Create the BLE Device
+	//BLEDevice::init("");
+	//pAdvertising = BLEDevice::getAdvertising();
+	//BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
+	//oAdvertisementData.setFlags(0x04); 
+	//oAdvertisementData.setName("test");
+	//oAdvertisementData.setManufacturerData("1234");
+	//pAdvertising->setAdvertisementData(oAdvertisementData);
 }
 
 void loop() 
 {
+
+	// Start advertising
+	//if (pAdvertising != NULL)
+	//{
+	//	pAdvertising->start();
+	//	delay(500);
+	//	pAdvertising->stop();
+	//	delay(100);
+	//}
+
+	if (!BleTaskStarted)
+	{
+		if (SecondsSinceStart > 10)
+		{
+			task1.start(BleTask);
+			BleTaskStarted = true;
+		}
+	}
+
+
 
 
 	NonStopTask();
@@ -218,6 +271,7 @@ void TenthSecondsSinceStartTask()
 
 void OnSecond()
 {
+	SecondsSinceStart++;
 	time_t now = time(nullptr); //获取当前时间
 	time_str = ctime(&now);
 	H1 = time_str[11];
@@ -226,7 +280,7 @@ void OnSecond()
 	M2 = time_str[15];
 	S1 = time_str[17];
 	S2 = time_str[18];
-	printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
+	//printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
 	//Serial.printf(time_str);
 
 	struct   tm     *timenow;
@@ -234,32 +288,32 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	//SacnBleDevice();
 
 
-	if (TenthSecondsSinceStart%600 == 0)
+
+
+	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
 	{
-		//MyPrintf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
-		//printf("SacnBleDevice\r\n");
-		//m_FreeRTOS.startTask();
-		//SacnBleDevice();
+		printf("%s:%ds %.3f "
+			,BleNameList[i].c_str()
+			,Esp32Data.Timeout[i]
+			,Esp32Data.KalmanDistance[i]);
+
+	}
+	printf("\r\n");
+
+
+	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
+	{
+		Esp32Data.Timeout[i] ++;
 	}
 
 
-	//if (CompressorData.isOn)
-	//{
-	//	digitalWrite(RELAY,HIGH);
-	//}
-	//else
-	//{
-	//	digitalWrite(RELAY,LOW);
-	//}
-	//
 
-
-	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	//m_WiFiUDP.write((const char*)&CompressorData, sizeof(tCompressorData));
-	//m_WiFiUDP.endPacket(); 
+	Esp32Data.Triger = false;
+	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
+	m_WiFiUDP.endPacket(); 
 
 }
 
@@ -276,10 +330,55 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 {
 	void onResult(BLEAdvertisedDevice advertisedDevice)
 	{
-		printf("Advertised DeviceName: %s RSSI:%d\n"
-			,advertisedDevice.getName().c_str()
-			,advertisedDevice.getRSSI()
-			);
+		BLEAddress nRFBLEAddress("55:56:57:58:59:60");
+		if(advertisedDevice.getAddress().equals(nRFBLEAddress))
+		{
+			printf("Advertised Device Add:%s Name:%s RSSI:%d \n"
+				,advertisedDevice.getAddress().toString().c_str()
+				,advertisedDevice.getName().c_str()
+				,advertisedDevice.getRSSI()
+
+				);
+
+			printf("Manufacturer:");
+			for(unsigned char i = 0; i<advertisedDevice.getManufacturerData().length(); i++)
+			{
+				printf("%02X",advertisedDevice.getManufacturerData().c_str()[i]);
+			}
+			printf("\n");
+		}
+
+			
+		if ((advertisedDevice.haveName())&&(advertisedDevice.haveRSSI()))
+		{
+			for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
+			{
+				if (BleNameList[i] == advertisedDevice.getName())
+				{
+					Esp32Data.Timeout[i] = 0;
+					Esp32Data.ReadDistance[i] = calcDistByRSSI(advertisedDevice.getRSSI());
+					if (pKalman[i] != NULL)
+					{
+						Esp32Data.KalmanDistance[i] = pKalman[i]->updateEstimate(Esp32Data.ReadDistance[i]);
+					}
+						//printf("Kalman:	%f	%f\n"
+						//	,Esp32Data.ReadDistance
+						//	,Esp32Data.KalmanDistance
+						//	);
+						//Esp32Data.Triger = true;
+						//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+						//m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
+						//m_WiFiUDP.endPacket(); 
+
+
+					//printf("Found DeviceName: %s Distance:%f\n"
+					//	,advertisedDevice.getName().c_str()
+					//	,LastGetDistance[i]
+					//	);
+				}
+			}
+		}
+
 		advertisedDevice.getScan()->clearResults();
 	}
 };
@@ -297,11 +396,19 @@ void SacnBleDevice()
 	pBLEScan->setWindow(0x30);
 
 	BLEScanResults foundDevices = pBLEScan->start(SCAN_TIME);
-	int count = foundDevices.getCount();
+	//int count = foundDevices.getCount();
 
-	printf("found %d Devices\r\n",count);
+	//printf("found %d Devices\r\n",count);
 
 }
+
+float calcDistByRSSI(int rssi)
+{
+	int iRssi = abs(rssi);
+	float power = (iRssi-59)/(10*2.0);
+	return pow(10, power);
+}
+
 
 
 void MyPrintf(const char *fmt, ...)

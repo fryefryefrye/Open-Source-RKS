@@ -1,0 +1,553 @@
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Object\main.obj
+COMPILER INVOKED BY: D:\Program Files (x86)\Keilv9\C51\BIN\C51.EXE main.c OPTIMIZE(4,SPEED) BROWSE INCDIR(hal\nrf24le1;h
+                    -al\nrf24l01p;hal;compiler\c51;compiler\common) DEFINE(MCU_NRF24LE1) DEBUG OBJECTEXTEND PRINT(.\List\main.lst) OBJECT(.\O
+                    -bject\main.obj)
+
+line level    source
+
+   1          #include <reg24le1.h>
+   2          #include <stdint.h>
+   3          #include <stdbool.h>
+   4          #include "hal_nrf.h"
+   5          #include "hal_nrf_hw.h"
+   6          #include "hal_clk.h"
+   7          #include "hal_rtc.h"
+   8          #include "hal_delay.h"
+   9          #include "hal_adc.h"
+  10          #include "hal_wdog.h"
+  11          #include "hal_uart.h"
+  12          #include "string.h"
+  13          
+  14          
+  15          /*************************user modify settings****************************/
+  16          #define  TAG_ID 8
+  17          
+  18          
+  19          #define  TAG_TIME                               10530+64*TAG_ID         //sleep time£º10530=0.3s;       32768=1s
+  20          #define  ADC_TIME                               10800           //volt of BAT,   every =   ADC_TIME*TAG_TIME
+  21          #define  TX_PAYLOAD_LEN                 6               // data length
+  22          #define  TX_PACKET_LEN                  TX_PAYLOAD_LEN + 16             // data length
+  23          #define  TX_CH_NUMBER                   3               // data length       
+  24          
+  25          #define  RF_POWER                HAL_NRF_0DBM
+  26          //HAL_NRF_18DBM,          /**< Output power set to -18dBm */
+  27          //HAL_NRF_12DBM,          /**< Output power set to -12dBm */
+  28          //HAL_NRF_6DBM,           /**< Output power set to -6dBm  */
+  29          //HAL_NRF_0DBM            /**< Output power set to 0dBm   */
+  30          
+  31          /******************************************************************************/
+  32          
+  33          
+  34          //#define  S1    P15  // Key S1
+  35          //#define  S2    P16  // Key S2
+  36          
+  37          //// The MAC address of the beacon
+  38          #define MY_MAC_0  0x60
+  39          #define MY_MAC_1  0x59
+  40          #define MY_MAC_2  0x48
+  41          #define MY_MAC_3  0x47
+  42          #define MY_MAC_4  0x46
+  43          #define MY_MAC_5  0x45
+  44          
+  45          #define ANDROID          0x42
+  46          #define IPHONE          0x40
+  47          
+  48          /* Watchdog*/
+  49          #define USE_WDT   1
+  50          #define WDT_TIME  256  //2S
+  51          
+  52          
+  53          uint8_t   CellVoltageH;
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 2   
+
+  54          uint8_t   CellVoltageL;
+  55          xdata bool  radio_busy;
+  56          xdata uint8_t  TxPayload[TX_PAYLOAD_LEN];
+  57          uint16_t PipeAndLen;
+  58          uint8_t CurrCH = 0;
+  59          
+  60          
+  61          void PrintInt16(uint16_t Counter);
+  62          void UART0_SendStr( char* str );
+  63          
+  64          //xdata uint8_t _packet[TX_PACKET_LEN] = {0xBA,0x1C,0x54,0x60,0xBB,0x85,0x53,0xF3,0xC3,0xEB,0x03,0x82,0xFB
+             -,0xBA,0xBB,0xC7,0x71,0x7E,0x2D,0x01}; //maximum size of payload handled by nrf24L01 is 32
+  65          xdata uint8_t _packet_coded[TX_CH_NUMBER][TX_PACKET_LEN] = {{0xF3,0xBB,0xEC,0x1F,0xA6,0x0F,0x0C,0xA7,0xEE,
+             -0x0C,0x28,0xB2,0x96,0x6E,0x5F,0x07,0x42,0x1F,0x82,0x85}  //Len = 20 ch = 0Start LE advertizing
+  66          ,{0x29,0x53,0x24,0x9E,0x80,0x91,0xED,0x5B,0x98,0x25,0x55,0xE2,0x21,0xF2,0xF3,0xC6,0xF7,0xCE,0x13,0x87}  //
+             -Len = 20 ch = 1Start LE advertizing
+  67          ,{0xBA,0x1C,0x54,0x60,0xBB,0x85,0x53,0xF3,0xC3,0xEB,0x03,0x82,0xFB,0x1A,0x3B,0x47,0xD1,0x50,0xF2,0x7B}};  
+             -//Len = 20 ch = 2Start LE advertizing
+  68          
+  69          uint8_t _length = 0; //length of packet filled
+  70          uint8_t _dataFieldStartPoint = 0;
+  71          xdata uint8_t chRf[] = {2,26,80} ; 
+  72          xdata uint8_t chLe[] = {37,38,39} ;
+  73          
+  74          #define crc_mul 0x1021
+  75          uint16_t cal_crc(unsigned char *ptr, unsigned char len)
+  76          {
+  77   1              unsigned char i;
+  78   1              unsigned int crc=0;
+  79   1              while(len-- != 0)
+  80   1              {
+  81   2                      for(i=0x80; i!=0; i>>=1)
+  82   2                      {
+  83   3                              if((crc&0x8000)!=0)
+  84   3                              {
+  85   4                                      crc<<=1;
+  86   4                                      crc^=(crc_mul);
+  87   4                              }else{
+  88   4                                      crc<<=1;
+  89   4                              }
+  90   3                              if((*ptr&i)!=0)
+  91   3                              {
+  92   4                                      crc ^= (crc_mul);
+  93   4                              }
+  94   3                      }
+  95   2                      ptr ++;
+  96   2              }
+  97   1      //      UART0_SendStr("crc:");
+  98   1      //      PrintInt16(crc);
+  99   1      //      UART0_SendStr("\r\n");
+ 100   1              return (crc);
+ 101   1      }
+ 102          
+ 103          void fill_crc(unsigned char *ptr, unsigned char stru_len)
+ 104          {
+ 105   1              uint16_t * pSum = ((uint32_t*)(ptr+stru_len-2));
+ 106   1              *pSum = cal_crc(ptr,stru_len-2);
+ 107   1      }
+ 108          
+ 109          uint8_t  reverseBits(uint8_t input)
+ 110          {
+ 111   1                      // reverse the bit order in a single byte
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 3   
+
+ 112   1                      uint8_t temp = 0;
+ 113   1                      if (input & 0x80) temp |= 0x01;
+ 114   1                      if (input & 0x40) temp |= 0x02;
+ 115   1                      if (input & 0x20) temp |= 0x04;
+ 116   1                      if (input & 0x10) temp |= 0x08;
+ 117   1                      if (input & 0x08) temp |= 0x10;
+ 118   1                      if (input & 0x04) temp |= 0x20;
+ 119   1                      if (input & 0x02) temp |= 0x40;
+ 120   1                      if (input & 0x01) temp |= 0x80;
+ 121   1                      return temp;
+ 122   1      }
+ 123          uint8_t  bleWhitenStart(uint8_t chan){
+ 124   1              //use left shifted one
+ 125   1              return reverseBits(chan) | 2;
+ 126   1      }
+ 127          
+ 128          void setPhone(uint8_t phone_type)
+ 129          {
+ 130   1              //byte no.0 PDU
+ 131   1              uint8_t i;
+ 132   1              for(i=0; i<TX_CH_NUMBER; i++)
+ 133   1              {
+ 134   2                      _packet_coded[i][0] = phone_type;       
+ 135   2              }
+ 136   1      }
+ 137          void setMAC(uint8_t m0, uint8_t m1, uint8_t m2, uint8_t m3, uint8_t m4, uint8_t m5)
+ 138          {
+ 139   1              uint8_t i;
+ 140   1              for(i=0; i<TX_CH_NUMBER; i++)
+ 141   1              {
+ 142   2                      //length of payload is entered in byte no.1
+ 143   2                      _length = 2;
+ 144   2                      _packet_coded[i][_length++] = m0;
+ 145   2                      _packet_coded[i][_length++] = m1;
+ 146   2                      _packet_coded[i][_length++] = m2;
+ 147   2                      _packet_coded[i][_length++] = m3;
+ 148   2                      _packet_coded[i][_length++] = m4;
+ 149   2                      _packet_coded[i][_length++] = m5;
+ 150   2                      //length should be 8 by now
+ 151   2                      //flags (LE-only, limited discovery mode)
+ 152   2                      _packet_coded[i][_length++] = 2;    //flag length
+ 153   2                      _packet_coded[i][_length++] = 0x01; //data type
+ 154   2                      _packet_coded[i][_length++] = 0x05; //actual flag
+ 155   2              }
+ 156   1      }
+ 157          
+ 158          void setData(void* Data,uint8_t dataLen)
+ 159          {
+ 160   1              uint8_t i,j;
+ 161   1              uint8_t* current;
+ 162   1              _dataFieldStartPoint = (_dataFieldStartPoint==0?_length:_dataFieldStartPoint);
+ 163   1      
+ 164   1      
+ 165   1              for(j=0; j<TX_CH_NUMBER; j++)
+ 166   1              {
+ 167   2                      _length = _dataFieldStartPoint;
+ 168   2                      current = (uint8_t*)(Data);
+ 169   2              
+ 170   2                      _packet_coded[j][_length++] = dataLen +1;
+ 171   2                      _packet_coded[j][_length++] = 0xFF;//data type
+ 172   2                      for (i = 0; i < dataLen; i++){
+ 173   3                              _packet_coded[j][_length++] = *(current);
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 4   
+
+ 174   3                              current++;
+ 175   3                      }
+ 176   2                      //CRC is appended to the data
+ 177   2                      //CRC starting val 0x555555 acc. to spec
+ 178   2                      _packet_coded[j][_length++] = 0x55;
+ 179   2                      _packet_coded[j][_length++] = 0x55;
+ 180   2                      _packet_coded[j][_length++] = 0x55;
+ 181   2              }
+ 182   1      }
+ 183          
+ 184          void BLEcrc(const uint8_t* Data, uint8_t dataLen, uint8_t* outputCRC){
+ 185   1              // calculating the CRC based on a LFSR
+ 186   1              uint8_t i, temp, tempData;
+ 187   1      
+ 188   1              while (dataLen--){
+ 189   2                      tempData = *Data++;
+ 190   2                      for (i = 0; i < 8; i++, tempData >>= 1){
+ 191   3                              temp = outputCRC[0] >> 7;
+ 192   3                              
+ 193   3                              outputCRC[0] <<= 1;
+ 194   3                              if (outputCRC[1] & 0x80){ outputCRC[0] |= 1; }
+ 195   3                              outputCRC[1] <<= 1;
+ 196   3                              if (outputCRC[2] & 0x80){ outputCRC[1] |= 1; }
+ 197   3                              outputCRC[2] <<= 1;
+ 198   3      
+ 199   3                              if (temp != (tempData & 1)){
+ 200   4                                      outputCRC[2] ^= 0x5B;
+ 201   4                                      outputCRC[1] ^= 0x06;
+ 202   4                              }
+ 203   3                      }
+ 204   2              }
+ 205   1      }
+ 206          
+ 207          void bleWhiten(uint8_t* Data, uint8_t len, uint8_t whitenCoeff){
+ 208   1              // Implementing whitening with LFSR
+ 209   1              uint8_t  m;
+ 210   1              while (len--){
+ 211   2                      for (m = 1; m; m <<= 1){
+ 212   3                              if (whitenCoeff & 0x80){
+ 213   4                                      whitenCoeff ^= 0x11;
+ 214   4                                      (*Data) ^= m;
+ 215   4                              }
+ 216   3                              whitenCoeff <<= 1;
+ 217   3                      }
+ 218   2                      Data++;
+ 219   2              }
+ 220   1      }
+ 221          
+ 222          void blePacketEncode(uint8_t* packet, uint8_t len, uint8_t chan){
+ 223   1              // Assemble the packet to be transmitted
+ 224   1              // Packet length includes pre-populated crc 
+ 225   1              uint8_t i, dataLen = len - 3;
+ 226   1              BLEcrc(packet, dataLen, packet + dataLen);
+ 227   1              for (i = 0; i < 3; i++, dataLen++)
+ 228   1                      packet[dataLen] = reverseBits(packet[dataLen]);
+ 229   1              bleWhiten(packet, len, bleWhitenStart(chan));
+ 230   1              for (i = 0; i < len; i++)
+ 231   1                      packet[i] = reverseBits(packet[i]); // the byte order of the packet should be reversed as well
+ 232   1      }
+ 233          
+ 234          
+ 235          
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 5   
+
+ 236          void sendADV(uint8_t channel)
+ 237          {
+ 238   1              
+ 239   1              hal_nrf_set_rf_channel(chRf[channel]);//_radio.setChannel(RF24BLE::chRf[channel]);
+ 240   1      
+ 241   1      //      UART0_SendStr("Tx Len:");
+ 242   1      //      PrintInt16(_length);
+ 243   1      //      UART0_SendStr("\r\n");
+ 244   1      //
+ 245   1      //      UART0_SendStr("tx channel");
+ 246   1      //      PrintInt16(channel);
+ 247   1      //      UART0_SendStr("\r\n");
+ 248   1      
+ 249   1              if(_length <= TX_PACKET_LEN)
+ 250   1              {
+ 251   2                      hal_nrf_write_tx_payload_noack(_packet_coded[channel],_length);//_radio.startWrite(_packet, _length,fals
+             -e);
+ 252   2              }
+ 253   1              else
+ 254   1              {
+ 255   2                      UART0_SendStr("_length > TX_PACKET_LEN !\r\n");
+ 256   2              }
+ 257   1      }
+ 258          
+ 259          
+ 260          void UART0_SendStr( char* str )
+ 261          {
+ 262   1          uint8_t i;
+ 263   1          uint8_t size = strlen(str);
+ 264   1          for(i=0; i<size; i++)
+ 265   1          {
+ 266   2              hal_uart_putchar(*(str+i));
+ 267   2          }
+ 268   1      }
+ 269          
+ 270          void IoInit(void)
+ 271          {
+ 272   1          //P0DIR = 0x00;
+ 273   1          //P1DIR = 0x00;
+ 274   1      
+ 275   1              P1DIR = ( 1<<5 ) | ( 1<<6 );    //p0.0 p0.1  input£¬others output
+ 276   1              P0DIR = 0;
+ 277   1              P1 = 0xff;
+ 278   1              P1CON = 0xD5;                   //Enable pull up for P0.0
+ 279   1              P1CON = 0xD6;                   //Enable pull up for P0.1
+ 280   1              P0 &= ~( 1<<2 );
+ 281   1              P0 &= ~( 1<<1 );  
+ 282   1      
+ 283   1      }
+ 284          
+ 285          
+ 286          void adc_init(void)              //get volt of BAT
+ 287          {
+ 288   1          hal_adc_set_input_channel(HAL_INP_VDD1_3);          //1/3 VDD
+ 289   1          hal_adc_set_reference(HAL_ADC_REF_INT);             //set REF int 1.2V
+ 290   1          hal_adc_set_input_mode(HAL_ADC_SINGLE);
+ 291   1          hal_adc_set_conversion_mode(HAL_ADC_SINGLE_STEP);
+ 292   1          hal_adc_set_sampling_rate(HAL_ADC_2KSPS);
+ 293   1          hal_adc_set_resolution(HAL_ADC_RES_12BIT);          //12 bit ADC
+ 294   1          hal_adc_set_data_just(HAL_ADC_JUST_RIGHT);
+ 295   1      }
+ 296          
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 6   
+
+ 297          void set_timer_period(uint16_t period)
+ 298          {
+ 299   1          if((period<10) && (period>65536))period = 32768;
+ 300   1          hal_rtc_start(false);
+ 301   1          hal_rtc_start(true);
+ 302   1          hal_rtc_set_compare_value(period - 1);
+ 303   1      }
+ 304          
+ 305          
+ 306          void RfCofig(void)
+ 307          {
+ 308   1              uint8_t  TX_ADDRESS[4]  = {0x8e,0x89,0xBE,0xD6};
+ 309   1              TX_ADDRESS[0] = reverseBits(TX_ADDRESS[0]);
+ 310   1              TX_ADDRESS[1] = reverseBits(TX_ADDRESS[1]);
+ 311   1              TX_ADDRESS[2] = reverseBits(TX_ADDRESS[2]);
+ 312   1              TX_ADDRESS[3] = reverseBits(TX_ADDRESS[3]);
+ 313   1      
+ 314   1          RFCKEN = 1;
+ 315   1      
+ 316   1      
+ 317   1          //BLE
+ 318   1              hal_nrf_close_pipe(HAL_NRF_ALL);
+ 319   1              hal_nrf_open_pipe(HAL_NRF_PIPE0,false);//       _radio.setAutoAck(false);
+ 320   1              hal_nrf_set_operation_mode(HAL_NRF_PTX);
+ 321   1              hal_nrf_set_rf_channel(chRf[0]);
+ 322   1              hal_nrf_set_datarate(HAL_NRF_1MBPS);//  _radio.setDataRate(RF24_1MBPS);
+ 323   1              hal_nrf_set_output_power(RF_POWER);//   _radio.setPALevel(RF24_PA_MAX);
+ 324   1              hal_nrf_set_crc_mode(HAL_NRF_CRC_OFF);//        _radio.disableCRC();
+ 325   1              hal_nrf_set_address_width(HAL_NRF_AW_4BYTES);// _radio.setAddressWidth(4);
+ 326   1              hal_nrf_enable_dynamic_payload(false);
+ 327   1              hal_nrf_set_address(HAL_NRF_TX,TX_ADDRESS);//   _radio.openWritingPipe(address);
+ 328   1              hal_nrf_set_auto_retr(0,0);//   _radio.setRetries(0, 0);        
+ 329   1              hal_nrf_set_power_mode(HAL_NRF_PWR_UP);//       _radio.powerUp();
+ 330   1      
+ 331   1          RF = 1;
+ 332   1          EA = 1;
+ 333   1      }
+ 334          
+ 335          void mcu_init(void)
+ 336          {
+ 337   1          hal_rtc_start(false);
+ 338   1          hal_clklf_set_source(HAL_CLKLF_RCOSC32K);           // Use 32.768KHz RC
+ 339   1      
+ 340   1          hal_rtc_set_compare_mode(HAL_RTC_COMPARE_MODE_0);   // Use 32 KHz timer mode 0
+ 341   1          set_timer_period(TAG_TIME);                         // Set the RTC2 time£¬card sleep time
+ 342   1          hal_clk_set_16m_source(HAL_CLK_XOSC16M);            // Always run on 16MHz crystal oscillator
+ 343   1          hal_clk_regret_xosc16m_on(0);                       // Keep XOSC16M off in register retention
+ 344   1      
+ 345   1          hal_rtc_start(true);
+ 346   1      
+ 347   1          while((CLKLFCTRL&0x80)==0x80);                          // Wait for the 32kHz to startup (change phase)
+ 348   1          while((CLKLFCTRL&0x80)!=0x80);
+ 349   1      }
+ 350          
+ 351          void Assemble_Data(void)
+ 352          {
+ 353   1              uint8_t i;
+ 354   1      
+ 355   1              P1 |= ( 1<<5 ) | ( 1<<6 );  //P1.5 = 1; P1.6 = 1
+ 356   1              if( !( P1 & ( 1<<5 ) ) )    //check P1.5
+ 357   1              {
+ 358   2                      TxPayload[0] = 2;//FUNCTION_CODE
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 7   
+
+ 359   2              }
+ 360   1              else if( !( P1 & ( 1<<6 ) ) )    //Check P1.6
+ 361   1              {
+ 362   2                      TxPayload[0] = 3;//FUNCTION_CODE
+ 363   2              }
+ 364   1              else
+ 365   1              {
+ 366   2                      TxPayload[0] = 0;//FUNCTION_CODE
+ 367   2              }
+ 368   1      
+ 369   1          TxPayload[1] = TAG_ID;
+ 370   1          TxPayload[2] = CellVoltageH;
+ 371   1          TxPayload[3] = CellVoltageL;
+ 372   1      
+ 373   1              fill_crc(TxPayload,TX_PAYLOAD_LEN);
+ 374   1      
+ 375   1              setPhone(ANDROID);
+ 376   1              setMAC(MY_MAC_0, MY_MAC_1, MY_MAC_2, MY_MAC_3, MY_MAC_4, MY_MAC_5);
+ 377   1                      
+ 378   1              setData(TxPayload, TX_PAYLOAD_LEN);
+ 379   1      
+ 380   1              for(i=0; i<TX_CH_NUMBER; i++)
+ 381   1              {
+ 382   2                      _packet_coded[i][1] = _length-5;//subtract checksum bytes and the 2 bytes including the length byte and 
+             -the first byte
+ 383   2                      blePacketEncode(_packet_coded[i], _length, chLe[i]);
+ 384   2              }
+ 385   1      
+ 386   1      //      UART0_SendStr("Assemble Len:");
+ 387   1      //      PrintInt16(_length);
+ 388   1      //      UART0_SendStr("\r\n");
+ 389   1      
+ 390   1      }
+ 391          
+ 392          void main()
+ 393          {
+ 394   1          xdata   uint32_t  loopCount = ADC_TIME-1;
+ 395   1      
+ 396   1          IoInit();
+ 397   1          mcu_init();
+ 398   1      
+ 399   1          hal_uart_init(UART_BAUD_9K6);  //UART£¬bps9600
+ 400   1          while(hal_clk_get_16m_source() != HAL_CLK_XOSC16M)
+ 401   1          {
+ 402   2          }
+ 403   1      
+ 404   1          hal_uart_putchar('a');
+ 405   1      
+ 406   1          adc_init();
+ 407   1          RfCofig();
+ 408   1      
+ 409   1      #ifdef  USE_WDT
+ 410   1          hal_wdog_init(WDT_TIME);//watch dog 2s
+ 411   1      #endif
+ 412   1      
+ 413   1          while(1)
+ 414   1          {
+ 415   2              loopCount++;
+ 416   2      
+ 417   2      //        PrintInt16(loopCount);
+ 418   2      //        UART0_SendStr("\r\n");
+ 419   2      
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 8   
+
+ 420   2      #ifdef  USE_WDT
+ 421   2              hal_wdog_restart(); //feed dog
+ 422   2      #endif
+ 423   2      
+ 424   2              if(loopCount == ADC_TIME)    //Get volt of BAT every 5mins
+ 425   2              {
+ 426   3                  hal_adc_start();           //ADC
+ 427   3                  while( hal_adc_busy())     //wait ADC finish
+ 428   3                      ;
+ 429   3                  CellVoltageH = hal_adc_read_MSB(); //get ADC
+ 430   3                  CellVoltageL = hal_adc_read_LSB();
+ 431   3                  loopCount=0;
+ 432   3                              Assemble_Data();
+ 433   3              }
+ 434   2      
+ 435   2              CurrCH++;
+ 436   2              if (CurrCH>2)
+ 437   2              {
+ 438   3                  CurrCH = 0;
+ 439   3              }
+ 440   2      
+ 441   2      //              UART0_SendStr("channel");
+ 442   2      //              PrintInt16(CurrCH);
+ 443   2      //              UART0_SendStr("\r\n");
+ 444   2      
+ 445   2      
+ 446   2              PWRDWN = 0x04;    // power down
+ 447   2              PWRDWN = 0x00;
+ 448   2      
+ 449   2      
+ 450   2                      sendADV(CurrCH);
+ 451   2      
+ 452   2      
+ 453   2              CE_PULSE();                 //RF send
+ 454   2              radio_busy = true;
+ 455   2              while(radio_busy)                   //wait RF finish
+ 456   2                  ;
+ 457   2          }
+ 458   1      }
+ 459          
+ 460          void rf_irq() interrupt INTERRUPT_RFIRQ
+ 461          {
+ 462   1          uint8_t  irq_flags;
+ 463   1      
+ 464   1          irq_flags = hal_nrf_get_clear_irq_flags();
+ 465   1      
+ 466   1          if(irq_flags & (1<<HAL_NRF_RX_DR))
+ 467   1          {
+ 468   2      
+ 469   2              while(!hal_nrf_rx_fifo_empty())// Read payload
+ 470   2              {
+ 471   3      //            PipeAndLen = hal_nrf_read_rx_payload(RxPayload);
+ 472   3              }
+ 473   2              radio_busy = false;
+ 474   2          }
+ 475   1      
+ 476   1          if(irq_flags & ((1<<HAL_NRF_TX_DS)))                        // transimmter finish
+ 477   1          {
+ 478   2              radio_busy = false;
+ 479   2          }
+ 480   1      
+ 481   1          if(irq_flags & ((1<<HAL_NRF_MAX_RT)))                       // re-transimmter
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 9   
+
+ 482   1          {
+ 483   2              radio_busy = false;
+ 484   2              hal_nrf_flush_tx();
+ 485   2          }
+ 486   1      }
+ 487          
+ 488          void PrintInt16(uint16_t Counter)
+ 489          {
+ 490   1          uint8_t onechar;
+ 491   1      
+ 492   1          onechar = Counter/10000%10+0x30;
+ 493   1          hal_uart_putchar(onechar);
+ 494   1      
+ 495   1          onechar = Counter/1000%10+0x30;
+ 496   1          hal_uart_putchar(onechar);
+ 497   1      
+ 498   1          onechar = Counter/100%10+0x30;
+ 499   1          hal_uart_putchar(onechar);
+ 500   1      
+ 501   1          onechar = Counter/10%10+0x30;
+ 502   1          hal_uart_putchar(onechar);
+ 503   1      
+ 504   1          onechar = Counter%10+0x30;
+ 505   1          hal_uart_putchar(onechar);
+ 506   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2199    ----
+   CONSTANT SIZE    =     32    ----
+   XDATA SIZE       =     79       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7      54
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
