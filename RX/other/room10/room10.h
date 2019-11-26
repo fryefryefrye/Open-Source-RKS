@@ -30,7 +30,7 @@
 #define timezone 8
 
 
-const char* ssid = "frye";  //WifiÃû³Æ
+const char* ssid = "frye_iot";  //WifiÃû³Æ
 const char* password = "52150337";  //WifiÃÜÂë
 WiFiUDP m_WiFiUDP;
 

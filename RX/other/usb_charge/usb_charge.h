@@ -18,6 +18,7 @@
 
 
 #define RELAY				D4
+#define RADAR				D5
 
 
 
@@ -65,8 +66,11 @@ void setup()
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(RELAY, LOW);
 
+	pinMode(RADAR, INPUT);
+
 	UsbChargeData.DataType = 12;
 	UsbChargeData.isOn = false;
+	
 
 
 	delay(50);                      
@@ -292,6 +296,7 @@ void OnSecond()
 		digitalWrite(RELAY,LOW);
 	}
 	
+	UsbChargeData.Radar = digitalRead(RADAR);
 
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);

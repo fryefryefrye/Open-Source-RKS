@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                                     {
                                         isScreenOn = false;
                                         screenOff();
-                                        Log.d("Date", "screenOff()OffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOffOff");
+                                        Log.d("Date", "screenOff()");
 
                                     }
 
@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                                     {
                                         isScreenOn = true;
                                         screenOn();
-                                        Log.d("Date", "screenOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOnOn()");
+                                        Log.d("Date", "screenOn()");
                                     }
                                 }
 //                                if (mWakeLock == null) {

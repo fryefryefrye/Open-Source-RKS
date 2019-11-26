@@ -118,6 +118,23 @@
         <tIfile></tIfile>
         <pMon>BIN\nrfkeil515.dll</pMon>
       </DebugOpt>
+      <Breakpoint>
+        <Bp>
+          <Number>0</Number>
+          <Type>0</Type>
+          <LineNumber>320</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>0</Address>
+          <ByteObject>0</ByteObject>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>0</BreakIfRCount>
+          <Filename>main.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
+        </Bp>
+      </Breakpoint>
       <DebugFlag>
         <trace>0</trace>
         <periodic>0</periodic>
@@ -160,10 +177,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>55</ColumnNumber>
+      <ColumnNumber>46</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>314</TopLine>
-      <CurrentLine>335</CurrentLine>
+      <TopLine>409</TopLine>
+      <CurrentLine>409</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -183,8 +200,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\hal_delay.c</PathWithFileName>
       <FilenameWithoutPath>hal_delay.c</FilenameWithoutPath>
@@ -197,8 +214,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24le1\hal_clk.c</PathWithFileName>
       <FilenameWithoutPath>hal_clk.c</FilenameWithoutPath>
@@ -211,8 +228,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24le1\hal_rtc.c</PathWithFileName>
       <FilenameWithoutPath>hal_rtc.c</FilenameWithoutPath>
@@ -225,8 +242,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24le1\hal_adc.c</PathWithFileName>
       <FilenameWithoutPath>hal_adc.c</FilenameWithoutPath>
@@ -239,8 +256,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24le1\hal_nrf_hw.c</PathWithFileName>
       <FilenameWithoutPath>hal_nrf_hw.c</FilenameWithoutPath>
@@ -253,8 +270,8 @@
       <Focus>0</Focus>
       <ColumnNumber>16924243</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>0</TopLine>
+      <CurrentLine>0</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24le1\hal_wdog.c</PathWithFileName>
       <FilenameWithoutPath>hal_wdog.c</FilenameWithoutPath>
@@ -265,10 +282,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>16924243</ColumnNumber>
+      <ColumnNumber>85</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>8335448</TopLine>
-      <CurrentLine>4070928</CurrentLine>
+      <TopLine>382</TopLine>
+      <CurrentLine>407</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\hal\nrf24l01p\hal_nrf.c</PathWithFileName>
       <FilenameWithoutPath>hal_nrf.c</FilenameWithoutPath>
@@ -1634,9 +1651,15 @@
       <Documents>
         <Doc>
           <Name>.\main.c</Name>
-          <ColumnNumber>0</ColumnNumber>
-          <TopLine>314</TopLine>
-          <CurrentLine>340</CurrentLine>
+          <ColumnNumber>46</ColumnNumber>
+          <TopLine>409</TopLine>
+          <CurrentLine>409</CurrentLine>
+        </Doc>
+        <Doc>
+          <Name>.\hal\nrf24l01p\hal_nrf.c</Name>
+          <ColumnNumber>85</ColumnNumber>
+          <TopLine>382</TopLine>
+          <CurrentLine>407</CurrentLine>
         </Doc>
       </Documents>
     </MDIGroup>

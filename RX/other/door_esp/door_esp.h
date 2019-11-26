@@ -574,7 +574,7 @@ void DoorClose_Speed_Task()
 					Step = 0xFF;
 					MyPrintf("DoorCloseing timeout 5s.\r\n");
 				}
-				if((Postion < 0)||(DoorClosedConfirm))
+				if((Postion < 2)||(DoorClosedConfirm))
 				{
 					Step ++;
 				}

@@ -1046,7 +1046,10 @@ const char* BLEUtils::devTypeToString(esp_bt_dev_type_t type) {
 void BLEUtils::dumpGapEvent(
 	esp_gap_ble_cb_event_t  event,
 	esp_ble_gap_cb_param_t* param) {
-	log_v("Received a GAP event: %s", gapEventToString(event));
+
+	printf("Received a GAP event: %s \r\n",gapEventToString(event));
+
+
 	switch (event) {
 #if CONFIG_LOG_DEFAULT_LEVEL > 4
 		// ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT
@@ -1567,8 +1570,8 @@ void BLEUtils::dumpGattServerEvent(
 		// ESP_GATTS_CONF_EVT
 		//
 		// conf:
-		// - esp_gatt_status_t status  â€“ The status code.
-		// - uint16_t          conn_id â€“ The connection used.
+		// - esp_gatt_status_t status  â€?The status code.
+		// - uint16_t          conn_id â€?The connection used.
 		case ESP_GATTS_CONF_EVT: {
 			log_v("[status: %s, conn_id: 0x%.2x]",
 				gattStatusToString(evtParam->conf.status).c_str(),
@@ -1691,15 +1694,15 @@ void BLEUtils::dumpGattServerEvent(
 		// ESP_GATTS_WRITE_EVT
 		//
 		// write:
-		// - uint16_t      conn_id  â€“ The connection id.
-		// - uint16_t      trans_id â€“ The transfer id.
-		// - esp_bd_addr_t bda      â€“ The address of the partner.
-		// - uint16_t      handle   â€“ The attribute handle.
-		// - uint16_t      offset   â€“ The offset of the currently received within the whole value.
-		// - bool          need_rsp â€“ Do we need a response?
-		// - bool          is_prep  â€“ Is this a write prepare?  If set, then this is to be considered part of the received value and not the whole value.  A subsequent ESP_GATTS_EXEC_WRITE will mark the total.
-		// - uint16_t      len      â€“ The length of the incoming value part.
-		// - uint8_t*      value    â€“ The data for this value part.
+		// - uint16_t      conn_id  â€?The connection id.
+		// - uint16_t      trans_id â€?The transfer id.
+		// - esp_bd_addr_t bda      â€?The address of the partner.
+		// - uint16_t      handle   â€?The attribute handle.
+		// - uint16_t      offset   â€?The offset of the currently received within the whole value.
+		// - bool          need_rsp â€?Do we need a response?
+		// - bool          is_prep  â€?Is this a write prepare?  If set, then this is to be considered part of the received value and not the whole value.  A subsequent ESP_GATTS_EXEC_WRITE will mark the total.
+		// - uint16_t      len      â€?The length of the incoming value part.
+		// - uint8_t*      value    â€?The data for this value part.
 		case ESP_GATTS_WRITE_EVT: {
 			log_v("[conn_id: %d, trans_id: %d, bda: %s, handle: 0x%.2x, offset: %d, need_rsp: %d, is_prep: %d, len: %d]",
 					evtParam->write.conn_id,
@@ -1757,7 +1760,6 @@ const char* BLEUtils::eventTypeToString(esp_ble_evt_type_t eventType) {
  */
 const char* BLEUtils::gapEventToString(uint32_t eventType) {
 	switch (eventType) {
-#if CONFIG_LOG_DEFAULT_LEVEL > 4
 		case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
 			return "ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT";
 		case ESP_GAP_BLE_ADV_DATA_RAW_SET_COMPLETE_EVT:
@@ -1812,9 +1814,11 @@ const char* BLEUtils::gapEventToString(uint32_t eventType) {
 			return "ESP_GAP_BLE_SET_STATIC_RAND_ADDR_EVT";
 		case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
 			return "ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT";
-#endif
+
+
+			
 		default:
-			log_v("gapEventToString: Unknown event type %d 0x%.2x", eventType, eventType);
+			printf("gapEventToString: Unknown event type %d 0x%.2x\r\n", eventType, eventType);
 			return "Unknown event type";
 	}
 } // gapEventToString

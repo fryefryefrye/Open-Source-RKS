@@ -13,7 +13,7 @@
 
 
 /*************************user modify settings****************************/
-#define  TAG_ID 8
+#define  TAG_ID 2
 
 
 #define  TAG_TIME				10530+64*TAG_ID		//sleep time£º10530=0.3s;	32768=1s
@@ -392,6 +392,7 @@ void Assemble_Data(void)
 void main()
 {
     xdata   uint32_t  loopCount = ADC_TIME-1;
+	uint8_t i;
 
     IoInit();
     mcu_init();
@@ -432,11 +433,7 @@ void main()
 			Assemble_Data();
         }
 
-        CurrCH++;
-        if (CurrCH>2)
-        {
-            CurrCH = 0;
-        }
+
 
 //		UART0_SendStr("channel");
 //		PrintInt16(CurrCH);
@@ -447,13 +444,29 @@ void main()
         PWRDWN = 0x00;
 
 
+#ifdef  POWER_SAVE
+		CurrCH++;
+		if (CurrCH>2)
+		{
+			CurrCH = 0;
+		}
 	  	sendADV(CurrCH);
+		CE_PULSE();	            //RF send
+		radio_busy = true;
+		while(radio_busy)		    //wait RF finish
+			;
+#else
 
+		for(i=0; i<TX_CH_NUMBER; i++)
+		{
+			sendADV(i);
 
-        CE_PULSE();	            //RF send
-        radio_busy = true;
-        while(radio_busy)		    //wait RF finish
-            ;
+			CE_PULSE();	            //RF send
+			radio_busy = true;
+			while(radio_busy)		    //wait RF finish
+				;
+		}
+#endif
     }
 }
 

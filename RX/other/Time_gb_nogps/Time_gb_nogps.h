@@ -583,12 +583,12 @@ bool SendRequestAndProcessReply()
 	WeatherRequest.LastTimeDiff = (SecondsSinceStart+Start1970OffSet) - WeatherData.TimeNow;
 	Start1970OffSet = WeatherData.TimeNow-SecondsSinceStart;
 	if (
-		(WeatherData.TimeNow - LastSyncTime > 900)
-		&&(WeatherData.TimeNow - LastSyncTime < 1100)
-		&&(abs(WeatherRequest.LastTimeDiff)<30)
+		(WeatherData.TimeNow - LastSyncTime > 900*3)
+		&&(WeatherData.TimeNow - LastSyncTime < 1100*3)
+		&&(abs(WeatherRequest.LastTimeDiff)<30*3)
 		)
 	{
-		CompensationMsInOneSecond = CompensationMsInOneSecond + WeatherRequest.LastTimeDiff;//+ fast. - slow
+		CompensationMsInOneSecond = CompensationMsInOneSecond + WeatherRequest.LastTimeDiff/3;//+ fast. - slow
 	}
 	LastSyncTime = WeatherData.TimeNow;
 
@@ -1300,12 +1300,12 @@ void OnSecond()
 	TimeLine[6]=Second/10%10+0x30;
 	TimeLine[7]=Second%10+0x30;
 
-	if(SecondsSinceStart%(10000)==600)//
+	if(SecondsSinceStart%(3000)==2800)//
 	{
 		initESP8266();
 	}
 
-	if(SecondsSinceStart%(1000)==0)//update time every 1000s
+	if(SecondsSinceStart%(3000)==0)//update time every 1000s
 	{
 		Serial.println(F("before Getweather!\r\n"));
 

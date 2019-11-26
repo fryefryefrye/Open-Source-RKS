@@ -1,4 +1,4 @@
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 1   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 1   
 
 
 C51 COMPILER V9.00, COMPILATION OF MODULE MAIN
@@ -24,7 +24,7 @@ line level    source
   13          
   14          
   15          /*************************user modify settings****************************/
-  16          #define  TAG_ID 8
+  16          #define  TAG_ID 2
   17          
   18          
   19          #define  TAG_TIME                               10530+64*TAG_ID         //sleep time£º10530=0.3s;       32768=1s
@@ -62,7 +62,7 @@ line level    source
   51          
   52          
   53          uint8_t   CellVoltageH;
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 2   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 2   
 
   54          uint8_t   CellVoltageL;
   55          xdata bool  radio_busy;
@@ -126,7 +126,7 @@ line level    source
  109          uint8_t  reverseBits(uint8_t input)
  110          {
  111   1                      // reverse the bit order in a single byte
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 3   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 3   
 
  112   1                      uint8_t temp = 0;
  113   1                      if (input & 0x80) temp |= 0x01;
@@ -190,7 +190,7 @@ line level    source
  171   2                      _packet_coded[j][_length++] = 0xFF;//data type
  172   2                      for (i = 0; i < dataLen; i++){
  173   3                              _packet_coded[j][_length++] = *(current);
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 4   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 4   
 
  174   3                              current++;
  175   3                      }
@@ -254,7 +254,7 @@ line level    source
  233          
  234          
  235          
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 5   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 5   
 
  236          void sendADV(uint8_t channel)
  237          {
@@ -318,7 +318,7 @@ line level    source
  294   1          hal_adc_set_data_just(HAL_ADC_JUST_RIGHT);
  295   1      }
  296          
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 6   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 6   
 
  297          void set_timer_period(uint16_t period)
  298          {
@@ -382,7 +382,7 @@ line level    source
  356   1              if( !( P1 & ( 1<<5 ) ) )    //check P1.5
  357   1              {
  358   2                      TxPayload[0] = 2;//FUNCTION_CODE
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 7   
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 7   
 
  359   2              }
  360   1              else if( !( P1 & ( 1<<6 ) ) )    //Check P1.6
@@ -421,130 +421,143 @@ line level    source
  392          void main()
  393          {
  394   1          xdata   uint32_t  loopCount = ADC_TIME-1;
- 395   1      
- 396   1          IoInit();
- 397   1          mcu_init();
- 398   1      
- 399   1          hal_uart_init(UART_BAUD_9K6);  //UART£¬bps9600
- 400   1          while(hal_clk_get_16m_source() != HAL_CLK_XOSC16M)
- 401   1          {
- 402   2          }
- 403   1      
- 404   1          hal_uart_putchar('a');
- 405   1      
- 406   1          adc_init();
- 407   1          RfCofig();
- 408   1      
- 409   1      #ifdef  USE_WDT
- 410   1          hal_wdog_init(WDT_TIME);//watch dog 2s
- 411   1      #endif
- 412   1      
- 413   1          while(1)
- 414   1          {
- 415   2              loopCount++;
- 416   2      
- 417   2      //        PrintInt16(loopCount);
- 418   2      //        UART0_SendStr("\r\n");
- 419   2      
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 8   
+ 395   1              uint8_t i;
+ 396   1      
+ 397   1          IoInit();
+ 398   1          mcu_init();
+ 399   1      
+ 400   1          hal_uart_init(UART_BAUD_9K6);  //UART£¬bps9600
+ 401   1          while(hal_clk_get_16m_source() != HAL_CLK_XOSC16M)
+ 402   1          {
+ 403   2          }
+ 404   1      
+ 405   1          hal_uart_putchar('a');
+ 406   1      
+ 407   1          adc_init();
+ 408   1          RfCofig();
+ 409   1      
+ 410   1      #ifdef  USE_WDT
+ 411   1          hal_wdog_init(WDT_TIME);//watch dog 2s
+ 412   1      #endif
+ 413   1      
+ 414   1          while(1)
+ 415   1          {
+ 416   2              loopCount++;
+ 417   2      
+ 418   2      //        PrintInt16(loopCount);
+ 419   2      //        UART0_SendStr("\r\n");
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 8   
 
- 420   2      #ifdef  USE_WDT
- 421   2              hal_wdog_restart(); //feed dog
- 422   2      #endif
- 423   2      
- 424   2              if(loopCount == ADC_TIME)    //Get volt of BAT every 5mins
- 425   2              {
- 426   3                  hal_adc_start();           //ADC
- 427   3                  while( hal_adc_busy())     //wait ADC finish
- 428   3                      ;
- 429   3                  CellVoltageH = hal_adc_read_MSB(); //get ADC
- 430   3                  CellVoltageL = hal_adc_read_LSB();
- 431   3                  loopCount=0;
- 432   3                              Assemble_Data();
- 433   3              }
- 434   2      
- 435   2              CurrCH++;
- 436   2              if (CurrCH>2)
- 437   2              {
- 438   3                  CurrCH = 0;
- 439   3              }
- 440   2      
- 441   2      //              UART0_SendStr("channel");
- 442   2      //              PrintInt16(CurrCH);
- 443   2      //              UART0_SendStr("\r\n");
- 444   2      
+ 420   2      
+ 421   2      #ifdef  USE_WDT
+ 422   2              hal_wdog_restart(); //feed dog
+ 423   2      #endif
+ 424   2      
+ 425   2              if(loopCount == ADC_TIME)    //Get volt of BAT every 5mins
+ 426   2              {
+ 427   3                  hal_adc_start();           //ADC
+ 428   3                  while( hal_adc_busy())     //wait ADC finish
+ 429   3                      ;
+ 430   3                  CellVoltageH = hal_adc_read_MSB(); //get ADC
+ 431   3                  CellVoltageL = hal_adc_read_LSB();
+ 432   3                  loopCount=0;
+ 433   3                              Assemble_Data();
+ 434   3              }
+ 435   2      
+ 436   2      
+ 437   2      
+ 438   2      //              UART0_SendStr("channel");
+ 439   2      //              PrintInt16(CurrCH);
+ 440   2      //              UART0_SendStr("\r\n");
+ 441   2      
+ 442   2      
+ 443   2              PWRDWN = 0x04;    // power down
+ 444   2              PWRDWN = 0x00;
  445   2      
- 446   2              PWRDWN = 0x04;    // power down
- 447   2              PWRDWN = 0x00;
- 448   2      
- 449   2      
- 450   2                      sendADV(CurrCH);
- 451   2      
- 452   2      
- 453   2              CE_PULSE();                 //RF send
- 454   2              radio_busy = true;
- 455   2              while(radio_busy)                   //wait RF finish
- 456   2                  ;
- 457   2          }
- 458   1      }
- 459          
- 460          void rf_irq() interrupt INTERRUPT_RFIRQ
- 461          {
- 462   1          uint8_t  irq_flags;
- 463   1      
- 464   1          irq_flags = hal_nrf_get_clear_irq_flags();
- 465   1      
- 466   1          if(irq_flags & (1<<HAL_NRF_RX_DR))
- 467   1          {
- 468   2      
- 469   2              while(!hal_nrf_rx_fifo_empty())// Read payload
- 470   2              {
- 471   3      //            PipeAndLen = hal_nrf_read_rx_payload(RxPayload);
- 472   3              }
- 473   2              radio_busy = false;
- 474   2          }
- 475   1      
- 476   1          if(irq_flags & ((1<<HAL_NRF_TX_DS)))                        // transimmter finish
- 477   1          {
- 478   2              radio_busy = false;
- 479   2          }
- 480   1      
- 481   1          if(irq_flags & ((1<<HAL_NRF_MAX_RT)))                       // re-transimmter
-C51 COMPILER V9.00   MAIN                                                                  11/21/2019 14:28:18 PAGE 9   
+ 446   2      
+ 447   2      #ifdef  POWER_SAVE
+                              CurrCH++;
+                              if (CurrCH>2)
+                              {
+                                      CurrCH = 0;
+                              }
+                              sendADV(CurrCH);
+                              CE_PULSE();                 //RF send
+                              radio_busy = true;
+                              while(radio_busy)                   //wait RF finish
+                                      ;
+              #else
+ 459   2      
+ 460   2                      for(i=0; i<TX_CH_NUMBER; i++)
+ 461   2                      {
+ 462   3                              sendADV(i);
+ 463   3      
+ 464   3                              CE_PULSE();                 //RF send
+ 465   3                              radio_busy = true;
+ 466   3                              while(radio_busy)                   //wait RF finish
+ 467   3                                      ;
+ 468   3                      }
+ 469   2      #endif
+ 470   2          }
+ 471   1      }
+ 472          
+ 473          void rf_irq() interrupt INTERRUPT_RFIRQ
+ 474          {
+ 475   1          uint8_t  irq_flags;
+ 476   1      
+ 477   1          irq_flags = hal_nrf_get_clear_irq_flags();
+ 478   1      
+ 479   1          if(irq_flags & (1<<HAL_NRF_RX_DR))
+ 480   1          {
+ 481   2      
+C51 COMPILER V9.00   MAIN                                                                  11/21/2019 20:42:44 PAGE 9   
 
- 482   1          {
- 483   2              radio_busy = false;
- 484   2              hal_nrf_flush_tx();
- 485   2          }
- 486   1      }
- 487          
- 488          void PrintInt16(uint16_t Counter)
- 489          {
- 490   1          uint8_t onechar;
- 491   1      
- 492   1          onechar = Counter/10000%10+0x30;
- 493   1          hal_uart_putchar(onechar);
- 494   1      
- 495   1          onechar = Counter/1000%10+0x30;
- 496   1          hal_uart_putchar(onechar);
- 497   1      
- 498   1          onechar = Counter/100%10+0x30;
- 499   1          hal_uart_putchar(onechar);
- 500   1      
- 501   1          onechar = Counter/10%10+0x30;
- 502   1          hal_uart_putchar(onechar);
- 503   1      
- 504   1          onechar = Counter%10+0x30;
- 505   1          hal_uart_putchar(onechar);
- 506   1      }
+ 482   2              while(!hal_nrf_rx_fifo_empty())// Read payload
+ 483   2              {
+ 484   3      //            PipeAndLen = hal_nrf_read_rx_payload(RxPayload);
+ 485   3              }
+ 486   2              radio_busy = false;
+ 487   2          }
+ 488   1      
+ 489   1          if(irq_flags & ((1<<HAL_NRF_TX_DS)))                        // transimmter finish
+ 490   1          {
+ 491   2              radio_busy = false;
+ 492   2          }
+ 493   1      
+ 494   1          if(irq_flags & ((1<<HAL_NRF_MAX_RT)))                       // re-transimmter
+ 495   1          {
+ 496   2              radio_busy = false;
+ 497   2              hal_nrf_flush_tx();
+ 498   2          }
+ 499   1      }
+ 500          
+ 501          void PrintInt16(uint16_t Counter)
+ 502          {
+ 503   1          uint8_t onechar;
+ 504   1      
+ 505   1          onechar = Counter/10000%10+0x30;
+ 506   1          hal_uart_putchar(onechar);
+ 507   1      
+ 508   1          onechar = Counter/1000%10+0x30;
+ 509   1          hal_uart_putchar(onechar);
+ 510   1      
+ 511   1          onechar = Counter/100%10+0x30;
+ 512   1          hal_uart_putchar(onechar);
+ 513   1      
+ 514   1          onechar = Counter/10%10+0x30;
+ 515   1          hal_uart_putchar(onechar);
+ 516   1      
+ 517   1          onechar = Counter%10+0x30;
+ 518   1          hal_uart_putchar(onechar);
+ 519   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   2199    ----
+   CODE SIZE        =   2192    ----
    CONSTANT SIZE    =     32    ----
    XDATA SIZE       =     79       4
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =      7      54
+   DATA SIZE        =      7      55
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
