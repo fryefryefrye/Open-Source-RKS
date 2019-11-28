@@ -9,6 +9,8 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 #include "RF24BLE.h"
 #include <printf.h>
 
+#include "irk.h"
+
 //// The MAC address of the beacon
 //#define MY_MAC_0  0x60
 //#define MY_MAC_1  0x59
@@ -20,6 +22,15 @@ unsigned char  HopCH[3] = {105,76,108};//Which RF channel to communicate on, 0-1
 //unsigned char MyMac[MAC_LEN] = {0x60,0x59,0x58,0x57,0x56,0x55};
 //unsigned char MyMac[MAC_LEN] = {0x63,0xD2,0xEB,0x43,0x0B,0x5E};
 unsigned char MyMac[MAC_LEN] = {0xd0,0x1E ,0x63 ,0x63 ,0x9A ,0x6E};
+
+//pi
+//esp_bt_octet16_t irk = {0x54,0x48,0x5F,0x52,0x45,0x51,0x5F,0x53,0x43,0x5F,0x42,0x4F,0x4E,0x44,0x0D,0x0A};
+
+//7inch hua wei
+//0x8A,0x1A,0x5B,0x3D,0x8A,0x57,0x42,0xF9,0x75,0x40,0x90,0xF4,0x04,0x15,0x08,0x7A
+
+//hsh iphone
+//esp_bt_octet16_t irk #define IRK_LIST_NUMBER 3char * IrkListName[IRK_LIST_NUMBER] = {"HouSH","WangJ","HshPad"};uint8_t irk[IRK_LIST_NUMBER][ESP_BT_OCTET16_LEN]= {	//hsh iphone	{0x92,0xE1,0x70,0x7B,0x84,0xDC,0x21,0x4D,0xA6,0x33,0xDC,0x3A,0x3A,0xB2,0x08,0x3F}	//wang jun iphone	,{0x17,0x0A,0xE5,0xA7,0xEF,0x8C,0xA8,0xBA,0x06,0xC1,0x54,0xEF,0x9A,0x7A,0x34,0xD0}	//hshpad	,{0x2E,0xB7,0xB3,0xD4,0xDC,0x5C,0x16,0x73,0xA7,0x9B,0x75,0x0E,0xEC,0xEB,0x60,0x2D}};
 
 #define ANDROID		 0x42
 #define IPHONE		0x40
@@ -290,44 +301,30 @@ void BleDataCheckTask()
 		return;
 	}
 
-
-	//receive shall be done when called
-	//single channel receiving only 
-	//since every channel will have the same information hence choose the optimum channel as per your envt.
 	byte status=BLE.recvPacket((uint8_t*)input,RECV_PAYLOAD_SIZE);
-	//if(status==RF24BLE_VALID)
-	//{
-	//	//printf("VALID:\r\n");
-	//}//RF24BLE_VALID=1
-	//else if(status==RF24BLE_CORRUPT)
-	//{
-	//	//printf("CORRUPT:\r\n");
-	//}//RF24BLE_CORRUPT =0
-	//else if(status==RF24BLE_TIMEOUT)
-	//{
-	//	//printf("TIMEOUT:\r\n");
-	//}//RF24BLE_TIMEOUT =-1
-
-
-	//for (byte i = 0; i < RECV_PAYLOAD_SIZE; i++){
-	//	printf("%02X ",input[i]);
-	//}
-	//printf("\r\n");
-
-
-
 
 	unsigned char AdMac[MAC_LEN];
 	if(input[0]==0x40)
 	{
 		for (byte i = 0; i < MAC_LEN; i++)
 		{
-			AdMac[i] = input[i+2];
+			AdMac[MAC_LEN-1-i] = input[i+2];
 		}
-		//printf("MacAdd = %02X %02X %02X %02X %02X %02X !\r\n",AdMac[0],AdMac[1],AdMac[2],AdMac[3],AdMac[4],AdMac[5]);
 
-		//delay(200);
-		SendScanReq(AdMac);
+		for (byte i = 0; i < IRK_LIST_NUMBER; i++)
+		{
+			if(btm_ble_addr_resolvable(AdMac,irk[i]))
+			{
+				printf("MacAdd = %02X %02X %02X %02X %02X %02X Found:%s\r\n"
+					,AdMac[0],AdMac[1],AdMac[2],AdMac[3],AdMac[4],AdMac[5]
+				,IrkListName[i]);
+			}
+		}
+
+		//IRK_LIST_NUMBER
+		//printf("MacAdd = %02X %02X %02X %02X %02X %02X Compared:%d\r\n"
+		//	,AdMac[0],AdMac[1],AdMac[2],AdMac[3],AdMac[4],AdMac[5]
+		//	,btm_ble_addr_resolvable(AdMac,irk));
 		return;
 	}
 
@@ -354,35 +351,6 @@ void BleDataCheckTask()
 			printf("volt:%d mv ch:%d time:%d\r\n",results[2]*0xFF+results[3],BLE._recvChannel,SecondsSinceStart);
 		}
 	}
-
-}
-
-void SendScanReq(unsigned char * Mac)
-{
-
-	radio.stopListening();
-
-
-	//for (uint8_t channel = 0; channel < 3; channel++)
-	//{
-	//	BLE.setPhone(0xC3);//set to scan request
-	//	BLE.setRequestMAC(MyMac,Mac);
-	//	BLE.sendADV(channel);
-	//	delay(1);
-	//}
-	//BLE.recvChannelRoll();
-
-
-	BLE.setPhone(0xC3);//set to scan request
-	BLE.setRequestMAC(MyMac,Mac);
-	BLE.sendADV(BLE._recvChannel);
-	delay(1);
-	radio.startListening();
-
-
-
-	//BLE.printPacket();
-
 
 }
 
@@ -495,6 +463,11 @@ void SecondsSinceStartTask()
 
 void OnSeconds()
 {
-	//BLE.recvChannelRoll();
+	BD_ADDR rpa = {0,0,0,0,0,0};
+//BLE.recvChannelRoll();
 	//BLEnRFSwitch();
+
+	//54485F5245515F53435F424F4E440D0A
+
+
 }

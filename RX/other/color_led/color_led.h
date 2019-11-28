@@ -1,7 +1,7 @@
 #include "Adafruit_NeoPixel.h"
 #include <printf.h>
 
-#define PIN 6
+#define PIN 4
 #define MAX_LED 20
 #define MAX_LIGHT 20
 

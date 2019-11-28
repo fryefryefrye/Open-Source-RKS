@@ -71,7 +71,7 @@ unsigned long WaitForTimeOut = 300; //0.1s
 
 #include "Adafruit_NeoPixel.h"
 #define PIN 4
-#define MAX_LED 21
+#define MAX_LED 23
 #define RELAY  5
 //#define LED1  5
 //#define LED2  6
@@ -492,10 +492,7 @@ void OnSeconds()
 	t++;
 	//printf("Date Time = %d-%02d-%02d %02d:%02d:%02d fix = %x \r\n",year(t) ,month(t),day(t),hour(t),minute(t),second(t),GpsData.fix);
 
-	Numbers[0] = second(t)%10;
-	Numbers[1] = second(t)/10;
-	Numbers[2] = minute(t)%10;
-	Numbers[3] = minute(t)/10;
+
 
 
 	Hour = hour(t);
@@ -505,14 +502,25 @@ void OnSeconds()
 		Hour = Hour - 12;
 	}
 
-	Numbers[4] = Hour%10;
-	Numbers[5] = Hour/10;
 
-	//for(int i = 0; i < 6;i++)
-	//{
-	//	printf("Numbers = %d\r\n",Numbers[i]);
-	//}
-	for(int i = 0; i < 14;i++)
+	//Numbers[0] = second(t)%10;
+	//Numbers[1] = second(t)/10;
+	//Numbers[2] = minute(t)%10;
+	//Numbers[3] = minute(t)/10;
+	//Numbers[4] = Hour%10;
+	//Numbers[5] = Hour/10;
+
+
+	Numbers[0] = minute(t)%10;
+	Numbers[1] = minute(t)/10;
+	Numbers[2] = Hour%10;
+	Numbers[3] = Hour/10;
+
+	for(int i = 0; i < 6;i++)
+	{
+		printf("Numbers = %d\r\n",Numbers[i]);
+	}
+	for(int i = 0; i < 21;i++)
 	{
 		if(DIGITAL_DISPLAY[Numbers[i/7]][i%7] == 1)
 		{

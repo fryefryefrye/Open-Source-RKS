@@ -1,13 +1,3 @@
-//
-//#include <esp_gap_bt_api.h>
-//#include <esp_gap_ble_api.h>
-//#include <esp_bt.h> 
-//#include <esp_bt_device.h>
-//#include <esp_bt_main.h>
-//#include <esp_gatts_api.h>
-//#include <esp_gattc_api.h>
-//#include <nvs_flash.h>
-//#include <esp_gatt_common_api.h>
 
 /*
 This example code is in the Public Domain (or CC0 licensed, at your option.)
@@ -32,7 +22,7 @@ CONDITIONS OF ANY KIND, either express or implied.
 
 #include "D:\GitHub\Open-Source-RKS\RX\other\common\bt_names.h"
 
-void Init();
+void BT_Init();
 
 
 
@@ -302,7 +292,7 @@ static void show_bonded_devices(void)
 	for (int i = 0; i < dev_num; i++) 
 	{
 		esp_log_buffer_hex(GATTS_TABLE_TAG, (void *)dev_list[i].bd_addr, sizeof(esp_bd_addr_t));
-	
+
 		printf("Add:");
 		for(unsigned char j = 0; j<sizeof(esp_bd_addr_t); j++)
 		{
@@ -316,7 +306,7 @@ static void show_bonded_devices(void)
 			printf(",0x%02X",*(((byte*)(dev_list[i].bond_key.pid_key.irk))+j));
 		}
 		printf("\r\n");
-	
+
 	}
 
 	free(dev_list);
@@ -590,122 +580,45 @@ void setup()
 	heart_rate_adv_params.adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
 
 
+	BT_Init();
 
 }
 
 void loop() 
 {
-	static unsigned long SecondsSinceStart=0;
-
-	SecondsSinceStart++;
-
-	//ESP_LOGE(GATTS_TABLE_TAG, "SecondsSinceStart %d",SecondsSinceStart);
-
-
-	if (SecondsSinceStart == 5)
-	{
-		Init();
-	}
-
-	//if (SecondsSinceStart > 10)
-	//{
-	//	int dev_num = esp_ble_get_bond_device_num();
-	//	printf("bond_device_num:%d\r\n",dev_num);
-	//	esp_ble_bond_dev_t * p_dev_list = new esp_ble_bond_dev_t[dev_num];
-	//	esp_ble_get_bond_device_list(&dev_num,p_dev_list);
-
-	//	for(unsigned char i = 0; i<dev_num; i++)
-	//	{
-	//		printf("irk:");
-	//		for(unsigned char j = 0; j<sizeof(esp_bt_octet16_t); j++)
-	//		{
-	//			printf("%02X",*(((byte*)(p_dev_list[i].bond_key.pid_key.irk))+j));
-	//		}
-	//		printf("\r\n");
-	//	}
-
-	//	free(p_dev_list);
-	//}
-
-
-
 	delay(1000);
 }
 
-void Init()
+void BT_Init()
 {
-		ESP_LOGE(GATTS_TABLE_TAG, "GATTS Starting...");
+	ESP_LOGE(GATTS_TABLE_TAG, "GATTS Starting...");
 
-		btStart();
-		
-		esp_err_t errRc = ESP_OK;
+	btStart();
 
-		if(nvs_flash_init() != ESP_OK)
+	esp_err_t errRc = ESP_OK;
+
+	if(nvs_flash_init() != ESP_OK)
+	{
+		printf("nvs_flash_init failed \r\n");
+	}  
+
+	esp_bluedroid_status_t bt_state = esp_bluedroid_get_status();
+
+	if (bt_state == ESP_BLUEDROID_STATUS_UNINITIALIZED) {
+		if(esp_bluedroid_init() != ESP_OK)
 		{
-			printf("nvs_flash_init failed \r\n");
+			printf("esp_bluedroid_init failed \r\n");
 		}  
+	}
 
-		//esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-		//if(esp_bt_controller_init(&bt_cfg) != ESP_OK)
-		//{
-		//	printf("esp_bt_controller_init failed \r\n");
-		//}  
-		//if(esp_bt_controller_enable(ESP_BT_MODE_BTDM) != ESP_OK)
-		//{
-		//	printf("esp_bt_controller_enable failed \r\n");
-		//}  
-
-		esp_bluedroid_status_t bt_state = esp_bluedroid_get_status();
-
-		if (bt_state == ESP_BLUEDROID_STATUS_UNINITIALIZED) {
-			if(esp_bluedroid_init() != ESP_OK)
-			{
-				printf("esp_bluedroid_init failed \r\n");
-			}  
-		}
-
-		if (bt_state != ESP_BLUEDROID_STATUS_ENABLED) {
-			if(esp_bluedroid_enable() != ESP_OK)
-			{
-				printf("esp_bluedroid_enable failed \r\n");
-			}  
-		}
+	if (bt_state != ESP_BLUEDROID_STATUS_ENABLED) {
+		if(esp_bluedroid_enable() != ESP_OK)
+		{
+			printf("esp_bluedroid_enable failed \r\n");
+		}  
+	}
 
 	esp_err_t ret;
-
-	//// Initialize NVS.
-	//ret = nvs_flash_init();
-	//if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-	//	ESP_ERROR_CHECK(nvs_flash_erase());
-	//	ret = nvs_flash_init();
-	//}
-	//ESP_ERROR_CHECK( ret );
-
-	//ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-
-	//esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-	//ret = esp_bt_controller_init(&bt_cfg);
-	//if (ret) {
-	//	ESP_LOGE(GATTS_TABLE_TAG, "%s init controller failed: %s", __func__, esp_err_to_name(ret));
-	//	return;
-	//}
-	//ret = esp_bt_controller_enable(ESP_BT_MODE_BTDM);
-	//if (ret) {
-	//	ESP_LOGE(GATTS_TABLE_TAG, "%s enable controller failed: %s", __func__, esp_err_to_name(ret));
-	//	return;
-	//}
-
-	//ESP_LOGI(GATTS_TABLE_TAG, "%s init bluetooth", __func__);
-	//ret = esp_bluedroid_init();
-	//if (ret) {
-	//	ESP_LOGE(GATTS_TABLE_TAG, "%s init bluetooth failed: %s", __func__, esp_err_to_name(ret));
-	//	return;
-	//}
-	//ret = esp_bluedroid_enable();
-	//if (ret) {
-	//	ESP_LOGE(GATTS_TABLE_TAG, "%s enable bluetooth failed: %s", __func__, esp_err_to_name(ret));
-	//	return;
-	//}
 
 	ret = esp_ble_gatts_register_callback(gatts_event_handler);
 	if (ret){
@@ -746,12 +659,8 @@ void Init()
 	esp_ble_gap_set_security_param(ESP_BLE_SM_SET_INIT_KEY, &init_key, sizeof(uint8_t));
 	esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
 
-	/* Just show how to clear all the bonded devices
-	* Delay 30s, clear all the bonded devices
-	*
-	* vTaskDelay(30000 / portTICK_PERIOD_MS);
-	* remove_all_bonded_devices();
-	*/
-	vTaskDelay(30000 / portTICK_PERIOD_MS);
+
+	//Delay 1s, clear all the bonded devices
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
 	remove_all_bonded_devices();
 }

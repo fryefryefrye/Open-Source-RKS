@@ -93,6 +93,7 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
+#define ROOM
 #include "Z:\bt\web\datastruct.h"
 tRoomData RoomData;
 unsigned char RelayPin[LIGHT_NUMBER];// = {RELAY1,RELAY2};
@@ -707,7 +708,7 @@ void CheckRfCommand(unsigned char * RfCommand)
 						{
 							p_swSer->enableRx(false);
 							IsSoftwareSerialOn = false;
-							AcOperation(AC_OP_SUMMER);
+							AcOperation(AC_OP_ON_OFF);
 						}
 						if ((j == 2)&&(RoomData.RoomId == ROOM_BALCONY))
 						{
