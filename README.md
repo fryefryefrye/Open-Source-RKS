@@ -1,15 +1,15 @@
 # Open-Source-RKS
 ## New update: Use your iPhone/Android as a Tag. Under Processing....
-## iPhone:
+### iPhone:
 When IOS is enabling with continuity service, it will always sending BLE advertising to let other IOS device to know. But the Bluetooth MAC Address is random and changed every 15 minutes. <br>
 With my another project, you can decode the random address and determined if this random address belongs to your phone.<br>
 https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
-## Android:
+### Android:
 Use "nRF Connect" APP, you can send BLE advertising with custom data.<br>
 That will be much easy then iPhone<br>
 
 ## Old version: Released on 2016. Use Independent Wireless Tag.
-## What is a RKS system
+### What is a RKS system
 RKS as the Remote keyless system. It's a proximity system that is triggered if a key is within a certain distance. <br> 
 Widely used in modern vehicles. It's very convenient to Entry your car when you have RKS system. <br> 
 You do not need take out of your key, just walk to your car with the key in your pocket, then you can open the door.<br>
@@ -23,7 +23,7 @@ Cost of materials are Less than € 10 for a key and € 25 for the Controller i
 Arduino based Controller can make you to use this system in any application if you like.<br>  
 You can submit a issue or mail to me if you have any question.<br> 
 
-## A very simple wireless Key. 
+### A very simple wireless Key. 
 
 nRF24LE1 module and CR2032 battery are the only thing to make a key for RKS system. <br>
 nRF24LE1 is Ultra-low Power Wireless System On-Chip Solution.<br>
@@ -31,7 +31,7 @@ An 8051 compatible MCU is attached in it. So one chip is enough.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/tag_simple.jpg)
 
 
-## Arduino based Controller
+### Arduino based Controller
 
 An Arduino equipment with a nRF24L01 module, can receive the data from the key nearby.<br> 
 Arduino based Controller is very easy to program, and you can make any application if you wish base on this RKS system.<br> 
@@ -41,7 +41,7 @@ When key goes far away, the relay will be disconnect.<br>
 ![](https://github.com/fryefryefrye/Open-Source-RKS/raw/master/img/rx_simple.jpg).
 
 
-## How they made?
+### How they made?
 * Make the Tag/Key/Transmitter
 
 First you need program the nRF24LE1 use a Programmer.<br>
