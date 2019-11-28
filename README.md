@@ -1,4 +1,12 @@
 # Open-Source-RKS
+## New update: Use your iPhone/Android as a Tag.
+## iPhone:
+When IOS is enabling with continuity service, it will always sending BLE advertising to let other IOS device to know. But the Bluetooth MAC Address is random and changed every 15 minutes. <br>
+With my another project, you can decode the random address and determined if it belongs to your phone.<br>
+https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
+## Android:
+Use "nRF Connect" APP, you can send BLE advertising with custom data.<br>
+That will be much easy then iPhone<br>
 
 ## What is a RKS system
 RKS as the Remote keyless system. It's a proximity system that is triggered if a key is within a certain distance. <br> 
