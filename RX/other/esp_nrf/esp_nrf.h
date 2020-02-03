@@ -48,7 +48,7 @@ unsigned long LastTagGetTime = 0;
 unsigned long Volt;   //unit: mV,
 
 
-const char* ssid = "frye";  //Wifi名称
+const char* ssid = "frye_iot3";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -60,8 +60,7 @@ char H1,H2,M1,M2,S1,S2;
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 22;
 tKeyLessData KeyLessData;
-//tUsbChargeCommand UsbChargeCommand;
-unsigned long LastAndroidBatteryUpdate;
+unsigned long LastServerUpdate;
 
 
 
@@ -82,8 +81,8 @@ void setup()
 	pinMode(RELAY, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(RELAY, LOW);
 
-	//UsbChargeData.DataType = 12;
-	//UsbChargeData.isOn = false;
+	KeyLessData.Triger = false;
+
 
 
 	delay(50);                      
@@ -96,21 +95,32 @@ void setup()
 	WiFi.begin(ssid, password); //Wifi接入到网络
 	Serial.println("\nConnecting to WiFi");
 	//如果Wifi状态不是WL_CONNECTED，则表示连接失败
+	unsigned char WiFiTimeOut = 0;
 	while (WiFi.status() != WL_CONNECTED) {  
 		Serial.print("."); 
 		delay(1000);    //延时等待接入网络
+		WiFiTimeOut++;
+		if (WiFiTimeOut>10)
+		{
+			break;
+			Serial.println("\nConnecting to WiFi Failed");
+		}
 	}
 
 
 
 	//设置时间格式以及时间服务器的网址
-	configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
-	Serial.println("\nWaiting for time");
-	while (!time(nullptr)) {
-		Serial.print(".");
-		delay(1000);    
+	if (WiFi.status() == WL_CONNECTED)
+	{
+		configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
+		Serial.println("\nWaiting for time");
+		while (!time(nullptr)) {
+			Serial.print(".");
+			delay(1000);    
+		}
+		Serial.println("");
 	}
-	Serial.println("");
+
 
 
 
@@ -211,16 +221,17 @@ void loop()
 	ChHopTask();
 
 
-	//m_WiFiUDP.parsePacket(); 
-	//unsigned int UdpAvailable = m_WiFiUDP.available();
-	//if (UdpAvailable == sizeof(tUsbChargeCommand))
-	//{
-	//	//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-	//	tUsbChargeCommand tempUsbChargeCommand;
-	//	m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
+	m_WiFiUDP.parsePacket(); 
+	unsigned int UdpAvailable = m_WiFiUDP.available();
+	if (UdpAvailable == sizeof(tKeyLessCommand))
+	{
+		//MyPrintf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+		//printf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+		tKeyLessCommand tempKeyLessCommand;
+		m_WiFiUDP.read((char *)&tempKeyLessCommand,sizeof(tKeyLessCommand));
 
-	//	LastAndroidBatteryUpdate = 0;
-	//}
+		LastServerUpdate = 0;
+	}
 }
 
 void nRFTask()
@@ -258,20 +269,21 @@ void nRFTask()
 		KeyLessData.KeyLessData = KeyLessData.KeyLessData<<8;
 		KeyLessData.KeyLessData = KeyLessData.KeyLessData + GotData[3];
 
+		KeyLessData.Triger = true;
 
 
 		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 		m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
 		m_WiFiUDP.endPacket(); 
 
-		printf("PackageCounter:%d Data:%d,%d,%d,%d Volt:%d CH:%d\r\n"
-		,PackageCounter
-		,GotData[0]
-		,GotData[1]
-		,GotData[2]
-		,GotData[3]
-		,Volt
-		,CurrCH);
+		//printf("PackageCounter:%d Data:%d,%d,%d,%d Volt:%d CH:%d\r\n"
+		//,PackageCounter
+		//,GotData[0]
+		//,GotData[1]
+		//,GotData[2]
+		//,GotData[3]
+		//,Volt
+		//,CurrCH);
 
 	}
 
@@ -326,92 +338,24 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	LastAndroidBatteryUpdate++;
+	printf("LastServerUpdate = %d\r\n",LastServerUpdate);
 
 
+	LastServerUpdate++;
+	if (LastServerUpdate > 30)
+	{
+		printf("Re connection routing!\n");  
+		WiFi.disconnect();
+		WiFi.mode(WIFI_STA);//设置模式为STA
+		WiFi.begin(ssid, password); //Wifi接入到网络
+		LastServerUpdate = 0;
+	}
 
+	KeyLessData.Triger = false;
 
-	//if (now%10 == 0)
-	//{
-	//	UsbChargeData.isOn = true;
-	//}
-
-	//if (now%10 == 5)
-	//{
-	//	UsbChargeData.isOn = false;
-	//}
-
-
-	//if (now%10 == 0)
-	//{
-	//	MyPrintf("Usb chager P=%d TO=%d TO=%d \r\n"
-	//		,UsbChargeCommand.BatteryPercentage
-	//		,UsbChargeCommand.AndroidTimeout
-	//		,LastAndroidBatteryUpdate);
-	//}
-
-
-	/*
-	testlog
-	15 min in 1 hour		not enough
-	25 min in 1 hour		enough
-
-	
-	*/
-
-	//if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
-	//{
-	//	if (now%3600 <= 40*60)
-	//	{
-	//		if (!UsbChargeData.isOn)
-	//		{
-	//			MyPrintf("Usb chager offline ON \r\n");
-	//			UsbChargeData.isOn = true;
-	//		}	
-	//	}
-	//	else
-	//	{
-	//		if (UsbChargeData.isOn)
-	//		{
-	//			UsbChargeData.isOn = false;
-	//			MyPrintf("Usb chager offline OFF \r\n");
-	//		}
-	//	}
-	//} 
-	//else
-	//{
-	//	if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
-	//	{
-	//		MyPrintf("Usb chager online ON \r\n");
-	//		UsbChargeData.isOn = true;
-	//	}	
-	//	else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
-	//	{
-	//		MyPrintf("Usb chager online OFF \r\n");
-	//		UsbChargeData.isOn = false;
-	//	}	
-	//}
-
-
-
-
-
-
-	//if (UsbChargeData.isOn)
-	//{
-	//	digitalWrite(RELAY,HIGH);
-	//}
-	//else
-	//{
-	//	digitalWrite(RELAY,LOW);
-	//}
-	
-
-
-	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	//m_WiFiUDP.write((const char*)&UsbChargeData, sizeof(tUsbChargeData));
-	//m_WiFiUDP.endPacket(); 
-
+	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
+	m_WiFiUDP.endPacket(); 
 }
 
 void OnTenthSecond()

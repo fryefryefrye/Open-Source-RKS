@@ -8,8 +8,8 @@ https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
 Use "nRF Connect" APP, you can send BLE advertising with custom data.<br>
 That will be much easy then iPhone<br>
 ### Receiver：
-With the help of the following project, we can Monitor BLE advertising with very cheap nRF24L01 module
-https://github.com/Pranavgulati/RF24BLE
+With the help of the following project, we can Monitor BLE advertising in the air with very cheap nRF24L01 module
+https://github.com/Pranavgulati/RF24BLE<br>
 So my old version Controller/Receiver is Hardware compatible, Only software update is needed.
 
 ## Old version: Released on 2016. Use Independent Wireless Tag.

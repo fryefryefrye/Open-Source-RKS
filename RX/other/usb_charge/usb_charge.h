@@ -34,7 +34,7 @@
 #define timezone 8
 
 
-const char* ssid = "frye";  //Wifi名称
+char* ssid = "frye";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -77,8 +77,41 @@ void setup()
 	Serial.begin(115200);
 
 
+
 	WiFi.disconnect();
 	WiFi.mode(WIFI_STA);//设置模式为STA
+
+	byte mac[6];
+	WiFi.softAPmacAddress(mac);
+
+	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+
+	for (byte i=0;i<6;i++)
+	{
+		UsbChargeData.Mac[i] = mac[i];
+	}
+
+
+	for (unsigned char i = 0;i<USB_CHARGE_NUMBER;i++)
+	{
+		if (memcmp(&UsbChargeData.Mac[0],&UsbChargeMac[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			DebugLogIndex = 30 + i;
+			if (i == 0)
+			{
+				char* ssid = "frye_iot";  //Wifi名称
+				printf("use ssid frye_iot \r\n");
+			} 
+			else if (i == 1)
+			{
+				char* ssid = "frye_iot2";  //Wifi名称
+				printf("use ssid frye_iot2 \r\n");
+			}
+			break;
+		}
+	}
+
+
 	Serial.print("Is connection routing, please wait");  
 	WiFi.begin(ssid, password); //Wifi接入到网络
 	Serial.println("\nConnecting to WiFi");
@@ -102,20 +135,7 @@ void setup()
 
 
 
-	byte mac[6];
-	WiFi.softAPmacAddress(mac);
-	for (byte i=0;i<6;i++)
-	{
-		UsbChargeData.Mac[i] = mac[i];
-	}
-	for (unsigned char i = 0;i<USB_CHARGE_NUMBER;i++)
-	{
-		if (memcmp(&UsbChargeData.Mac[0],&UsbChargeMac[i][0],sizeof(unsigned long)*6) == 0)
-		{
-			DebugLogIndex = 30 + i;
-			break;
-		}
-	}
+
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 

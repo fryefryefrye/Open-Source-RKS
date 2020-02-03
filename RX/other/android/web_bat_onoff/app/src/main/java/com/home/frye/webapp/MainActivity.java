@@ -1,24 +1,18 @@
 package com.home.frye.webapp;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.BatteryManager;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
-import android.widget.Toast;
 import android.os.PowerManager;
 import android.app.KeyguardManager;
 
@@ -45,6 +39,12 @@ public class MainActivity extends AppCompatActivity {
     int BatteryData[] = {13, 0
                             ,0,0,0,0,0,0};// data type,BatteryPercentage
 
+
+    byte[] receiveData;
+    DatagramPacket receivePacket;
+    byte sendData[];
+    DatagramPacket sendPacket;
+
     String date;
     Boolean isScreenOn = true;
     BatteryReceiver m_receiver;
@@ -63,8 +63,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        //getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         m_receiver = new BatteryReceiver();
@@ -86,6 +84,12 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        sendData = new byte[8+6*4];
+        sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, 5050);
+        receiveData = new byte[1024];
+        receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+
         runnable = new Runnable() {
             public void run() {
                 SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss"); //获取系系时间
@@ -98,26 +102,28 @@ public class MainActivity extends AppCompatActivity {
 
 
                         BatteryData[1] = m_receiver.getPercent();
-                        byte sendData[] = new byte[8+6*4];
+                        //byte sendData[] = new byte[8+6*4];
 
                         for (byte i = 0; i < 8+6*4; i++) {
                             sendData[i] = (byte) ((BatteryData[i / 4] >> (i % 4 * 8)) & 0xff);
                         }
 
                         try {
-                            DatagramPacket packet = new DatagramPacket(sendData, sendData.length, serverAddress, 5050);
-                            socket.send(packet);
+                            //DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, 5050);
+                            socket.send(sendPacket);
 
-                            byte[] receive = new byte[1024];
-                            DatagramPacket receivePacket = new DatagramPacket(receive, receive.length);
-//                            while (true) {
+//                            byte[] receiveData = new byte[1024];
+//                            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
+                            Log.d("Date", "try receive ");
                                socket.receive(receivePacket);
+                            Log.d("Date", "receive finished");
                                 //String result = new String(receivePacket.getData(), 0, receivePacket.getLength(), "utf-8");
                                 if (receivePacket.getLength() == 4)
                                 {
-                                    //Log.d("Date", "Got "+receivePacket.getLength()+" bytes "+receive[0]+" "+receive[1]+" "+receive[2]+" "+receive[3]);
+                                    //Log.d("Date", "Got "+receivePacket.getLength()+" bytes "+receiveData[0]+" "+receiveData[1]+" "+receiveData[2]+" "+receiveData[3]);
 
-                                    if((isScreenOn) && (receive[0] == 0))
+                                    if((isScreenOn) && (receiveData[0] == 0))
                                     {
                                         isScreenOn = false;
                                         screenOff();
@@ -125,24 +131,13 @@ public class MainActivity extends AppCompatActivity {
 
                                     }
 
-                                     if((!isScreenOn) && (receive[0] == 1))
+                                     if((!isScreenOn) && (receiveData[0] == 1))
                                     {
                                         isScreenOn = true;
                                         screenOn();
                                         Log.d("Date", "screenOn()");
                                     }
                                 }
-//                                if (mWakeLock == null) {
-//                                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-//                                    mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-//                                            this.getClass().getCanonicalName());
-//                                    mWakeLock.acquire();
-//                                    mWakeLock.release();
-//                                }
-
-
-                                //}
-//                            }
 
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -151,23 +146,8 @@ public class MainActivity extends AppCompatActivity {
                 }).start();
 
 
-//                if (mWakeLock == null) {
-//                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-//                    mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP,
-//                            this.getClass().getCanonicalName());
-//                }
-//                if (mWakeLock != null) {
-//                    mWakeLock.acquire();
-//                }
-
 
                 handler.postDelayed(this, 1000);
-
-
-//                if (mWakeLock != null) {
-//                    mWakeLock.release();
-//                    mWakeLock = null;
-//                }
 
             }
         };
@@ -182,14 +162,15 @@ public class MainActivity extends AppCompatActivity {
         //settings.setSupportZoom(true);
         settings.setBuiltInZoomControls(true);
         settings.setUseWideViewPort(true);
-        webView.setInitialScale(150);//12寸平板，竖屏。
+        //webView.setInitialScale(150);//12寸平板，竖屏。
+        webView.setInitialScale(200);//7寸平板，竖屏。
         //webView.setInitialScale(200);//7寸平板，横屏。
         //webView.setInitialScale(100);//3寸，横屏。
 //
 
         //webView.loadUrl("http://fryefryefrye.myds.me:8084/weather");
         //webView.loadUrl("http://fryefryefrye.myds.me:8084/homeindex");
-        webView.loadUrl("http://fryefryefrye.myds.me:8084/localindex");
+        webView.loadUrl("http://192.168.0.17:8081/localindex");
 
     }
 

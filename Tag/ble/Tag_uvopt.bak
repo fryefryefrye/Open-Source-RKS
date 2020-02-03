@@ -177,10 +177,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>46</ColumnNumber>
+      <ColumnNumber>17</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>409</TopLine>
-      <CurrentLine>409</CurrentLine>
+      <TopLine>1</TopLine>
+      <CurrentLine>16</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>.\main.c</PathWithFileName>
       <FilenameWithoutPath>main.c</FilenameWithoutPath>
@@ -1651,9 +1651,9 @@
       <Documents>
         <Doc>
           <Name>.\main.c</Name>
-          <ColumnNumber>46</ColumnNumber>
-          <TopLine>409</TopLine>
-          <CurrentLine>409</CurrentLine>
+          <ColumnNumber>17</ColumnNumber>
+          <TopLine>1</TopLine>
+          <CurrentLine>16</CurrentLine>
         </Doc>
         <Doc>
           <Name>.\hal\nrf24l01p\hal_nrf.c</Name>

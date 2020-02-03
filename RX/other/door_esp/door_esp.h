@@ -830,7 +830,7 @@ void KeyPressed(unsigned char KeyIndex)
 		//if (Tag&&ReadyOut&&IsDoorClosed())
 		//*if (Tag&&bBodyCheckOut&&IsDoorClosed())*/
 
-		if (TagExist[3]&&isDoorClosed)
+		if ((TagExist[3]||TagExist[2])&&isDoorClosed)
 		{
 			Buzz = 1;
 			StopAllTask();

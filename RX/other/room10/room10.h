@@ -30,7 +30,7 @@
 #define timezone 8
 
 
-const char* ssid = "frye_iot";  //Wifi名称
+const char* ssid = "frye";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -44,6 +44,7 @@ unsigned char DebugLogIndex = 0xFF;
 tRoom10Data Room10Data;
 tRoom10Command Room10Command;
 unsigned long LastAndroidBatteryUpdate;
+unsigned char ScreenOffCounter = 0;
 
 #include <Wire.h>     //The DHT12 uses I2C comunication.
 #include "VL53L0X.h"
@@ -138,6 +139,7 @@ void setup()
 
 	Room10Data.DataType = 19;
 	Room10Data.DisableRf = false;
+	Room10Data.UsbChargeOn = false;
 
 
 	delay(50);                      
@@ -286,6 +288,11 @@ void TenthSecondsSinceStartTask()
 
 void OnSecond()
 {
+
+
+	static bool LastUsbChargeOn = false;
+
+
 	time_t now = time(nullptr); //获取当前时间
 	time_str = ctime(&now);
 	H1 = time_str[11];
@@ -342,14 +349,14 @@ void OnSecond()
 	//	}
 	//}
 
-	if (Room10Command.AndroidTimeout>10)
-	{
-		digitalWrite(BUZZ, LOW);
-	}
-	else
-	{
-		digitalWrite(BUZZ, HIGH);
-	}
+	//if (Room10Command.AndroidTimeout>10)
+	//{
+	//	digitalWrite(BUZZ, LOW);
+	//}
+	//else
+	//{
+	//	digitalWrite(BUZZ, HIGH);
+	//}
 	
 	if (false)
 	{
@@ -368,11 +375,6 @@ void OnSecond()
 		}	
 	}
 
-
-
-
-
-
 	if (Room10Data.UsbChargeOn)
 	{
 		digitalWrite(USB_CHARGE,HIGH);
@@ -382,6 +384,15 @@ void OnSecond()
 		digitalWrite(USB_CHARGE,LOW);
 	}
 
+	//sync screen on when charge on/off. Then the screen can be off.
+	if (LastUsbChargeOn != Room10Data.UsbChargeOn)
+	{
+		LastUsbChargeOn = Room10Data.UsbChargeOn;
+		Room10Data.ScreenOn = true;
+		ScreenOffCounter = 0;
+	}
+	
+
 
 	if(dht12.read() == 0)		
 	{
@@ -390,55 +401,11 @@ void OnSecond()
 	}
 	Room10Data.Brightness = 100-(analogRead(A0)*100/1024);
 
-	printf("Humidity:%d %% Temperature:%d *C Brightness:%d%%\r\n"
-		,Room10Data.Humidity
-		,Room10Data.RealTemperature
-		,Room10Data.Brightness
-		);
-
-
-	static unsigned char ScreenOffCounter = 0;
-	if (Room10Data.ScreenOn)//current on
-	{
-		if (Room10Data.Brightness > 50)
-		{
-			ScreenOffCounter++;
-			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
-			if (ScreenOffCounter > 15)
-			{
-				Room10Data.ScreenOn = false;
-				printf("ScreenOn to false;\r\n");
-				ScreenOffCounter = 0;
-			}
-		}
-		else
-		{
-			ScreenOffCounter = 0;
-			printf("ScreenOffCounter to 0  \r\n");
-		}
-	}
-	else//current off
-	{
-		if (Room10Data.Brightness < 50)
-		{
-			Room10Data.ScreenOn = true;
-			printf("ScreenOn to true;\r\n");
-		}
-	}
-
-
-	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
-	printf("distance = %d\r\n",Room10Data.Distance);
-
-	//if (Room10Data.Distance < 500)
-	//{
-	//	Room10Data.ScreenOn = true;
-	//} 
-	//else
-	//{
-	//	Room10Data.ScreenOn = false;
-	//}
-
+	//printf("Humidity:%d %% Temperature:%d *C Brightness:%d%%\r\n"
+		//,Room10Data.Humidity
+		//,Room10Data.RealTemperature
+		//,Room10Data.Brightness
+		//);
 
 
 
@@ -456,6 +423,46 @@ void OnTenthSecond()
 	{
 		OnSecond();
 	}
+
+	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
+	//printf("distance = %d\r\n",Room10Data.Distance);
+
+
+	if (Room10Data.ScreenOn)//current on
+	{
+		//if (Room10Data.Brightness > 50)
+		if ((Room10Data.Distance > 1000)||(Room10Data.Distance < 200))
+		{
+			ScreenOffCounter++;
+			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
+			if (ScreenOffCounter > 50)
+			{
+				Room10Data.ScreenOn = false;
+				printf("ScreenOn to false;\r\n");
+				ScreenOffCounter = 0;
+			}
+		}
+		else
+		{
+			ScreenOffCounter = 0;
+			printf("ScreenOffCounter to 0  \r\n");
+		}
+	}
+	else//current off
+	{
+		//if (Room10Data.Brightness < 50)
+		if ((Room10Data.Distance < 1000)&&(Room10Data.Distance > 200))
+		{
+			Room10Data.ScreenOn = true;
+			printf("ScreenOn to true;\r\n");
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&Room10Data, sizeof(tRoom10Data));
+			m_WiFiUDP.endPacket(); 
+		}
+	}
+
+
+
 	
 }
 

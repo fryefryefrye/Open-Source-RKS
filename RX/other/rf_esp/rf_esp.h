@@ -56,6 +56,9 @@ bool CheckStop();
 #define RF_COMMAND_BASE 0xB37C64
 #define RF_COMMAND_SEP 200 //ms
 
+#define RF_COMMAND_ALL_OFF RF_COMMAND_BASE-1
+#define RF_COMMAND_ALL_ON RF_COMMAND_BASE-2
+
 #define RF_WINDOW_COMMAND_LEN 5
 #define RF_WINDOW_COMMAND_COUNTER 2
 unsigned char RfWindow[RF_WINDOW_COMMAND_COUNTER*3][RF_WINDOW_COMMAND_LEN] = 
@@ -322,8 +325,10 @@ void loop()
 				break;
 
 			case RF_OP_ALL:
-				if (tempRfCommand.RfIndex == 9)
+				if (tempRfCommand.RfIndex == 9)//All On
 				{
+					//RfCommand24Bit = RF_COMMAND_ALL_ON;
+					//RfSwitch315.send(pRfCommand24Bit,24);	
 					for(int i = 12; i >= 0; i--)
 					{
 						if ((i !=4 )&&(i<11))
@@ -337,8 +342,10 @@ void loop()
 						}
 					}
 				}
-				else if (tempRfCommand.RfIndex == 8)
+				else if (tempRfCommand.RfIndex == 8)//All Off
 				{
+					//RfCommand24Bit = RF_COMMAND_ALL_OFF;
+					//RfSwitch315.send(pRfCommand24Bit,24);	
 					for(int i = 12; i >= 0; i--)
 					{
 						digitalWrite(BUZZ, HIGH);

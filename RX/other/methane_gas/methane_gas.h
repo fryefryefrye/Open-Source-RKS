@@ -22,7 +22,7 @@
 #define BUZZ				D7
 #define KEY					D2
 
-#define GAS_LIMIT			12
+#define GAS_LIMIT			20
 
 
 
@@ -48,7 +48,7 @@ char H1,H2,M1,M2,S1,S2;
 
 
 #include "Z:\bt\web\datastruct.h"
-unsigned char DebugLogIndex = 24;
+unsigned char DebugLogIndex = 29;
 tMethaneGasData MethaneGasData;
 
 
@@ -201,7 +201,7 @@ void loop()
 
 void RelayBuzzTask()
 {
-	if (VavleStartTime!=0)
+	if (VavleStartTime!=0)//Vavle moving
 	{
 		if (TenthSecondsSinceStart - VavleStartTime > 70)
 		{
@@ -222,18 +222,29 @@ void RelayBuzzTask()
 			digitalWrite(BUZZ, LOW);
 		}
 	}
-	else
+	else//Vavle not moving
 	{
-		//beep when off
-		if (!isVavleOpened)
+
+		//beep when over limit every 3s
+		if (MethaneGasData.Percentage > GAS_LIMIT)
 		{
 			if (TenthSecondsSinceStart%30 == 0)
 			{
 				digitalWrite(BUZZ, HIGH);
 			}
-
-
-			if (TenthSecondsSinceStart%30 == (MethaneGasData.Percentage > GAS_LIMIT ? 10:0))
+			if (TenthSecondsSinceStart%30 == 10)
+			{
+				digitalWrite(BUZZ, LOW);
+			}
+		}
+		//beep when Vavle closed every 30s
+		else if (!isVavleOpened)
+		{
+			if (TenthSecondsSinceStart%300 == 0)
+			{
+				digitalWrite(BUZZ, HIGH);
+			}
+			if (TenthSecondsSinceStart%300 == 10)
 			{
 				digitalWrite(BUZZ, LOW);
 			}
@@ -242,7 +253,6 @@ void RelayBuzzTask()
 		{
 			digitalWrite(BUZZ, LOW);
 		}
-
 	}
 }
 
@@ -251,12 +261,14 @@ void CloseVavle()
 	isVavleOpened = false;
 	digitalWrite(RELAY_CLOSE, HIGH);
 	VavleStartTime = TenthSecondsSinceStart;
+	MyPrintf("Start CloseVavle. \n");
 }
 void OpenVavle()
 {
 	isVavleOpened = true;
 	digitalWrite(RELAY_OPEN, HIGH);
 	VavleStartTime = TenthSecondsSinceStart;
+	MyPrintf("Start OpenVavle. \n");
 }
 
 
@@ -335,14 +347,32 @@ void KeyTask()
 			if (KeyCounter > KEY_PRESS_MIN)
 			{
 				PauseKeyCounter = PAUSE_KEY_PRESS;
-				if (isVavleOpened)
+				if (MethaneGasData.Percentage < GAS_LIMIT)
 				{
-					CloseVavle();
-				} 
+					if (VavleStartTime == 0)
+					{
+						if (isVavleOpened)
+						{
+							MyPrintf("Methane CloseVavle by press key!\n");
+							CloseVavle();
+						} 
+						else
+						{
+							MyPrintf("Methane OpenVavle by press key!\n");
+							OpenVavle();
+						}
+					}
+					else
+					{
+						MyPrintf("Vavle is moving,skip press key!\n");
+					}
+
+				}
 				else
 				{
-					OpenVavle();
+					MyPrintf("Methane over limit,skip press key!\n");
 				}
+
 
 				KeyCounter = 0;
 			}
@@ -357,12 +387,26 @@ void KeyTask()
 
 void CheckGasTask()
 {
+	static bool LastGasOverLimit = false;
+
 	if ((MethaneGasData.Percentage > GAS_LIMIT)
 		&&(TenthSecondsSinceStart>1800)
 		&&isVavleOpened)
 	{
 		MyPrintf("Methane over limit. CloseVavle. \n");
 		CloseVavle();
+	}
+
+	if ((MethaneGasData.Percentage > GAS_LIMIT)&&(LastGasOverLimit == false))
+	{
+		MyPrintf("Methane go to over limit. Or just Power ON for warming\n");
+		LastGasOverLimit = true;
+	}
+
+	if ((MethaneGasData.Percentage < GAS_LIMIT)&&(LastGasOverLimit == true))
+	{
+		MyPrintf("Methane go to under limit. Or warm up finished\n");
+		LastGasOverLimit = false;
 	}
 }
 void OnTenthSecond()
@@ -371,6 +415,11 @@ void OnTenthSecond()
 	if (TenthSecondsSinceStart%10 == 0)
 	{
 		OnSecond();
+	}
+
+	if (TenthSecondsSinceStart == 1800)
+	{
+		MyPrintf("Methane protector armed. \n");
 	}
 
 

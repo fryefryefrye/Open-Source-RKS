@@ -189,55 +189,56 @@ void loop()
 	TenthSecondsSinceStartTask();
 
 
-	while (swSer.available() > 0) {
-		unsigned char recvdata = swSer.read();
+	//while (swSer.available() > 0) 
+	//{
+	//	unsigned char recvdata = swSer.read();
 
-		//printf("%02X",recvdata);
+	//	//printf("%02X",recvdata);
 
-		if (isResponeHead)
-		{
-			Respone[ResponeCounter] = recvdata;
-			if (ResponeCounter == 13)
-			{
-				ResponeLen = BCDToDec(Respone+13,1);
-				//printf("ResponeLen = %d \n",ResponeLen);
-			}
-			ResponeCounter ++;
+	//	if (isResponeHead)
+	//	{
+	//		Respone[ResponeCounter] = recvdata;
+	//		if (ResponeCounter == 13)
+	//		{
+	//			ResponeLen = BCDToDec(Respone+13,1);
+	//			//printf("ResponeLen = %d \n",ResponeLen);
+	//		}
+	//		ResponeCounter ++;
 
-			if (ResponeCounter>13+ResponeLen)
-			{
-				isResponeHead = false;
-				ProcessData();
-				ResponeCounter = 0;
+	//		if (ResponeCounter>13+ResponeLen)
+	//		{
+	//			isResponeHead = false;
+	//			ProcessData();
+	//			ResponeCounter = 0;
 
-				//printf("data = %d \n",BCDToDec(Respone+18,ResponeLen-4));
-			}
-			if (ResponeCounter>=MAX_RESPONE)
-			{
-				isResponeHead = false;
-				ResponeCounter = 0;
-			}
-		} 
-		else
-		{
-			if (recvdata == 0xFE)
-			{
-				Respone[ResponeCounter] = recvdata;
-				ResponeCounter ++;
-				if (ResponeCounter == 4)
-				{
-					isResponeHead = true;
-				}
-			}
-			else
-			{
-				ResponeCounter = 0;
-			}
-		}
+	//			//printf("data = %d \n",BCDToDec(Respone+18,ResponeLen-4));
+	//		}
+	//		if (ResponeCounter>=MAX_RESPONE)
+	//		{
+	//			isResponeHead = false;
+	//			ResponeCounter = 0;
+	//		}
+	//	} 
+	//	else
+	//	{
+	//		if (recvdata == 0xFE)
+	//		{
+	//			Respone[ResponeCounter] = recvdata;
+	//			ResponeCounter ++;
+	//			if (ResponeCounter == 4)
+	//			{
+	//				isResponeHead = true;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			ResponeCounter = 0;
+	//		}
+	//	}	
+	//}
 
 
-		yield();
-	}
+	//yield();
 
 	//m_WiFiUDP.parsePacket(); 
 	//unsigned int UdpAvailable = m_WiFiUDP.available();
@@ -356,38 +357,41 @@ void OnTenthSecond()
 		OnSecond();
 	}
 
-	if (TenthSecondsSinceStart%10 == 0)
-	{
-		for (unsigned char i = 0; i<HEAD_LEN ; i++)
-		{
-			swSer.write(RequestHead[i]);
-			yield();
-		}
-		for (unsigned char i = 0; i<REQUEST_LEN ; i++)
-		{
-			swSer.write(Request[RequestIndex][i]);
-			yield();
-		}
-		RequestIndex++;
-		if (RequestIndex>=REQUEST_NUMBER)
-		{
-			RequestIndex = 1;
-		}
+	////request other info every 1s for one kind
+	//if (TenthSecondsSinceStart%10 == 0)
+	//{
+	//	for (unsigned char i = 0; i<HEAD_LEN ; i++)
+	//	{
+	//		swSer.write(RequestHead[i]);
+	//		yield();
+	//	}
+	//	for (unsigned char i = 0; i<REQUEST_LEN ; i++)
+	//	{
+	//		swSer.write(Request[RequestIndex][i]);
+	//		yield();
+	//	}
+	//	RequestIndex++;
+	//	if (RequestIndex>=REQUEST_NUMBER)
+	//	{
+	//		RequestIndex = 1;
+	//	}
 
-	}
+	//}
 
+	//request power every 1s
 	if (TenthSecondsSinceStart%10 == 5)
 	{
 		for (unsigned char i = 0; i<HEAD_LEN ; i++)
 		{
 			swSer.write(RequestHead[i]);
-			yield();
+			//yield();
 		}
 		for (unsigned char i = 0; i<REQUEST_LEN ; i++)
 		{
 			swSer.write(Request[0][i]);
-			yield();
+			
 		}
+		//yield();
 	}
 
 

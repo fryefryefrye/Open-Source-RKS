@@ -1,33 +1,22 @@
 #include <TridentTD_EasyFreeRTOS32.h>
 TridentOS   task1;
 
-#include <SimpleKalmanFilter.h>
-
-#define CONFIG_BLE_SMP_ENABLE
-
-#include <SPI.h>
-#include "RF24.h"
-RF24 radio(2,4);//D5 D6 D7
-
-
+//#include <SimpleKalmanFilter.h>
 
 #include<WiFi.h>
 #include<WiFiUdp.h>
-//#include<mDNS.h>
 #include<ArduinoOTA.h>
-//#include<WiFiMulti.h>
 #include<time.h>
 #define timezone 8
 
-//#include <esp_gap_bt_api.h>
 
 
 #include "BLEDevice.h"
 #include "BLEUtils.h"
 #include "BLEScan.h"
-#include "BLEAdvertisedDevice.h"
-#include "BLEBeacon.h"
-BLEAdvertising *pAdvertising;
+//#include "BLEAdvertisedDevice.h"
+//#include "BLEBeacon.h"
+
 
 
 
@@ -37,7 +26,7 @@ BLEAdvertising *pAdvertising;
 
 
 
-const char* ssid = "frye_iot";  //Wifi名称
+const char* ssid = "frye_iot2";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -45,23 +34,16 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
-
+#define BLE_KEYLESS
+#define KEYLESS
 #include "Z:\bt\web\datastruct.h"
-tEsp32Data Esp32Data;
+tBleKeyLessData BleKeyLessData;
 unsigned char DebugLogIndex = 27;
 unsigned long TenthSecondsSinceStart = 0;
 unsigned long SecondsSinceStart = 0;
-//const char* BleNameList[NAME_MAX] = {
-std::string BleNameList[BLE_NAME_NUMBER] = {
-	"HouX"
-	,"HouXB"
-	,"HouSH"
-	,"WangJ"
-};
-//time_t LastGetTime[BLE_NAME_MAX];
-//float LastGetDistance[BLE_NAME_MAX];
-//init Kalman with params, you can modify params to make better result
-SimpleKalmanFilter * pKalman[BLE_NAME_NUMBER];
+
+
+//SimpleKalmanFilter * pKalman[BLE_NAME_NUMBER];
 
 
 void MyPrintf(const char *fmt, ...);
@@ -97,6 +79,37 @@ void setup()
 
 	WiFi.disconnect();
 	WiFi.mode(WIFI_STA);//设置模式为STA
+
+	byte mac[6];
+	WiFi.softAPmacAddress(mac);
+	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+
+	for (byte i=0;i<6;i++)
+	{
+		BleKeyLessData.Mac[i] = mac[i];
+	}
+
+
+	for (unsigned char i = 0;i<USB_CHARGE_NUMBER;i++)
+	{
+		if (memcmp(&BleKeyLessData.Mac[0],&KeyLessStationMacList[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			DebugLogIndex = 40 + i;
+			if (i == 3)
+			{
+				char* ssid = "frye_iot2";  //Wifi名称
+				
+			} 
+			//else if (i == 1)
+			//{
+			//	char* ssid = "frye_iot2";  //Wifi名称
+			
+			//}
+			break;
+		}
+	}
+	printf("use ssid %s \r\n",ssid);
+
 	Serial.print("Is connection routing, please wait");  
 	WiFi.begin(ssid, password); //Wifi接入到网络
 	Serial.println("\nConnecting to WiFi");
@@ -120,28 +133,7 @@ void setup()
 
 	m_WiFiUDP.begin(5050); 
 
-
-	byte mac[6];
-	WiFi.softAPmacAddress(mac);
-	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	//for (byte i=0;i<6;i++)
-	//{
-	//	RoomData.Mac[i] = mac[i];
-	//}
-
-	//for (unsigned char i = 0;i<ROOM_NUMBER;i++)
-	//{
-	//	if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
-	//	{
-	//		MyPrintf("room ID=%d \r\n",i);
-	//		RoomIndex = i;
-	//		break;
-	//	}
-	//}
-
-
-
 
 	ArduinoOTA.onStart([]() {
 		String type;
@@ -180,51 +172,21 @@ void setup()
 	Serial.println(WiFi.localIP());
 
 
-	Esp32Data.DataType = 20;
+	BleKeyLessData.DataType = 20;
 
-	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
-	{
-		pKalman[i] = new SimpleKalmanFilter(2, 2, 0.01);
-	}
-
-
-
-
-
-	//task1.start(BleTask);
-
-
-
-	//// Create the BLE Device
-	//BLEDevice::init("");
-	//pAdvertising = BLEDevice::getAdvertising();
-	//BLEAdvertisementData oAdvertisementData = BLEAdvertisementData();
-	//oAdvertisementData.setFlags(0x04); 
-	//oAdvertisementData.setName("test");
-	//oAdvertisementData.setManufacturerData("1234");
-	//pAdvertising->setAdvertisementData(oAdvertisementData);
-}
-
-void loop() 
-{
-
-	// Start advertising
-	//if (pAdvertising != NULL)
+	//for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
 	//{
-	//	pAdvertising->start();
-	//	delay(500);
-	//	pAdvertising->stop();
-	//	delay(100);
+	//	pKalman[i] = new SimpleKalmanFilter(2, 2, 0.01);
 	//}
 
 
 
 
+}
 
-
+void loop() 
+{
 	NonStopTask();
-
-
 }
 
 void NonStopTask()
@@ -292,102 +254,27 @@ void OnSecond()
 		task1.start(BleTask);
 	}
 
-
-
-	//if (SecondsSinceStart == 15)
+	//for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
 	//{
+	//	printf("%s:%ds %.3f "
+	//		,BleNameList[i].c_str()
+	//		,Esp32Data.Timeout[i]
+	//		,Esp32Data.KalmanDistance[i]);
+
+	//}
+	//printf("\r\n");
 
 
-	//	esp_err_t err;
-	//	esp_bd_addr_t bd_addr;
-	//	bd_addr[0] = 0xDC;
-	//	bd_addr[1] = 0x2B;
-	//	bd_addr[2] = 0x2A;
-	//	bd_addr[3] = 0x14;
-	//	bd_addr[4] = 0xC0;
-	//	bd_addr[5] = 0x61;
-
-
-	//	//if(esp_ble_set_encryption(bd_addr,ESP_LE_AUTH_REQ_SC_MITM_BOND) != ESP_OK)
-	//	//{
-	//	//	printf("esp_ble_set_encryption failed \r\n");
-	//	//}
-
-	//	if(esp_ble_gap_config_local_privacy(true) != ESP_OK)
-	//	{
-	//		printf("esp_ble_gap_config_local_privacy failed \r\n");
-	//	}
-
-	//	if(esp_ble_gap_security_rsp(bd_addr,true) != ESP_OK)
-	//	{
-	//		printf("esp_ble_gap_security_rsp failed \r\n");
-	//	}
-
-	//	esp_ble_io_cap_t iocap = ESP_IO_CAP_NONE;//set the IO capability to No Input No Output
-	//	esp_ble_auth_req_t auth_req = ESP_LE_AUTH_BOND; //bonding with peer device after authentication
-	//	uint8_t key_size = 16;      //the key size should be 7~16 bytes
-	//	uint8_t init_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
-	//	uint8_t rsp_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
-
-	//	esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &auth_req, sizeof(uint8_t));
-	//	esp_ble_gap_set_security_param(ESP_BLE_SM_IOCAP_MODE, &iocap, sizeof(uint8_t));
-	//	esp_ble_gap_set_security_param(ESP_BLE_SM_MAX_KEY_SIZE, &key_size, sizeof(uint8_t));
-	//	esp_ble_gap_set_security_param(ESP_BLE_SM_SET_INIT_KEY, &init_key, sizeof(uint8_t));
-	//	esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
-
-	//	BLEClient* pMyClient = BLEDevice::createClient();
-
-	//	printf("before connect \r\n");
-	//	pMyClient->connect(bd_addr,BLE_ADDR_TYPE_PUBLIC);
-	//	printf("after connect \r\n");
-
-	//	//// Get a reference to a specific remote service on the server
-	//	//BLERemoteService* pMyRemoteService = pMyClient->getService(serviceUUID);
-	//	//// Get a reference to a specific remote characteristic owned by the service
-	//	//BLERemoteCharacteristic* pMyRemoteCharacteristic =
-	//	//pMyRemoteService->getCharacteristic(characteristicUUID);
-	//	//// Retrieve the current value of the remote characteristic.
-	//	//std::string myValue = pMyRemoteCharacteristic->readValue();
-
-	//	
-
-	//	//esp_ble_gap_set_security_param
-
-	//	int dev_num = esp_ble_get_bond_device_num();
-	//	printf("bond_device_num:%d\r\n",dev_num);
-	//	esp_ble_bond_dev_t * p_dev_list = new esp_ble_bond_dev_t[dev_num];
-	//	esp_ble_get_bond_device_list(&dev_num,p_dev_list);
-	//	for(unsigned char i = 0; i<dev_num; i++)
-	//	{
-	//		printf("irk:%d\r\n",p_dev_list[i].bond_key.pid_key.irk);
-	//	}
-	//	
+	//for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
+	//{
+	//	Esp32Data.Timeout[i] ++;
 	//}
 
 
 
-
-	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
-	{
-		printf("%s:%ds %.3f "
-			,BleNameList[i].c_str()
-			,Esp32Data.Timeout[i]
-			,Esp32Data.KalmanDistance[i]);
-
-	}
-	printf("\r\n");
-
-
-	for(unsigned char i = 0; i<BLE_NAME_NUMBER; i++)
-	{
-		Esp32Data.Timeout[i] ++;
-	}
-
-
-
-	Esp32Data.Triger = false;
+	BleKeyLessData.Triger = false;
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
+	m_WiFiUDP.write((const uint8_t*)&BleKeyLessData, sizeof(tBleKeyLessData));
 	m_WiFiUDP.endPacket(); 
 
 }
@@ -407,6 +294,11 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 {
 	void onResult(BLEAdvertisedDevice advertisedDevice)
 	{
+		printf("Advertised Device Add:%s RSSI:%d \n"
+			,advertisedDevice.getAddress().toString().c_str()
+			,advertisedDevice.getRSSI()
+			);
+
 		BLEAddress nRFBLEAddress("45:46:47:48:59:60");
 		if(advertisedDevice.getAddress().equals(nRFBLEAddress))
 		{
@@ -422,8 +314,8 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 			//m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
 			//m_WiFiUDP.endPacket();
 
-			Esp32Data.Timeout[0] = 0;
-			Esp32Data.ReadDistance[0] = calcDistByRSSI(advertisedDevice.getRSSI());
+			//Esp32Data.Timeout[0] = 0;
+			//Esp32Data.ReadDistance[0] = calcDistByRSSI(advertisedDevice.getRSSI());
 
 			//Esp32Data.Triger = true;
 			//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
@@ -445,27 +337,26 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
 			{
 				if (BleNameList[i] == advertisedDevice.getName())
 				{
-					Esp32Data.Timeout[i] = 0;
-					Esp32Data.ReadDistance[i] = calcDistByRSSI(advertisedDevice.getRSSI());
-					if (pKalman[i] != NULL)
-					{
-						Esp32Data.KalmanDistance[i] = pKalman[i]->updateEstimate(Esp32Data.ReadDistance[i]);
-					}
+					//Esp32Data.Timeout[i] = 0;
+					//Esp32Data.ReadDistance[i] = calcDistByRSSI(advertisedDevice.getRSSI());
+					//if (pKalman[i] != NULL)
+					//{
+					//	Esp32Data.KalmanDistance[i] = pKalman[i]->updateEstimate(Esp32Data.ReadDistance[i]);
+					//}
 
 
 						//printf("Kalman:	%f	%f\n"
 						//	,Esp32Data.ReadDistance
 						//	,Esp32Data.KalmanDistance
 						//	);
-						Esp32Data.Triger = true;
-						m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-						m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
-						m_WiFiUDP.endPacket(); 
+						//Esp32Data.Triger = true;
+						//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+						//m_WiFiUDP.write((const uint8_t*)&Esp32Data, sizeof(tEsp32Data));
+						//m_WiFiUDP.endPacket(); 
 
 
-					printf("Found DeviceName: %s Distance:%f\n"
+					printf("Found DeviceName: %s \n"
 						,advertisedDevice.getName().c_str()
-						,Esp32Data.ReadDistance[i]
 						);
 				}
 			}
@@ -483,7 +374,7 @@ void SacnBleDevice()
 	
 	BLEScan *pBLEScan = BLEDevice::getScan(); //create new scan
 	pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-	pBLEScan->setActiveScan(true); //active scan uses more power, but get results faster
+	pBLEScan->setActiveScan(false); //active scan uses more power, but get results faster
 	pBLEScan->setInterval(0x50);
 	pBLEScan->setWindow(0x30);
 

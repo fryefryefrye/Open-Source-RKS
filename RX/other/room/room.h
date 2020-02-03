@@ -86,7 +86,7 @@ DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
 SoftwareSerial *p_swSer;
 bool IsSoftwareSerialOn = true; 
 
-const char* ssid = "frye_iot";  //Wifi名称
+char* ssid = "frye";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -97,6 +97,7 @@ char H1,H2,M1,M2,S1,S2;
 #include "Z:\bt\web\datastruct.h"
 tRoomData RoomData;
 unsigned char RelayPin[LIGHT_NUMBER];// = {RELAY1,RELAY2};
+unsigned long LastServerUpdate;
 
 
 
@@ -196,13 +197,57 @@ void setup()
 
 	WiFi.disconnect();
 	WiFi.mode(WIFI_STA);//设置模式为STA
+	byte mac[6];
+	WiFi.softAPmacAddress(mac);
+	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	for (byte i=0;i<6;i++)
+	{
+		RoomData.Mac[i] = mac[i];
+	}
+
+	RoomData.RoomId = 0xFF;
+
+	for (unsigned char i = 0;i<ROOM_NUMBER;i++)
+	{
+		if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			RoomData.RoomId = i;
+			switch(i)
+			{
+			case ROOM_SOUTH:
+				ssid = "frye_iot2";  //Wifi名称
+				break;
+			case ROOM_SMALL:
+				ssid = "frye_iot2";  //Wifi名称
+				break;
+			case ROOM_CANTEEN:
+				ssid = "frye_iot";  //Wifi名称
+				break;
+			case ROOM_BALCONY:
+				ssid = "frye_iot2";  //Wifi名称
+				break;
+			}
+
+
+			break;
+		}
+	}
+
+
 	Serial.print("Is connection routing, please wait");  
 	WiFi.begin(ssid, password); //Wifi接入到网络
 	Serial.println("\nConnecting to WiFi");
 	//如果Wifi状态不是WL_CONNECTED，则表示连接失败
+	unsigned char WiFiTimeOut = 0;
 	while (WiFi.status() != WL_CONNECTED) {  
 		Serial.print("."); 
 		delay(1000);    //延时等待接入网络
+		WiFiTimeOut++;
+		if (WiFiTimeOut>10)
+		{
+			break;
+			Serial.println("\nConnecting to WiFi Failed");
+		}
 	}
 
 
@@ -218,29 +263,8 @@ void setup()
 
 
 
-
-	byte mac[6];
-	WiFi.softAPmacAddress(mac);
-	for (byte i=0;i<6;i++)
-	{
-		RoomData.Mac[i] = mac[i];
-	}
-
-	RoomData.RoomId = 0xFF;
-
-	for (unsigned char i = 0;i<ROOM_NUMBER;i++)
-	{
-		if (memcmp(&RoomData.Mac[0],&RoomMacAddress[i][0],sizeof(unsigned long)*6) == 0)
-		{
-			RoomData.RoomId = i;
-			MyPrintf("room ID=%d \r\n",i);
-			break;
-		}
-	}
-
-	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-
+	MyPrintf("room ID=%d \r\n",RoomData.RoomId);
 
 
 
@@ -411,6 +435,7 @@ void loop()
 	if (UdpAvailable == sizeof(tRoomCommand))
 	{
 		//printf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+		LastServerUpdate = 0;
 		tRoomCommand tempRoomCommand;
 		m_WiFiUDP.read((char *)&tempRoomCommand,sizeof(tRoomCommand));
 
@@ -536,6 +561,16 @@ void OnSecond()
 	//Serial.printf(time_str);
 
 	//MyPrintf("AcTemperature = %d  AcMode = %d \r\n",RoomData.AcTemperature,RoomData.AcMode);
+
+	LastServerUpdate++;
+	if (LastServerUpdate > 3600)
+	{
+		printf("Re connection routing!\n");  
+		WiFi.disconnect();
+		WiFi.mode(WIFI_STA);//设置模式为STA
+		WiFi.begin(ssid, password); //Wifi接入到网络
+		LastServerUpdate = 0;
+	}
 
 
 	if (AcDataGot)
