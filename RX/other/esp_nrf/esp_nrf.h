@@ -128,7 +128,7 @@ void setup()
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 	for (byte i=0;i<6;i++)
 	{
 		KeyLessData.Mac[i] = mac[i];
@@ -276,14 +276,14 @@ void nRFTask()
 		m_WiFiUDP.write((const char*)&KeyLessData, sizeof(tKeyLessData));
 		m_WiFiUDP.endPacket(); 
 
-		//printf("PackageCounter:%d Data:%d,%d,%d,%d Volt:%d CH:%d\r\n"
-		//,PackageCounter
-		//,GotData[0]
-		//,GotData[1]
-		//,GotData[2]
-		//,GotData[3]
-		//,Volt
-		//,CurrCH);
+		printf("PackageCounter:%d Data:%d,%d,%d,%d Volt:%d CH:%d\r\n"
+		,PackageCounter
+		,GotData[0]
+		,GotData[1]
+		,GotData[2]
+		,GotData[3]
+		,Volt
+		,CurrCH);
 
 	}
 
@@ -344,10 +344,12 @@ void OnSecond()
 	LastServerUpdate++;
 	if (LastServerUpdate > 30)
 	{
-		printf("Re connection routing!\n");  
-		WiFi.disconnect();
-		WiFi.mode(WIFI_STA);//设置模式为STA
-		WiFi.begin(ssid, password); //Wifi接入到网络
+		//printf("Re connection routing!\n");  
+		//WiFi.disconnect();
+		//WiFi.mode(WIFI_STA);//设置模式为STA
+		//WiFi.begin(ssid, password); //Wifi接入到网络
+		printf("reset!\n");  
+		ESP.reset();
 		LastServerUpdate = 0;
 	}
 

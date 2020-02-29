@@ -25,7 +25,7 @@
 #define INT2	D7
 
 #define RF_IN				D6
-void DecodeRf_INT();
+ICACHE_RAM_ATTR void DecodeRf_INT();
 
 unsigned char RcCommand[3] = {0,0,0};
 bool DecodeFrameOK = false;
@@ -223,8 +223,8 @@ unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
 void OnSecond();
-void Encoder_INT1();
-void Encoder_INT2();
+ICACHE_RAM_ATTR void Encoder_INT1();
+ICACHE_RAM_ATTR void Encoder_INT2();
 
 void MyPrintf(const char *fmt, ...);
 
@@ -1057,7 +1057,7 @@ void setup()
 		KeyLessData.Mac[i] = mac[i];
 	}
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 
 
 
@@ -1387,7 +1387,7 @@ void IicExchange()
 
 }
 
-void Encoder_INT1()//中断函数
+ICACHE_RAM_ATTR void Encoder_INT1()//中断函数
 {
 	//static unsigned int Counter = 0;
 
@@ -1447,7 +1447,7 @@ void Encoder_INT1()//中断函数
 
 }
 
-void Encoder_INT2()//中断函数
+ICACHE_RAM_ATTR void Encoder_INT2()//中断函数
 {
 	//static unsigned int Counter = 0;
 	static unsigned long LastMicros = 0;
@@ -1613,7 +1613,7 @@ void BuzzOutput(bool on)
 
 }
 
-void DecodeRf_INT()
+ICACHE_RAM_ATTR void DecodeRf_INT()
 {
 #define PULSE_NUMBER 48
 #define MIN_LEN 100

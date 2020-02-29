@@ -33,7 +33,7 @@
 
 
 
-const char* ssid = "frye_iot2";  //Wifi√˚≥∆
+const char* ssid = "frye_iot3";  //Wifi√˚≥∆
 const char* password = "52150337";  //Wifi√‹¬Î
 WiFiUDP m_WiFiUDP;
 
@@ -141,7 +141,7 @@ void setup()
 
 	m_WiFiUDP.begin(5050); 
 
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 
 	ArduinoOTA.onStart([]() {
 		String type;

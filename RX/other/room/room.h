@@ -148,8 +148,8 @@ void OnSecond();
 
 
 //Air conditioning infrared control
-bool AcDataGot = false; 
-void IR_DEconde_INT();
+bool AcInitDataGot = false; 
+ICACHE_RAM_ATTR void IR_DEconde_INT();
 bool IsIrIntOn = false; 
 void CheckAcData();
 void ProcessAcData();
@@ -176,7 +176,7 @@ unsigned char AC_POWER_PULSE_INPUT_PIN;
 unsigned long PowerTimeDiff;
 unsigned long LastPowerTime = 0;
 bool GotPower = false;
-void AC_Power_INT();
+ICACHE_RAM_ATTR void AC_Power_INT();
 
 //Modbus AC Power
 #define MODBUS_REQUEST_LEN 8
@@ -263,7 +263,7 @@ void setup()
 
 
 
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 	MyPrintf("room ID=%d \r\n",RoomData.RoomId);
 
 
@@ -447,6 +447,12 @@ void loop()
 				MyPrintf("get from control %d %d\r\n",i,RoomData.Light[i]);
 				digitalWrite(RelayPin[i], !RoomData.Light[i]);
 			}
+			if (AcInitDataGot)
+			{
+				m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
+				m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
+				m_WiFiUDP.endPacket(); 
+			} 
 		}
 		if (tempRoomCommand.AcChangeNotice == true)
 		{
@@ -470,7 +476,7 @@ void loop()
 			LastAcOn = false;
 		}
 		LastAcTemperature = RoomData.AcTemperature;
-		AcDataGot = true;
+		AcInitDataGot = true;
 	}
 }
 
@@ -565,15 +571,19 @@ void OnSecond()
 	LastServerUpdate++;
 	if (LastServerUpdate > 3600)
 	{
-		printf("Re connection routing!\n");  
-		WiFi.disconnect();
-		WiFi.mode(WIFI_STA);//设置模式为STA
-		WiFi.begin(ssid, password); //Wifi接入到网络
+		//printf("Re connection routing!\n");  
+		//WiFi.disconnect();
+		//WiFi.mode(WIFI_STA);//设置模式为STA
+		//WiFi.begin(ssid, password); //Wifi接入到网络
+
+		printf("reset!\n");  
+		ESP.reset();
+
 		LastServerUpdate = 0;
 	}
 
 
-	if (AcDataGot)
+	if (AcInitDataGot)
 	{
 		m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
 		m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
@@ -753,6 +763,13 @@ void CheckRfCommand(unsigned char * RfCommand)
 						}
 					}
 				}
+
+				if (AcInitDataGot)
+				{
+					m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
+					m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
+					m_WiFiUDP.endPacket(); 
+				} 
 			}
 		}
 	}
@@ -872,7 +889,7 @@ void AcOperation(unsigned char OpCode)
 	p_swSer->enableRx(true);
 }
 
-void AC_Power_INT()//中断函数
+ICACHE_RAM_ATTR void AC_Power_INT()//中断函数
 {
 	unsigned long ThisPowerTime = millis();
 
@@ -895,7 +912,7 @@ void AC_Power_INT()//中断函数
 
 }
 
-void IR_DEconde_INT()//中断函数
+ICACHE_RAM_ATTR void IR_DEconde_INT()//中断函数
 {
 	unsigned long ThisTime;
 	unsigned long DiffTime;
@@ -1164,7 +1181,14 @@ void ProcessAcData()
 
 	MyPrintf("Data checked! mode = %d, temp = %d\r\n",RoomData.AcMode,RoomData.AcTemperature);
 
-	AcDataGot = true;
+	if (AcInitDataGot)
+	{
+		m_WiFiUDP.beginPacket(SERVER_ADDRESS, 5050);
+		m_WiFiUDP.write((const char*)&RoomData, sizeof(tRoomData));
+		m_WiFiUDP.endPacket(); 
+	} 
+
+	AcInitDataGot = true;
 
 	if (RoomData.AcMode != 5)
 	{

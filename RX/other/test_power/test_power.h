@@ -1,7 +1,7 @@
 
 
 #include <printf.h>
-void blink();
+ICACHE_RAM_ATTR void blink();
 void SecondsSinceStartTask();
 void OnTenthSecond();
 
@@ -69,7 +69,7 @@ void OnTenthSecond()
 
 
 
-void blink()//中断函数
+ICACHE_RAM_ATTR void blink()//中断函数
 {
 
 

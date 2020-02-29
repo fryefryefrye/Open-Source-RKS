@@ -85,7 +85,7 @@ void OnSecond();
 
 
 void ValveTask(unsigned char ChannelId);
-void Flow_INT();
+ICACHE_RAM_ATTR void Flow_INT();
 //void OpenValve(unsigned long OperatingTime);
 //void CloseValve(unsigned long OperatingTime);
 //unsigned long ValveStartTime[FLOOR_HEATER_CHANNEL_NUMBER] = 0;
@@ -147,7 +147,7 @@ void setup()
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 	for (byte i=0;i<6;i++)
 	{
 		//UsbChargeData.Mac[i] = mac[i];
@@ -251,7 +251,7 @@ void OnTenthSecond()
 	}
 }
 
-void Flow_INT()
+ICACHE_RAM_ATTR void Flow_INT()
 {
 	FloorHeaterData.Channel[0].FlowRate++;
 }

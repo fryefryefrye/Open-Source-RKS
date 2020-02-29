@@ -1,6 +1,6 @@
 
 
-void blink();
+ICACHE_RAM_ATTR void blink();
 
 
 
@@ -333,7 +333,7 @@ unsigned char acTemperature(unsigned char code)
 }
 
 
-void blink()//中断函数
+ICACHE_RAM_ATTR void blink()//中断函数
 {
 	unsigned long ThisTime;
 	unsigned long DiffTime;

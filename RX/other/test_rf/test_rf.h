@@ -70,8 +70,8 @@ void setup()
 	mySwitch.setRepeatTransmit(10);
 
 #ifdef DUMP_LONG
-	attachInterrupt(0, Dump_315, CHANGE);
-	attachInterrupt(1, Dump_433, CHANGE);
+	attachInterrupt(0, Dump_315, CHANGE); //pin2
+	attachInterrupt(1, Dump_433, CHANGE); //pin3
 #endif
 
 #ifdef DUMP_DECODE

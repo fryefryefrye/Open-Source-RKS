@@ -38,7 +38,7 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
-
+#define SLIDING_DOOR
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 23;
 tSlidingDoorData SlidingDoorData;
@@ -61,7 +61,7 @@ void MyPrintf(const char *fmt, ...);
 
 //RF
 #define RF_IN				D6
-void DecodeRf_INT();
+ICACHE_RAM_ATTR void DecodeRf_INT();
 unsigned char RcCommand[3] = {0,0,0};
 bool DecodeFrameOK = false;
 void CheckRf();
@@ -144,7 +144,7 @@ void setup()
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
 	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 	for (byte i=0;i<6;i++)
 	{
 		SlidingDoorData.Mac[i] = mac[i];
@@ -428,20 +428,20 @@ void CheckRf()
 	{
 
 
-		if (memcmp(LastRf,RcCommand,3) == 0)
-		{
-			//MyPrintf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
+		//if (memcmp(LastRf,RcCommand,3) == 0)
+		//{
+		//	//MyPrintf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
 			CheckRfCommand(RcCommand);
-		} 
-		else
-		{
-			memcpy(LastRf,RcCommand,3);
-		}
+		//} 
+		//else
+		//{
+		//	memcpy(LastRf,RcCommand,3);
+		//}
 		DecodeFrameOK = false;
 	}
 }
 
-void DecodeRf_INT()
+ICACHE_RAM_ATTR void DecodeRf_INT()
 {
 #define PULSE_NUMBER 48
 #define MIN_LEN 100
@@ -629,7 +629,7 @@ void OpenDoor()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 25)
+				if(TenthSecondsSinceStart -StartTime > 26)
 				{
 					OpenRelay(false);
 					Step = 2;
@@ -668,7 +668,7 @@ void CloseDoor()
 			}
 			if (Step == 1)
 			{
-				if(TenthSecondsSinceStart -StartTime > 25)
+				if(TenthSecondsSinceStart -StartTime > 26)
 				{
 					CloseRelay(false);
 					Step = 2;
