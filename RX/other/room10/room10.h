@@ -360,15 +360,54 @@ void OnSecond()
 	//	digitalWrite(BUZZ, HIGH);
 	//}
 	
-	if (false)
+	//if ((Hour<23)&&(Hour>7))//8:00:00~22:59:59
+	//{
+	//	if ((!Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage<60))
+	//	{
+
+	//		MyPrintf("Room10 Usb chager online ON \r\n");
+	//		Room10Data.UsbChargeOn = true;
+
+	//	}	
+	//	else if ((Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage>70))
+	//	{
+	//		MyPrintf("Room10 Usb chager online OFF \r\n");
+	//		Room10Data.UsbChargeOn = false;
+	//	}	
+	//}
+	//else
+	//{
+	//	MyPrintf("Room10 Usb chager OFF after 23:00:00 \r\n");
+	//	Room10Data.UsbChargeOn = false;
+	//}
+
+
+
+	static long DarkCounter = 0;
+	Room10Data.Brightness = 100-(analogRead(A0)*100/1024);
+
+	if (Room10Data.Brightness<5)
 	{
+		//if (Room10Data.UsbChargeOn)
+		//{
+		//	Room10Data.UsbChargeOn = false;
+		//}
+		DarkCounter++;
 	}
 	else
 	{
+		DarkCounter = 0;
+	}
+
+
+	if ((DarkCounter == 0)||(DarkCounter>3600))
+	{
 		if ((!Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage<60))
 		{
+
 			MyPrintf("Room10 Usb chager online ON \r\n");
 			Room10Data.UsbChargeOn = true;
+
 		}	
 		else if ((Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage>70))
 		{
@@ -376,6 +415,16 @@ void OnSecond()
 			Room10Data.UsbChargeOn = false;
 		}	
 	}
+	else
+	{
+		if (Room10Data.UsbChargeOn)
+		{
+			MyPrintf("Room10 Usb chager OFF when dark in 1 hour \r\n");
+			Room10Data.UsbChargeOn = false;
+		}
+
+	}
+
 
 	if (Room10Data.UsbChargeOn)
 	{
@@ -401,7 +450,7 @@ void OnSecond()
 		Room10Data.Humidity = dht12.LastHumidity*10;
 		Room10Data.RealTemperature = dht12.LastTemperature*10;
 	}
-	Room10Data.Brightness = 100-(analogRead(A0)*100/1024);
+
 
 	//printf("Humidity:%d %% Temperature:%d *C Brightness:%d%%\r\n"
 		//,Room10Data.Humidity

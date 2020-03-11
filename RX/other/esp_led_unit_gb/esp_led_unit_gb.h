@@ -26,7 +26,9 @@
 #include<ESP8266mDNS.h>
 #include<ArduinoOTA.h>
 #include<ESP8266WiFiMulti.h>
+#include<ESP8266WiFiGeneric.h>
 #include<time.h>
+
 #define timezone 8
 
 #include "LedUnitChat.h""
@@ -248,7 +250,7 @@ void setup()
 
 
 	LedUnitGbData.DataType = 23;
-	LedUnitGbData.Cycle = 500;
+	LedUnitGbData.Cycle = 1000;
 	LedUnitGbData.DisplayLight = 50;
 
 
@@ -360,7 +362,10 @@ void setup()
 
 	//printf("LedUnitGbCommand size = %d\r\n",sizeof(struct tLedUnitGbCommand));
 
-	delay(1000);
+	//delay(5000);
+
+	//ESP8266WiFiGenericClass mESP8266WiFiGenericClass;
+	//mESP8266WiFiGenericClass.setSleepMode(WIFI_MODEM_SLEEP,10);
 
 
 
@@ -397,13 +402,7 @@ void setup()
 	//}
 
 
-	//FirstLine[0] = '0';
-	//FirstLine[2] = '2';
-	//SecondLine[2] = '2';
-
 	char * test = "LED单元!等待～～";
-	//test = "两";
-	//ShowChineseOnLedUnit(0,0,test,DispBuf);
 	ShowStringOnLedUnit(test,DispBuf);
 
 }

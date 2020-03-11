@@ -269,7 +269,7 @@ void OnSecond()
 	
 	*/
 
-	if ((LastAndroidBatteryUpdate>30)||(UsbChargeCommand.AndroidTimeout>30))
+	if ((LastAndroidBatteryUpdate>120)||(UsbChargeCommand.AndroidTimeout>120))
 	{
 		if (now%3600 <= 40*60)
 		{

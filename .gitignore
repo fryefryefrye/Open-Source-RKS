@@ -31,3 +31,5 @@
 *.s#8
 *.s#9
 *.l##
+/.vs
+/RX/other/esp_led_unit_gb/新建文件夹/esp_led_unit_gb_back.h
