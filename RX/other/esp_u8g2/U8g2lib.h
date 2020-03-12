@@ -49,11 +49,11 @@
 #include <Print.h>
 #include "U8x8lib.h"
 
-#include "clib/u8g2.h"
+#include "u8g2.h"
 
 class U8G2 : public Print
 {
-  protected:
+  public:
     u8g2_t u8g2;
     u8x8_char_cb cpp_next_cb; /*  the cpp interface has its own decoding function for the Arduino print command */
   public:

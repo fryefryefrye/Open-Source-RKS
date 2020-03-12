@@ -30,10 +30,11 @@
 #define timezone 8
 
 #include <Arduino.h>
-#include <SPI.h>
-#include <U8g2lib.h>
+//#include <SPI.h>
+#include "U8g2lib.h"
 
-U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0,SCL,SDA); //配置构造函数
+//U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0,SCL,SDA); //配置构造函数
+U8G2_SSD1306_64X32_NONAME_F_SW_I2C u8g2(U8G2_R0, SCL, SDA); //配置构造函数
 
 
 
@@ -180,6 +181,7 @@ void setup()
 	Serial.println(WiFi.localIP());
 
 	u8g2.begin(); //启动u8g2驱动程序 / 可按需更改u8x8驱动程序
+	u8g2.setFont(u8g2_font_wqy16_t_gb2312b);
 }
 
 void loop() 
@@ -235,15 +237,32 @@ void OnSecond()
 	unsigned char Minute = timenow->tm_min;
 
 
-	u8g2.firstPage();
-	do {
+	//u8g2.firstPage();
+	//do {
 		//u8g2.setFont(u8g2_font_unifont_t_chinese1);
-		u8g2.setFont(u8g2_font_wqy16_t_gb2312b);
-		u8g2.drawUTF8(0,15,"编译上传编译上传");
-		u8g2.drawUTF8(0,15+16,"编译上传编译上传");
-		u8g2.drawUTF8(0,15+16*2,"编译上传编译上传");
-		u8g2.drawUTF8(0,15+16*3,"编译上传编译上传");
-	} while ( u8g2.nextPage() );
+
+		u8g2.drawUTF8(0,15,"编译上传");
+		//u8g2.drawUTF8(0,15+16,"编译上传编译上传");
+		//u8g2.drawUTF8(0,15+16*2,"编译上传编译上传");
+		//u8g2.drawUTF8(0,15+16*3,"编译上传编译上传");
+		//u8g2.drawFrame(0, 0, 16*4, 16*2);
+		u8g2.drawFrame(0, 16, 16 * 4, 16);
+	//} while ( u8g2.nextPage() );
+
+	
+	#define BYTE_ON_ONE_LINE 16
+	char OutputString[BYTE_ON_ONE_LINE * 5 + 10];
+
+	for (int i = 0; i < 256; i++)
+	{
+		sprintf(OutputString+(i % BYTE_ON_ONE_LINE)*5,"0x%02X ", u8g2.u8g2.tile_buf_ptr[i]);
+		if ((i+1) % BYTE_ON_ONE_LINE == 0)
+		{
+			printf("%s\n",OutputString);
+		}
+	}
+	printf("\n");
+
 
 
 
