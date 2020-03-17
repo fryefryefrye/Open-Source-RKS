@@ -44,6 +44,13 @@ unsigned char DebugLogIndex = 23;
 tSlidingDoorData SlidingDoorData;
 //tSlidingDoorCommand SlidingDoorCommand;
 
+#include <Wire.h>     //The DHT12 uses I2C comunication.
+#include "VL53L0X.h"
+VL53L0X DistanceSensor;
+#define POSTION_OPEN_OVER		830
+#define POSTION_CLOSE_UNDER		70
+#define DISTANCE_NUMBER 40
+uint16_t DistanceArray[DISTANCE_NUMBER];
 
 unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
@@ -53,10 +60,12 @@ void OnSecond();
 
 void MyPrintf(const char *fmt, ...);
 
-#define POSTION_OPEN		D5
-#define POSTION_CLOSE		D4
+
+
 #define RELAY1				D8
 #define RELAY2				D7
+#define IIC_DAT				D4
+#define IIC_CLK				D5
 
 
 //RF
@@ -104,8 +113,8 @@ void setup()
 	pinMode(RELAY2, OUTPUT);//set the pin to be OUTPUT pin.
 	digitalWrite(RELAY2, LOW);
 
-	pinMode(POSTION_OPEN, INPUT_PULLUP);
-	pinMode(POSTION_CLOSE, INPUT_PULLUP);
+	//pinMode(POSTION_OPEN, INPUT_PULLUP);
+	//pinMode(POSTION_CLOSE, INPUT_PULLUP);
 
 
 	SlidingDoorData.DataType = 15;
@@ -216,6 +225,14 @@ void setup()
 	pinMode(RF_IN, INPUT_PULLUP);
 	attachInterrupt(digitalPinToInterrupt(RF_IN), DecodeRf_INT, CHANGE);
 
+	Wire.begin(IIC_DAT,IIC_CLK);
+	DistanceSensor.setTimeout(100);
+	if (!DistanceSensor.init())
+	{
+		printf("Failed to detect and initialize sensor!\r\n");
+	}
+	DistanceSensor.startContinuous();
+
 
 }
 
@@ -279,11 +296,11 @@ void loop()
 			{
 				printf("OpenCloseDoor from wifi! \r\n");
 
-				if (!digitalRead(POSTION_OPEN))
+				if (SlidingDoorData.isOpened)
 				{
 					ClosingDoor = true;
 				}
-				else if (!digitalRead(POSTION_CLOSE))
+				else if (SlidingDoorData.isClosed)
 				{
 					OpeningDoor = true;
 				}
@@ -326,8 +343,27 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	SlidingDoorData.isClosed = !digitalRead(POSTION_CLOSE);
-	SlidingDoorData.isOpened = !digitalRead(POSTION_OPEN);
+
+	//MyPrintf("Distance = %u\r\n", SlidingDoorData.Distance);
+	//SlidingDoorData.isClosed = !digitalRead(POSTION_CLOSE);
+	//SlidingDoorData.isOpened = !digitalRead(POSTION_OPEN);
+
+	if (SlidingDoorData.Distance > POSTION_CLOSE_UNDER)
+	{
+		SlidingDoorData.OpenRate = (SlidingDoorData.Distance - POSTION_CLOSE_UNDER)*100
+			/(POSTION_OPEN_OVER - POSTION_CLOSE_UNDER);
+	} 
+	else
+	{
+		SlidingDoorData.OpenRate = 0;
+	}
+	if (SlidingDoorData.OpenRate >100)
+	{
+		SlidingDoorData.OpenRate = 100;
+	}
+	SlidingDoorData.OpenRate = 100 - SlidingDoorData.OpenRate;
+
+
 
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 	m_WiFiUDP.write((const char*)&SlidingDoorData, sizeof(tSlidingDoorData));
@@ -343,6 +379,52 @@ void OnTenthSecond()
 	{
 		OnSecond();
 	}
+
+	SlidingDoorData.Distance = DistanceSensor.readRangeContinuousMillimeters();
+
+
+	SlidingDoorData.isClosed = (SlidingDoorData.Distance > POSTION_OPEN_OVER);
+	SlidingDoorData.isOpened = (SlidingDoorData.Distance < POSTION_CLOSE_UNDER);
+
+	for (byte i = 0; i < DISTANCE_NUMBER-1; i++)
+	{
+		DistanceArray[DISTANCE_NUMBER-i-1] = DistanceArray[DISTANCE_NUMBER-i-2];
+	}
+	DistanceArray[0] = SlidingDoorData.Distance;
+
+	//Open or Close
+	static bool LastUnder = false;
+	static bool LastOver = false;
+	char OutputString[DISTANCE_NUMBER * 10 + 10];
+
+	if ((SlidingDoorData.Distance < POSTION_CLOSE_UNDER)&&(!LastUnder))
+	{
+		LastUnder = true;
+		LastOver = false;
+		MyPrintf("Sliding door Open finished\r\n");
+
+		for (byte i = 0; i < DISTANCE_NUMBER; i++)
+		{
+			sprintf(OutputString + i * 10, "\n%04d %04d", DistanceArray[i],DistanceArray[i+1] - DistanceArray[i]);
+		}
+		MyPrintf("Distance = %s\r\n", OutputString);
+	}
+
+
+
+	if ((SlidingDoorData.Distance > POSTION_OPEN_OVER) && (!LastOver))
+	{
+		LastOver = true;
+		LastUnder = false;
+		MyPrintf("Sliding door Close finished\r\n");
+
+		for (byte i = 0; i < DISTANCE_NUMBER; i++)
+		{
+			sprintf(OutputString + i * 10, "\n%04d %04d", DistanceArray[i],DistanceArray[i] - DistanceArray[i+1]);
+		}
+		MyPrintf("Distance = %s\r\n", OutputString);
+	}
+
 	
 }
 
@@ -379,16 +461,15 @@ void CheckRfCommand(unsigned char * RfCommand)
 					} 
 					else
 					{
-						if (digitalRead(POSTION_OPEN))
+						if (!SlidingDoorData.isOpened)
 						{
-
 							OpeningDoor = true;
 							printf("OpenDoor! Key press!  \r\n");
 						}
 						else
 						{
 							ClosingDoor = true;
-							printf("OpenDoor Key press! But already opened. So, cloes it \r\n");
+							printf("OpenDoor Key press! But not closed. So, cloes it \r\n");
 						}
 					}
 				} 
@@ -401,7 +482,7 @@ void CheckRfCommand(unsigned char * RfCommand)
 					} 
 					else
 					{
-						if (digitalRead(POSTION_CLOSE))
+						if (!SlidingDoorData.isClosed)
 						{
 							ClosingDoor = true;
 							printf("CloseDoor Key press! \r\n");
@@ -409,7 +490,7 @@ void CheckRfCommand(unsigned char * RfCommand)
 						else
 						{
 							OpeningDoor = true;
-							printf("CloseDoor Key press! But already closed. So Open it\r\n");
+							printf("CloseDoor Key press! But not opened. So Open it\r\n");
 						}
 					}
 				}

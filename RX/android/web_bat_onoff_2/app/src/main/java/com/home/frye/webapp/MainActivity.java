@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
     WebView webView;
     //BatteryReceiver BatteryReceiver;
 
-    boolean isLogOutput = true;
+    boolean isLogOutput = false;
 
 
     private PowerManager.WakeLock mWakeLock;
@@ -214,8 +214,8 @@ public class MainActivity extends AppCompatActivity {
         //settings.setSupportZoom(true);
         settings.setBuiltInZoomControls(true);
         settings.setUseWideViewPort(true);
-        webView.setInitialScale(150);//12寸平板，竖屏。
-        //webView.setInitialScale(200);//7寸平板，竖屏。
+        //webView.setInitialScale(150);//12寸平板，竖屏。
+        webView.setInitialScale(200);//7寸平板，竖屏。
         //webView.setInitialScale(200);//7寸平板，横屏。
         //webView.setInitialScale(100);//3寸，横屏。
 //

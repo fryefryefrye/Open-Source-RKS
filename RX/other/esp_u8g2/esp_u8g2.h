@@ -31,11 +31,14 @@
 
 #include <Arduino.h>
 //#include <SPI.h>
-#include "U8g2lib.h"
+#include <U8g2lib.h>
+
+#define IIC_DAT				D4
+#define IIC_CLK				D3
 
 //U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0,SCL,SDA); //配置构造函数
-U8G2_SSD1306_64X32_NONAME_F_SW_I2C u8g2(U8G2_R0, SCL, SDA); //配置构造函数
 
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, IIC_CLK, IIC_DAT); //配置构造函数
 
 
 
@@ -192,6 +195,8 @@ void loop()
 
 
 
+
+
 	//m_WiFiUDP.parsePacket(); 
 	//unsigned int UdpAvailable = m_WiFiUDP.available();
 	//if (UdpAvailable == sizeof(tXXXXXXXXCommand))
@@ -228,7 +233,9 @@ void OnSecond()
 	M2 = time_str[15];
 	S1 = time_str[17];
 	S2 = time_str[18];
-	//printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
+
+	char ShowString[9];
+	sprintf(ShowString,"%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
 	//Serial.printf(time_str);
 
 	struct   tm     *timenow;
@@ -237,31 +244,32 @@ void OnSecond()
 	unsigned char Minute = timenow->tm_min;
 
 
-	//u8g2.firstPage();
-	//do {
-		//u8g2.setFont(u8g2_font_unifont_t_chinese1);
 
-		u8g2.drawUTF8(0,15,"编译上传");
-		//u8g2.drawUTF8(0,15+16,"编译上传编译上传");
-		//u8g2.drawUTF8(0,15+16*2,"编译上传编译上传");
-		//u8g2.drawUTF8(0,15+16*3,"编译上传编译上传");
-		//u8g2.drawFrame(0, 0, 16*4, 16*2);
-		u8g2.drawFrame(0, 16, 16 * 4, 16);
-	//} while ( u8g2.nextPage() );
+	//u8g2.clearBuffer();
+	u8g2.firstPage();
+	do {
+
+	u8g2.setFont(u8g2_font_wqy16_t_gb2312b);
+
+	u8g2.drawUTF8(0, 15, "编译上传编译上传");
+	u8g2.drawUTF8(0, 15 + 16, ShowString);
+	u8g2.drawUTF8(0, 15 + 16 * 2, "编译上传编译上传");
+	u8g2.drawUTF8(0, 15 + 16 * 3, "编译上传编译上传");
+	} while ( u8g2.nextPage() );
 
 	
-	#define BYTE_ON_ONE_LINE 16
-	char OutputString[BYTE_ON_ONE_LINE * 5 + 10];
+	//#define BYTE_ON_ONE_LINE 16
+	//char OutputString[BYTE_ON_ONE_LINE * 5 + 10];
 
-	for (int i = 0; i < 256; i++)
-	{
-		sprintf(OutputString+(i % BYTE_ON_ONE_LINE)*5,"0x%02X ", u8g2.u8g2.tile_buf_ptr[i]);
-		if ((i+1) % BYTE_ON_ONE_LINE == 0)
-		{
-			printf("%s\n",OutputString);
-		}
-	}
-	printf("\n");
+	//for (int i = 0; i < 256; i++)
+	//{
+	//	sprintf(OutputString+(i % BYTE_ON_ONE_LINE)*5,"0x%02X ", u8g2.u8g2.tile_buf_ptr[i]);
+	//	if ((i+1) % BYTE_ON_ONE_LINE == 0)
+	//	{
+	//		printf("%s\n",OutputString);
+	//	}
+	//}
+	//printf("\n");
 
 
 

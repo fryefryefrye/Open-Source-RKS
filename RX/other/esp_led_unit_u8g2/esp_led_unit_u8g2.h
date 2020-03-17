@@ -445,8 +445,8 @@ void DisplayOneLine()
 	for (int i=0; i<64; i++)
 	{
 		digitalWrite(CLK,0);
-		digitalWrite(R1, ((LedUnitGbCommand.DispBuf2[i%64+(row/8)*64]>>(row%8))&1));//发送上半屏
-		digitalWrite(R2, ((LedUnitGbCommand.DispBuf2[i%64+(row/8)*64+128]>>(row%8))&1));//发送下半屏
+		digitalWrite(R1, ((LedUnitGbCommand.DispBuf[i%64+(row/8)*64]>>(row%8))&1));//发送上半屏
+		digitalWrite(R2, ((LedUnitGbCommand.DispBuf[i%64+(row/8)*64+128]>>(row%8))&1));//发送下半屏
 		digitalWrite(CLK,1);
 	}
 
@@ -536,7 +536,7 @@ void NonStopTask()
 			//		DispBuf[j][i] = LedUnitGbCommand.DispBuf[j][i];
 			//	}
 			//}
-			memcpy(DispBuf,LedUnitGbCommand.DispBuf,8*32);
+			//memcpy(DispBuf,LedUnitGbCommand.DispBuf,8*32);
 
 			//printf("Update Cycle = %d  Light = %d\r\n"
 			//	,LedUnitGbData.Cycle

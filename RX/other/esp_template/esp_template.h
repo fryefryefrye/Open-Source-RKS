@@ -43,7 +43,7 @@ char H1,H2,M1,M2,S1,S2;
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 20;
-tXXXXXXXXData XXXXXXXXData;
+//tXXXXXXXXData XXXXXXXXData;
 unsigned long LastServerUpdate;
 
 
@@ -65,7 +65,7 @@ void setup()
 	delay(50);                      
 	Serial.begin(115200);
 
-	XXXXXXXXData.DataType = 0;
+	//XXXXXXXXData.DataType = 0;
 
 
 	WiFi.disconnect();
@@ -75,7 +75,7 @@ void setup()
 	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
-		XXXXXXXXData.Mac[i] = mac[i];
+		//XXXXXXXXData.Mac[i] = mac[i];
 	}
 
 	//XXXXXXXXData.Id = 0xFF;
@@ -182,16 +182,16 @@ void loop()
 
 
 
-	m_WiFiUDP.parsePacket(); 
-	unsigned int UdpAvailable = m_WiFiUDP.available();
-	if (UdpAvailable == sizeof(tXXXXXXXXCommand))
-	{
-		//MyPrintf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		//printf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-		tXXXXXXXXCommand tempXXXXXXXXCommand;
-		m_WiFiUDP.read((char *)&tempXXXXXXXXCommand,sizeof(tXXXXXXXXCommand));
-		LastServerUpdate = 0;
-	}
+	//m_WiFiUDP.parsePacket(); 
+	//unsigned int UdpAvailable = m_WiFiUDP.available();
+	//if (UdpAvailable == sizeof(tXXXXXXXXCommand))
+	//{
+	//	//MyPrintf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+	//	//printf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+	//	tXXXXXXXXCommand tempXXXXXXXXCommand;
+	//	m_WiFiUDP.read((char *)&tempXXXXXXXXCommand,sizeof(tXXXXXXXXCommand));
+	//	LastServerUpdate = 0;
+	//}
 }
 
 unsigned long LastMillis = 0;
@@ -243,9 +243,9 @@ void OnSecond()
 		LastServerUpdate = 0;
 	}
 
-	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&XXXXXXXXData, sizeof(tXXXXXXXXData));
-	m_WiFiUDP.endPacket(); 
+	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	//m_WiFiUDP.write((const char*)&XXXXXXXXData, sizeof(tXXXXXXXXData));
+	//m_WiFiUDP.endPacket(); 
 }
 
 void OnTenthSecond()

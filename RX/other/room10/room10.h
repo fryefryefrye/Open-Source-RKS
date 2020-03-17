@@ -478,15 +478,17 @@ void OnTenthSecond()
 	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
 	//printf("distance = %d\r\n",Room10Data.Distance);
 
-
+#define DISTANCE_HIGH 700
+#define DISTANCE_LOW  200
+#define SCREEN_TIMEOUT  50 //0.1s
 	if (Room10Data.ScreenOn)//current on
 	{
 		//if (Room10Data.Brightness > 50)
-		if ((Room10Data.Distance > 1000)||(Room10Data.Distance < 200))
+		if ((Room10Data.Distance > DISTANCE_HIGH)||(Room10Data.Distance < DISTANCE_LOW))
 		{
 			ScreenOffCounter++;
 			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
-			if (ScreenOffCounter > 50)
+			if (ScreenOffCounter > SCREEN_TIMEOUT)
 			{
 				Room10Data.ScreenOn = false;
 				printf("ScreenOn to false;\r\n");
@@ -501,8 +503,7 @@ void OnTenthSecond()
 	}
 	else//current off
 	{
-		//if (Room10Data.Brightness < 50)
-		if ((Room10Data.Distance < 1000)&&(Room10Data.Distance > 200))
+		if ((Room10Data.Distance < DISTANCE_HIGH)&&(Room10Data.Distance > DISTANCE_LOW))
 		{
 			Room10Data.ScreenOn = true;
 			printf("ScreenOn to true;\r\n");
