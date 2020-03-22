@@ -218,7 +218,7 @@ void OnSecond()
 	M2 = time_str[15];
 	S1 = time_str[17];
 	S2 = time_str[18];
-	//printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
+	printf("%c%c:%c%c:%c%c\n",H1,H2,M1,M2,S1,S2);
 	//Serial.printf(time_str);
 
 	struct   tm     *timenow;
@@ -226,22 +226,24 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	printf("LastServerUpdate = %d\r\n",LastServerUpdate);
 
 
-	LastServerUpdate++;
-	if (LastServerUpdate > 30)
-	{
-		printf("Re connection routing!\n");  
-		WiFi.disconnect();
-		WiFi.mode(WIFI_STA);//设置模式为STA
-		WiFi.begin(ssid, password); //Wifi接入到网络
+	//printf("LastServerUpdate = %d\r\n",LastServerUpdate);
 
-		//printf("reset!\n");  
-		//ESP.reset();
 
-		LastServerUpdate = 0;
-	}
+	//LastServerUpdate++;
+	//if (LastServerUpdate > 30)
+	//{
+	//	printf("Re connection routing!\n");  
+	//	WiFi.disconnect();
+	//	WiFi.mode(WIFI_STA);//设置模式为STA
+	//	WiFi.begin(ssid, password); //Wifi接入到网络
+
+	//	//printf("reset!\n");  
+	//	//ESP.reset();
+
+	//	LastServerUpdate = 0;
+	//}
 
 	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 	//m_WiFiUDP.write((const char*)&XXXXXXXXData, sizeof(tXXXXXXXXData));

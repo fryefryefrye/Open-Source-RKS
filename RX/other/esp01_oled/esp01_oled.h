@@ -29,8 +29,8 @@
 #include<time.h>
 #define timezone 8
 
-#define IIC_DAT				D2
-#define IIC_CLK				D1
+#define IIC_DAT				D9
+#define IIC_CLK				D10
 
 
 
@@ -52,8 +52,8 @@ unsigned long LastServerUpdate;
 
 
 #include <Wire.h>     //The DHT12 uses I2C comunication.
-#include "VL53L0X.h"
-VL53L0X DistanceSensor;
+//#include "VL53L0X.h"
+//VL53L0X DistanceSensor;
 uint16_t Distance;
 #define DISTANCE_NUMBER 30
 uint16_t DistanceArray[DISTANCE_NUMBER];
@@ -79,7 +79,7 @@ void setup()
 
 
 	delay(50);                      
-	Serial.begin(115200);
+	//Serial.begin(115200);
 
 	//XXXXXXXXData.DataType = 0;
 
@@ -88,7 +88,7 @@ void setup()
 	WiFi.mode(WIFI_STA);//设置模式为STA
 	byte mac[6];
 	WiFi.softAPmacAddress(mac);
-	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	for (byte i=0;i<6;i++)
 	{
 		//XXXXXXXXData.Mac[i] = mac[i];
@@ -121,19 +121,19 @@ void setup()
 	//}
 
 
-	Serial.print("Is connection routing, please wait");  
+	//Serial.print("Is connection routing, please wait");  
 	WiFi.begin(ssid, password); //Wifi接入到网络
-	Serial.println("\nConnecting to WiFi");
+	//Serial.println("\nConnecting to WiFi");
 	//如果Wifi状态不是WL_CONNECTED，则表示连接失败
 	unsigned char WiFiTimeOut = 0;
 	while (WiFi.status() != WL_CONNECTED) {  
-		Serial.print("."); 
+		//Serial.print("."); 
 		delay(1000);    //延时等待接入网络
 		WiFiTimeOut++;
 		if (WiFiTimeOut>10)
 		{
 			break;
-			Serial.println("\nConnecting to WiFi Failed");
+			//Serial.println("\nConnecting to WiFi Failed");
 		}
 	}
 
@@ -141,12 +141,12 @@ void setup()
 
 	//设置时间格式以及时间服务器的网址
 	configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
-	Serial.println("\nWaiting for time");
+	//Serial.println("\nWaiting for time");
 	while (!time(nullptr)) {
-		Serial.print(".");
+		//Serial.print(".");
 		delay(1000);    
 	}
-	Serial.println("");
+	//Serial.println("");
 
 
 	m_WiFiUDP.begin(5050); 
@@ -162,32 +162,32 @@ void setup()
 		}
 
 		// NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-		Serial.println("Start updating " + type);
+		//Serial.println("Start updating " + type);
 	});
 	ArduinoOTA.onEnd([]() {
-		Serial.println("\nEnd");
+		//Serial.println("\nEnd");
 	});
 	ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-		Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+		//Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 	});
 	ArduinoOTA.onError([](ota_error_t error) {
-		Serial.printf("Error[%u]: ", error);
+		//Serial.printf("Error[%u]: ", error);
 		if (error == OTA_AUTH_ERROR) {
-			Serial.println("Auth Failed");
+			//Serial.println("Auth Failed");
 		} else if (error == OTA_BEGIN_ERROR) {
-			Serial.println("Begin Failed");
+			//Serial.println("Begin Failed");
 		} else if (error == OTA_CONNECT_ERROR) {
-			Serial.println("Connect Failed");
+			//Serial.println("Connect Failed");
 		} else if (error == OTA_RECEIVE_ERROR) {
-			Serial.println("Receive Failed");
+			//Serial.println("Receive Failed");
 		} else if (error == OTA_END_ERROR) {
-			Serial.println("End Failed");
+			//Serial.println("End Failed");
 		}
 	});
 	ArduinoOTA.begin();
-	Serial.println("Ready");
-	Serial.print("IP address: ");
-	Serial.println(WiFi.localIP());
+	//Serial.println("Ready");
+	//Serial.print("IP address: ");
+	//Serial.println(WiFi.localIP());
 
 
 
@@ -197,12 +197,12 @@ void setup()
 
 
 	Wire.begin(IIC_DAT,IIC_CLK);
-	DistanceSensor.setTimeout(100);
-	if (!DistanceSensor.init())
-	{
-		printf("Failed to detect and initialize sensor!\r\n");
-	}
-	DistanceSensor.startContinuous();
+	//DistanceSensor.setTimeout(100);
+	//if (!DistanceSensor.init())
+	//{
+	//	printf("Failed to detect and initialize sensor!\r\n");
+	//}
+	//DistanceSensor.startContinuous();
 }
 
 void loop() 
@@ -266,6 +266,7 @@ void OnSecond()
 	//u8g2.drawUTF8(64, 15, DistanceString);
 	//u8g2.updateDisplayArea(0, 0, 8, 2);// One tile is a 8x8 pixel area
 	u8g2.sendBuffer();
+
 
 
 
@@ -371,7 +372,7 @@ void MyPrintf(const char *fmt, ...)
 	n = vsprintf(sprint_buf, fmt, args);
 	va_end(args);
 
-	printf(sprint_buf);
+	//printf(sprint_buf);
 
 	pDebugData->DataType = 3;
 	pDebugData->RoomId = DebugLogIndex;
