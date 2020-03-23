@@ -46,14 +46,14 @@ char TimeString[9];
 unsigned char DebugLogIndex = 20;
 tPowerBankData PowerBankData;
 
+#include <Wire.h>
 
 
 
-//#include <Wire.h>     //The DHT12 uses I2C comunication.
 //#include <U8g2lib.h>
 //U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, IIC_CLK, IIC_DAT); //配置构造函数
 
-#include <Wire.h>
+
 #include "CN_SSD1306_Wire.h"
 CN_SSD1306_Wire Displayer;//HardWare I2C
 
@@ -87,7 +87,7 @@ void StartOTA();
 void GetPowerState();
 void UpdateOled();
 void GotoSleep();
-bool IfKeepWeakUp();
+
 
 void MyPrintf(const char *fmt, ...);
 uint32_t calculateCRC32(const uint8_t* data, size_t length);
@@ -164,7 +164,7 @@ void setup()
 		)
 	{
 		//电流大，或者要求WiFi常开
-		//进入运行状态，判断WiFi是否成功连接
+		//进入运行状态，判断WiFi是否成功连接,否则关闭WiFi省电
 		if (WiFi.status() == WL_CONNECTED)
 		{
 			printf("StartOTA \r\n");
@@ -235,7 +235,7 @@ void OnSecond()
 	{
 		printf("Start wifi when running offline ,but need wifi time is up \r\n");
 		StartWifi();
-		Displayer.Fill_Screen(0x00);
+		//Displayer.Fill_Screen(0x00);
 	}
 
 	if (abs(PowerBankData.Current) < CURRENT_LOW_LIMIT)
@@ -381,6 +381,7 @@ void StartWifi()
 		{
 			break;
 			Serial.println("\nConnecting to WiFi Failed");
+			return;
 		}
 	}
 	Serial.println("");
@@ -421,7 +422,7 @@ void StartWifi()
 	//printf("GmtTimeDiffToPowerOn = %d \r\n", rtcData.GmtTimeDiffToPowerOn);
 
 
-
+	//首次联网后，与服务器交换一次信息，主要目的是为了获取是否有常开WiFi的要求。
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 	m_WiFiUDP.write((const char*)&PowerBankData, sizeof(tPowerBankData));
 	m_WiFiUDP.endPacket(); 
@@ -479,11 +480,22 @@ void UpdateOled()
 	Displayer.ShowASCII1632(16,4  ,PowerBankData.volt/3/100%10);
 	Displayer.ShowASCII1632(16*2,4,PowerBankData.volt/3/10%10);//:
 	//Displayer.ShowASCII1632(16*3,4,PowerBankData.volt/3/10%10);
-	Displayer.ShowASCII1632(16*3,4,12);
-	Displayer.ShowASCII1632(16*4,4,PowerBankData.Current/1000%100);
-	Displayer.ShowASCII1632(16*5,4,PowerBankData.Current/100%10);//:
-	Displayer.ShowASCII1632(16*6,4,PowerBankData.Current/10%10);
-	Displayer.ShowASCII1632(16*7,4,PowerBankData.Current/1%10);
+
+	if(PowerBankData.Current>0)
+	{
+		Displayer.ShowASCII1632(16 * 3, 4, 11);
+	}
+	else
+	{
+		Displayer.ShowASCII1632(16 * 3, 4, 13);
+	}
+
+	
+	
+	Displayer.ShowASCII1632(16*4,4,abs(PowerBankData.Current)/1000%100);
+	Displayer.ShowASCII1632(16*5,4, abs(PowerBankData.Current)/100%10);//:
+	Displayer.ShowASCII1632(16*6,4, abs(PowerBankData.Current)/10%10);
+	Displayer.ShowASCII1632(16*7,4, abs(PowerBankData.Current)/1%10);
 }
 
 void GotoSleep()
@@ -493,11 +505,6 @@ void GotoSleep()
 	// Write struct to RTC memory
 	ESP.rtcUserMemoryWrite(0, (uint32_t*)&rtcData, sizeof(rtcData));
 	ESP.deepSleep(CpuSleepTime * 1e6);
-}
-
-bool IfKeepWeakUp()
-{
-	return ((rtcData.PowerBankCommand.WiFiAlwaysOn)||(abs(PowerBankData.Current) > CURRENT_LOW_LIMIT));
 }
 
 
@@ -572,30 +579,3 @@ uint32_t calculateCRC32(const uint8_t* data, size_t length)
 	}
 	return crc;
 }
-
-
-
-
-
-
-
-
-
-//void setup() {
-//    Serial.begin(115200);
-//    Serial.setTimeout(2000);
-//
-//    // Wait for serial to initialize.
-//    while (!Serial) {}
-//
-//     Deep sleep mode for 30 seconds, the ESP8266 wakes up by itself when GPIO 16 (D0 in NodeMCU board) is connected to the RESET pin
-//    Serial.println("\r\nI'm awake, but I'm going into deep sleep mode for 10 seconds\r\n");
-//    ESP.deepSleep(10e6);
-//
-//     Deep sleep mode until RESET pin is connected to a LOW signal (for example pushbutton or magnetic reed switch)
-//    Serial.println("I'm awake, but I'm going into deep sleep mode until RESET pin is connected to a LOW signal");
-//    ESP.deepSleep(0); 
-//}
-//
-//void loop() {
-//}
