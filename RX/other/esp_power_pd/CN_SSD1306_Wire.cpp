@@ -4,11 +4,11 @@
 * 建议和问题反馈，请发邮件至 hello14blog@gmail.com
 ***************************************************************************/
 
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+//#if ARDUINO >= 100
+// #include "Arduino.h"
+//#else
+// #include "WProgram.h"
+//#endif
 
 #include "Wire.h"
 
@@ -77,17 +77,23 @@ void CN_SSD1306_Wire::Fill_Screen(unsigned char dat)
 void CN_SSD1306_Wire::ShowCN(unsigned char x, unsigned char y, unsigned char N)
 {
 	unsigned char wm=0;
-	unsigned int adder=32*N;
+	unsigned int adder=0;
+	unsigned char OneHzk16[32];
+	//read 32 byte from flash
+	//memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+	memcpy(OneHzk16, CN16x16 + 32 * N, 32);
+
+
 	IIC_SetPos(x , y);
 	for(wm = 0;wm < 16;wm++)
 	{
-		WriteData(CN16x16[adder]);
+		WriteData(OneHzk16[adder]);
 		adder += 1;
 	}
 	IIC_SetPos(x,y + 1);
 	for(wm = 0;wm < 16;wm++)
 	{
-		WriteData(CN16x16[adder]);
+		WriteData(OneHzk16[adder]);
 		adder += 1;
 	}
 }
@@ -97,16 +103,20 @@ void CN_SSD1306_Wire::ShowCN3232(unsigned char x, unsigned char y, unsigned char
 {
 	unsigned char wm=0;
 	unsigned char i=0;
-	unsigned int adder=32*N;
+	unsigned int adder = 0;
+	unsigned char OneHzk16[32];
+	//read 32 byte from flash
+	//memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+	memcpy(OneHzk16, CN16x16 + 32 * N, 32);
 
-	unsigned int CN3232[32];
+	uint16_t CN3232[32];
 
 	for(wm = 0;wm < 32;wm++)
 	{
 		CN3232[wm] = 0;
 		for(i = 0;i < 8;i++)
 		{
-			CN3232[wm] = CN3232[wm] + (((((unsigned int)CN16x16[adder]>>i)&1)*3)<<(2*i));
+			CN3232[wm] = CN3232[wm] + (((((unsigned int)OneHzk16[adder]>>i)&1)*3)<<(2*i));
 		}
 		adder += 1;	
 	}
@@ -143,11 +153,16 @@ void CN_SSD1306_Wire::ShowCN3232(unsigned char x, unsigned char y, unsigned char
 void CN_SSD1306_Wire::ShowASCII816(unsigned char x, unsigned char y, unsigned char N)
 {
 	unsigned char wm=0;
-	unsigned int adder=16*N;
+	unsigned int adder = 0;
+	unsigned char OneASCII816[16];
+	//read 32 byte from flash
+	//memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+	memcpy(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+
 	IIC_SetPos(x , y);
 	for(wm = 0;wm < 8;wm++)
 	{
-		WriteData(ASCII816[adder]);
+		WriteData(OneASCII816[adder]);
 		adder += 1;
 	}
 
@@ -155,7 +170,7 @@ void CN_SSD1306_Wire::ShowASCII816(unsigned char x, unsigned char y, unsigned ch
 	IIC_SetPos(x,y + 1);
 	for(wm = 0;wm < 8;wm++)
 	{
-		WriteData(ASCII816[adder]);
+		WriteData(OneASCII816[adder]);
 		adder += 1;
 	}
 }
@@ -165,16 +180,20 @@ void CN_SSD1306_Wire::ShowASCII1632(unsigned char x, unsigned char y, unsigned c
 {
 	unsigned char wm=0;
 	unsigned char i=0;
-	unsigned int adder=16*N;
+	unsigned int adder=0;
+	unsigned char OneASCII816[16];
+	//read 32 byte from flash
+	//memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+	memcpy(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
 
-	unsigned int ASCII1632[16];
+	uint16_t ASCII1632[16];
 
 	for(wm = 0;wm < 16;wm++)
 	{
 		ASCII1632[wm] = 0;
 		for(i = 0;i < 8;i++)
 		{
-			ASCII1632[wm] = ASCII1632[wm] + (((((unsigned int)ASCII816[adder]>>i)&1)*3)<<(2*i));
+			ASCII1632[wm] = ASCII1632[wm] + (((((unsigned int)OneASCII816[adder]>>i)&1)*3)<<(2*i));
 		}
 		adder += 1;	
 	}

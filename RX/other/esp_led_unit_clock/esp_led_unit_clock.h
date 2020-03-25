@@ -592,10 +592,6 @@ void hc138sacn(byte r)   //输出行线状态ABCD （A低,D高)
 
 void DisplayOneLine()
 {
-	//显示缓存扫描
-	//for(row=0; row<16; row++)
-	//{
-
 	static unsigned char row=0;
 	for (int i=0; i<8; i++)
 	{
@@ -618,7 +614,7 @@ void DisplayOneLine()
 		row = 0;
 		NonStopTask();
 	}
-	//}
+
 
 }
 
@@ -628,8 +624,6 @@ void DisplayTimerTask()
 {
 
 	static bool ScreenOn = false;
-	//micros()
-	//millis()
 	CurrentDisplayTime = micros();
 	if (abs(CurrentDisplayTime - LastDisplayTime) > LedUnitData.Cycle)
 	{
@@ -637,77 +631,14 @@ void DisplayTimerTask()
 		DisplayOneLine();
 		ScreenOn = true;
 	}
-
-	//if ((ScreenOn)&&(abs(CurrentDisplayTime - LastDisplayTime) >= LedUnitData.Light))
-	//{
-	//	digitalWrite(OE, 1);  //关闭显示
-	//	ScreenOn = false;
-	//}
-
-	//if ((ScreenOn))
-	//{
-	//	digitalWrite(OE, 1);  //关闭显示
-	//	ScreenOn = false;
-	//}
-
-	
-
 }
 
 
 void loop() 
 {
 
-
-
-
-
-
 	DisplayTimerTask();
 
-	//ArduinoOTA.handle();
-	//delay(0);
-
-	////显示缓存扫描
-	//for(unsigned char row=0; row<16; row++)
-	//{
-
-	////static unsigned char row=0;
-	//for (int i=0; i<8; i++)
-	//{
-	//	hc595senddata(DispBuf[i][row],DispBuf[i][row+16]);//发送列数据，上16行与下16行同时发送。
-	//}
-
-	//hc138sacn(row);            //选行
-	//digitalWrite(STB, 1);      //数据确认
-	//digitalWrite(STB, 0);
-	//digitalWrite(OE, 1);  //关闭显示
-	//delayMicroseconds(500) ;   //节电用,
-	//digitalWrite(OE, 0);  //开启显示
-	//delayMicroseconds(50) ;  //刷新频率
-	////row++;
-	////if (row>15)
-	////{
-	////	row = 0;
-	////	SecondsSinceStartTask();
-	////}
-	//}
-
-	//SecondsSinceStartTask();
-
-
-
-
-	//m_WiFiUDP.parsePacket(); 
-	//unsigned int UdpAvailable = m_WiFiUDP.available();
-	//if (UdpAvailable == sizeof(tLedUnitCommand))
-	//{
-	//	//MyPrintf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-	//	//printf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-	//	tLedUnitCommand tempLedUnitCommand;
-	//	m_WiFiUDP.read((char *)&tempLedUnitCommand,sizeof(tLedUnitCommand));
-	//	LastServerUpdate = 0;
-	//}
 }
 
 void NonStopTask() 
@@ -902,7 +833,7 @@ void OnSecond()
 		}
 
 	}
-	//间隔横线
+	////间隔横线
 	//static unsigned char Line = 0;
 	//for (int j=0; j<8; j++)
 	//{

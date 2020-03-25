@@ -62,7 +62,7 @@ Adafruit_INA219 ina219(INA219_ADDRESS);
 #define CURRENT_LOW_LIMIT 10			//mA
 #define CURRENT_LOW_LIMIT_SECONDS 10	//Seconds
 
-#define CURRENT_UP_LIMIT 25			//mA
+#define CURRENT_UP_LIMIT 20			//mA
 //#define CURRENT_UP_LIMIT_SECONDS 10	//Seconds
 
 struct {
@@ -158,7 +158,7 @@ void setup()
 		GotoSleep();
 	}
 
-	
+
 	if ((abs(PowerBankData.Current) > CURRENT_UP_LIMIT)
 		||(rtcData.PowerBankCommand.WiFiAlwaysOn)
 		)
@@ -292,7 +292,7 @@ void GetPowerState()
 
 	printf("Current:%d BusVoltage:%d \r\n",PowerBankData.Current,PowerBankData.volt);
 
-	PowerBankData.Current = PowerBankData.Current - 820;
+	//PowerBankData.Current = PowerBankData.Current - 820;
 
 }
 
@@ -391,8 +391,8 @@ void StartWifi()
 
 
 
-	////设置时间格式以及时间服务器的网址
-	//configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
+	//设置时间格式以及时间服务器的网址
+	configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
 	//Serial.println("\nWaiting for time");
 	////while (!time(nullptr)) {
 	////	Serial.print(".");
@@ -443,59 +443,60 @@ void UpdateOled()
 {
 
 	//time_t now = rtcData.SecondsSincePowerOn + rtcData.GmtTimeDiffToPowerOn;
-	//time_str = ctime(&now);
-	//H1 = time_str[11];
-	//H2 = time_str[12];
-	//M1 = time_str[14];
-	//M2 = time_str[15];
-	//S1 = time_str[17];
-	//S2 = time_str[18];
+	time_t now = time(nullptr); //获取当前时间
+	time_str = ctime(&now);
+	H1 = time_str[11];
+	H2 = time_str[12];
+	M1 = time_str[14];
+	M2 = time_str[15];
+	S1 = time_str[17];
+	S2 = time_str[18];
 
 	//printf("%c%c:%c%c:%c%c\n", H1, H2, M1, M2, S1, S2);
 
-	//Displayer.ShowASCII1632(0,0,H1-0x30);
-	//Displayer.ShowASCII1632(16,0,H2-0x30);
-	//Displayer.ShowASCII1632(16*2,0,13);//:
-	//Displayer.ShowASCII1632(16*3,0,M1-0x30);
-	//Displayer.ShowASCII1632(16*4,0,M2-0x30);
-	//Displayer.ShowASCII1632(16*5,0,13);//:
-	//Displayer.ShowASCII1632(16*6,0,S1-0x30);
-	//Displayer.ShowASCII1632(16*7,0,S2-0x30);
+	//Displayer.ShowASCII1632(0,0,H1);
+	//Displayer.ShowASCII1632(16,0,H2);
+	//Displayer.ShowASCII1632(16*2,0,':');
+	//Displayer.ShowASCII1632(16*3,0,M1);
+	//Displayer.ShowASCII1632(16*4,0,M2);
+	//Displayer.ShowASCII1632(16*5,0, ':');
+	//Displayer.ShowASCII1632(16*6,0,S1);
+	//Displayer.ShowASCII1632(16*7,0,S2);
 
 
 	printf("SecondsSincePowerOn = %d; SecondsSinceStart = %d \r\n", rtcData.SecondsSincePowerOn, SecondsSinceStart);
 
 
-	Displayer.ShowASCII1632(0,0,rtcData.SecondsSincePowerOn/10000000%10);
-	Displayer.ShowASCII1632(16,0,rtcData.SecondsSincePowerOn/1000000%10);
-	Displayer.ShowASCII1632(16*2,0,rtcData.SecondsSincePowerOn/100000%10);//:
-	Displayer.ShowASCII1632(16*3,0,rtcData.SecondsSincePowerOn/10000%10);
-	Displayer.ShowASCII1632(16*4,0,rtcData.SecondsSincePowerOn/1000%100);
-	Displayer.ShowASCII1632(16*5,0,rtcData.SecondsSincePowerOn/100%10);//:
-	Displayer.ShowASCII1632(16*6,0,rtcData.SecondsSincePowerOn/10%10);
-	Displayer.ShowASCII1632(16*7,0,rtcData.SecondsSincePowerOn/1%10);
+	//Displayer.ShowASCII1632(0,0,rtcData.SecondsSincePowerOn/10000000%10+ 0x30);
+	//Displayer.ShowASCII1632(16,0,rtcData.SecondsSincePowerOn/1000000%10+ 0x30);
+	//Displayer.ShowASCII1632(16*2,0,rtcData.SecondsSincePowerOn/100000%10+ 0x30);
+	//Displayer.ShowASCII1632(16*3,0,rtcData.SecondsSincePowerOn/10000%10+ 0x30);
+	//Displayer.ShowASCII1632(16*4,0,rtcData.SecondsSincePowerOn/1000%100+ 0x30);
+	//Displayer.ShowASCII1632(16*5,0,rtcData.SecondsSincePowerOn/100%10+ 0x30);
+	//Displayer.ShowASCII1632(16*6,0,rtcData.SecondsSincePowerOn/10%10+ 0x30);
+	//Displayer.ShowASCII1632(16*7,0,rtcData.SecondsSincePowerOn/1%10+ 0x30);
 
 
-	Displayer.ShowASCII1632(0,4   ,PowerBankData.volt/3/1000%10);
-	Displayer.ShowASCII1632(16,4  ,PowerBankData.volt/3/100%10);
-	Displayer.ShowASCII1632(16*2,4,PowerBankData.volt/3/10%10);//:
+	Displayer.ShowASCII1632(0,4   ,PowerBankData.volt/6/1000%10+0x30);
+	Displayer.ShowASCII1632(16,4  ,PowerBankData.volt/6/100%10 + 0x30);
+	Displayer.ShowASCII1632(16*2,4,PowerBankData.volt/6/10%10 + 0x30);
 	//Displayer.ShowASCII1632(16*3,4,PowerBankData.volt/3/10%10);
 
 	if(PowerBankData.Current>0)
 	{
-		Displayer.ShowASCII1632(16 * 3, 4, 11);
+		Displayer.ShowASCII1632(16 * 3, 4, '+');
 	}
 	else
 	{
-		Displayer.ShowASCII1632(16 * 3, 4, 13);
+		Displayer.ShowASCII1632(16 * 3, 4, '-');
 	}
 
 	
 	
-	Displayer.ShowASCII1632(16*4,4,abs(PowerBankData.Current)/1000%100);
-	Displayer.ShowASCII1632(16*5,4, abs(PowerBankData.Current)/100%10);//:
-	Displayer.ShowASCII1632(16*6,4, abs(PowerBankData.Current)/10%10);
-	Displayer.ShowASCII1632(16*7,4, abs(PowerBankData.Current)/1%10);
+	Displayer.ShowASCII1632(16*4,4,abs(PowerBankData.Current)/1000%100 + 0x30);
+	Displayer.ShowASCII1632(16*5,4, abs(PowerBankData.Current)/100%10 + 0x30);
+	Displayer.ShowASCII1632(16*6,4, abs(PowerBankData.Current)/10%10 + 0x30);
+	Displayer.ShowASCII1632(16*7,4, abs(PowerBankData.Current)/1%10 + 0x30);
 }
 
 void GotoSleep()
