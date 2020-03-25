@@ -7,7 +7,8 @@
 #ifndef _CN_SSD1306_Wire_H
 #define _CN_SSD1306_Wire_H
 
-#define CHART_IN_FLASH
+//#define ACSII_IN_FLASH
+//#define HZK_IN_FLASH
 
 
 //16*16汉字取字方式：
@@ -16,8 +17,11 @@
 //C51
 //右转90度
 
-//const unsigned char  CN16x16[] PROGMEM =
+#ifdef HZK_IN_FLASH
+const unsigned char  CN16x16[] PROGMEM =
+#else
 const unsigned char  CN16x16[] =
+#endif
 {
 
 	//余  0
@@ -76,8 +80,12 @@ ASCII纵向取模8*16字库。为1亮。
 ASCII值减32即为数组二维下标。
 **************************************************/
 #define ASCII_OFFSET 32
-//const unsigned char  ASCII816[] PROGMEM =
+
+#ifdef ACSII_IN_FLASH
+const unsigned char  ASCII816[] PROGMEM =
+#else
 const unsigned char  ASCII816[] =
+#endif
 {
 // !
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,

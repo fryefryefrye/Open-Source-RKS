@@ -29,26 +29,17 @@
 #define IIC_DAT				D2
 #define IIC_CLK				D1
 
-
-
-
 const char* ssid = "frye_iot3";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
-
 char *time_str;   
-char H1,H2,M1,M2,S1,S2;
-char TimeString[9];
-
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 20;
 tPowerBankData PowerBankData;
 
 #include <Wire.h>
-
-
 
 //#include <U8g2lib.h>
 //U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, IIC_CLK, IIC_DAT); //配置构造函数
@@ -75,9 +66,11 @@ struct {
 
 unsigned long SecondsSinceStart = 0;
 unsigned long TenthSecondsSinceStart = 0;
-unsigned long CpuSleepTime = 10;
-unsigned long WiFiSleepTime = 600;
+unsigned long CpuSleepTime = 60;
+unsigned long WiFiSleepTime = 3600;
 
+unsigned char CurrentLine[16] = { 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32 };
+unsigned char UpdateLine[16] = { 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32 };
 
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
@@ -87,8 +80,6 @@ void StartOTA();
 void GetPowerState();
 void UpdateOled();
 void GotoSleep();
-
-
 void MyPrintf(const char *fmt, ...);
 uint32_t calculateCRC32(const uint8_t* data, size_t length);
 
@@ -137,10 +128,6 @@ void setup()
 		UpdateOled();
 	}
 		
-
-
-
-
 	//根据各项条件判断是否需要打开WiFi，否则休眠。
 	if ((rtcData.SecondsSincePowerOn == 0)
 		||(rtcData.SecondsSincePowerOn - rtcData.LastWifiTimeBasePowerOn > WiFiSleepTime)
@@ -158,7 +145,6 @@ void setup()
 		GotoSleep();
 	}
 
-
 	if ((abs(PowerBankData.Current) > CURRENT_UP_LIMIT)
 		||(rtcData.PowerBankCommand.WiFiAlwaysOn)
 		)
@@ -172,24 +158,18 @@ void setup()
 		}
 		else
 		{
-
 			printf("Turn off wifi，because wifi connection failed\r\n");
 			WiFi.disconnect();
 			WiFi.mode(WIFI_OFF);
 			WiFi.forceSleepBegin();
 			delay(1);
 		}
-
 	}
 	else//没有要求常开WiFi，并且无电流的话，休眠。
 	{
 		printf("GotoSleep for no WiFiAlwaysOn, and no Current  \r\n");
 		GotoSleep();
 	}
-
-
-
-
 }
 
 
@@ -222,7 +202,6 @@ void OnSecond()
 
 	//printf("PowerOn = %d; Start = %d \r\n", rtcData.SecondsSincePowerOn, SecondsSinceStart);
 
-
 	if (WiFi.status() == WL_CONNECTED)
 	{
 		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
@@ -235,7 +214,6 @@ void OnSecond()
 	{
 		printf("Start wifi when running offline ,but need wifi time is up \r\n");
 		StartWifi();
-		//Displayer.Fill_Screen(0x00);
 	}
 
 	if (abs(PowerBankData.Current) < CURRENT_LOW_LIMIT)
@@ -248,8 +226,6 @@ void OnSecond()
 	}
 	
 	printf("CurrentUnderCounter = %d \r\n", CurrentUnderCounter);
-
-
 
 	//没有要求常开WiFi，并且电流消失的话，休眠。
 	if (
@@ -415,13 +391,6 @@ void StartWifi()
 	//}
 	//Serial.println("Got Time");
 
-
-	//rtcData.GmtTimeDiffToPowerOn = now - rtcData.SecondsSincePowerOn;
-
-	//printf("LastWifiTimeBasePowerOn = %d \r\n", rtcData.LastWifiTimeBasePowerOn);
-	//printf("GmtTimeDiffToPowerOn = %d \r\n", rtcData.GmtTimeDiffToPowerOn);
-
-
 	//首次联网后，与服务器交换一次信息，主要目的是为了获取是否有常开WiFi的要求。
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
 	m_WiFiUDP.write((const char*)&PowerBankData, sizeof(tPowerBankData));
@@ -445,58 +414,43 @@ void UpdateOled()
 	//time_t now = rtcData.SecondsSincePowerOn + rtcData.GmtTimeDiffToPowerOn;
 	time_t now = time(nullptr); //获取当前时间
 	time_str = ctime(&now);
-	H1 = time_str[11];
-	H2 = time_str[12];
-	M1 = time_str[14];
-	M2 = time_str[15];
-	S1 = time_str[17];
-	S2 = time_str[18];
+	//printf("%s\n", time_str);
+	UpdateLine[0] = time_str[11];
+	UpdateLine[1] = time_str[12];
+	UpdateLine[2] = ':';
+	UpdateLine[3] = time_str[14];
+	UpdateLine[4] = time_str[15];
+	UpdateLine[5] = ':';
+	UpdateLine[6] = time_str[17];
+	UpdateLine[7] = time_str[18];
 
-	//printf("%c%c:%c%c:%c%c\n", H1, H2, M1, M2, S1, S2);
+	UpdateLine[0 + 8] = PowerBankData.volt / 6 / 1000 % 10 + 0x30;
+	UpdateLine[1 + 8] = PowerBankData.volt / 6 / 100 % 10 + 0x3;
+	UpdateLine[2 + 8] = PowerBankData.volt / 6 / 10 % 10 + 0x30;
 
-	//Displayer.ShowASCII1632(0,0,H1);
-	//Displayer.ShowASCII1632(16,0,H2);
-	//Displayer.ShowASCII1632(16*2,0,':');
-	//Displayer.ShowASCII1632(16*3,0,M1);
-	//Displayer.ShowASCII1632(16*4,0,M2);
-	//Displayer.ShowASCII1632(16*5,0, ':');
-	//Displayer.ShowASCII1632(16*6,0,S1);
-	//Displayer.ShowASCII1632(16*7,0,S2);
-
-
-	printf("SecondsSincePowerOn = %d; SecondsSinceStart = %d \r\n", rtcData.SecondsSincePowerOn, SecondsSinceStart);
-
-
-	//Displayer.ShowASCII1632(0,0,rtcData.SecondsSincePowerOn/10000000%10+ 0x30);
-	//Displayer.ShowASCII1632(16,0,rtcData.SecondsSincePowerOn/1000000%10+ 0x30);
-	//Displayer.ShowASCII1632(16*2,0,rtcData.SecondsSincePowerOn/100000%10+ 0x30);
-	//Displayer.ShowASCII1632(16*3,0,rtcData.SecondsSincePowerOn/10000%10+ 0x30);
-	//Displayer.ShowASCII1632(16*4,0,rtcData.SecondsSincePowerOn/1000%100+ 0x30);
-	//Displayer.ShowASCII1632(16*5,0,rtcData.SecondsSincePowerOn/100%10+ 0x30);
-	//Displayer.ShowASCII1632(16*6,0,rtcData.SecondsSincePowerOn/10%10+ 0x30);
-	//Displayer.ShowASCII1632(16*7,0,rtcData.SecondsSincePowerOn/1%10+ 0x30);
-
-
-	Displayer.ShowASCII1632(0,4   ,PowerBankData.volt/6/1000%10+0x30);
-	Displayer.ShowASCII1632(16,4  ,PowerBankData.volt/6/100%10 + 0x30);
-	Displayer.ShowASCII1632(16*2,4,PowerBankData.volt/6/10%10 + 0x30);
-	//Displayer.ShowASCII1632(16*3,4,PowerBankData.volt/3/10%10);
-
-	if(PowerBankData.Current>0)
+	if (PowerBankData.Current > 0)
 	{
-		Displayer.ShowASCII1632(16 * 3, 4, '+');
+		UpdateLine[3 + 8] = '+';
 	}
 	else
 	{
-		Displayer.ShowASCII1632(16 * 3, 4, '-');
+		UpdateLine[3 + 8] = '-';
 	}
+	UpdateLine[4 + 8] = abs(PowerBankData.Current) / 1000 % 100 + 0x30;
+	UpdateLine[5 + 8] = abs(PowerBankData.Current) / 100 % 100 + 0x30;
+	UpdateLine[6 + 8] = abs(PowerBankData.Current) / 10 % 100 + 0x30;
+	UpdateLine[7 + 8] = abs(PowerBankData.Current) / 1 % 100 + 0x30;
 
-	
-	
-	Displayer.ShowASCII1632(16*4,4,abs(PowerBankData.Current)/1000%100 + 0x30);
-	Displayer.ShowASCII1632(16*5,4, abs(PowerBankData.Current)/100%10 + 0x30);
-	Displayer.ShowASCII1632(16*6,4, abs(PowerBankData.Current)/10%10 + 0x30);
-	Displayer.ShowASCII1632(16*7,4, abs(PowerBankData.Current)/1%10 + 0x30);
+	unsigned long MillisBeforeOled = millis();
+	for (byte i = 0; i < 16; i++)
+	{
+		if (CurrentLine[i] != UpdateLine[i])
+		{
+			Displayer.ShowASCII1632(16 * (i%8), 4 * (i/8), UpdateLine[i]);
+			CurrentLine[i] = UpdateLine[i];
+		}
+	}
+	//MyPrintf("Update:%dms PowerOn:%ds; Start:%ds \r\n", millis() - MillisBeforeOled,rtcData.SecondsSincePowerOn, SecondsSinceStart);	
 }
 
 void GotoSleep()

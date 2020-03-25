@@ -4,23 +4,10 @@
 * 建议和问题反馈，请发邮件至 hello14blog@gmail.com
 ***************************************************************************/
 
-//#if ARDUINO >= 100
-// #include "Arduino.h"
-//#else
-// #include "WProgram.h"
-//#endif
-
 #include "Wire.h"
 
 #include "CN_SSD1306_Wire.h"
-#include "codetab.c"
 
-//定义类
-//CN_SSD1306_Wire::CN_SSD1306_Wire()//int rst
-//{
-//  //_rst = rst;
-//  //pinMode(rst, OUTPUT);
-//}
 
 //IIC写命令 -- 命令操作很少，对速度影响不大
 void CN_SSD1306_Wire::WriteCommand(unsigned char ins)
@@ -79,9 +66,14 @@ void CN_SSD1306_Wire::ShowCN(unsigned char x, unsigned char y, unsigned char N)
 	unsigned char wm=0;
 	unsigned int adder=0;
 	unsigned char OneHzk16[32];
+
+#ifdef HZK_IN_FLASH
 	//read 32 byte from flash
-	//memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+	memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+#else
 	memcpy(OneHzk16, CN16x16 + 32 * N, 32);
+#endif
+
 
 
 	IIC_SetPos(x , y);
@@ -105,9 +97,16 @@ void CN_SSD1306_Wire::ShowCN3232(unsigned char x, unsigned char y, unsigned char
 	unsigned char i=0;
 	unsigned int adder = 0;
 	unsigned char OneHzk16[32];
+
+
+
+#ifdef HZK_IN_FLASH
 	//read 32 byte from flash
-	//memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+	memcpy_P(OneHzk16, CN16x16 + 32 * N, 32);
+#else
 	memcpy(OneHzk16, CN16x16 + 32 * N, 32);
+#endif
+
 
 	uint16_t CN3232[32];
 
@@ -155,9 +154,13 @@ void CN_SSD1306_Wire::ShowASCII816(unsigned char x, unsigned char y, unsigned ch
 	unsigned char wm=0;
 	unsigned int adder = 0;
 	unsigned char OneASCII816[16];
+
+#ifdef ACSII_IN_FLASH
 	//read 32 byte from flash
-	//memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+	memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+#else
 	memcpy(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+#endif
 
 	IIC_SetPos(x , y);
 	for(wm = 0;wm < 8;wm++)
@@ -182,9 +185,14 @@ void CN_SSD1306_Wire::ShowASCII1632(unsigned char x, unsigned char y, unsigned c
 	unsigned char i=0;
 	unsigned int adder=0;
 	unsigned char OneASCII816[16];
+
+
+#ifdef ACSII_IN_FLASH
 	//read 32 byte from flash
-	//memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+	memcpy_P(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+#else
 	memcpy(OneASCII816, ASCII816 + 16 * (N - ASCII_OFFSET), 16);
+#endif
 
 	uint16_t ASCII1632[16];
 
