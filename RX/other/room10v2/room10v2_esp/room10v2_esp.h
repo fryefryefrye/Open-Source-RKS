@@ -73,13 +73,21 @@ WiFiUDP m_WiFiUDP;
 char *time_str;   
 char H1,H2,M1,M2,S1,S2;
 
-
+#define ROOM_10
 #include "Z:\bt\web\datastruct.h"
-unsigned char DebugLogIndex = 20;
-//tXXXXXXXXData XXXXXXXXData;
-//unsigned long LastServerUpdate;
+unsigned char DebugLogIndex = 0xFF;
 
 
+tRoom10Data Room10Data;
+tRoom10Command Room10Command;
+unsigned long LastAndroidBatteryUpdate;
+unsigned char ScreenOffCounter = 0;
+
+#include <Wire.h>     //The DHT12 uses I2C comunication.
+#include "VL53L0X.h"
+#include "DHT12.h"
+DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
+VL53L0X sensor;
 
 unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
@@ -94,26 +102,45 @@ void MyPrintf(const char *fmt, ...);
 void setup() 
 {       
 
+	pinMode(USB_CHARGE, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(USB_CHARGE, LOW);
+
+
+	Wire.begin(IIC_DAT,IIC_CLK);
+
+	sensor.setTimeout(500);
+	if (!sensor.init())
+	{
+		printf("Failed to detect and initialize sensor!\r\n");
+	}
+	sensor.startContinuous();
+
+
+
+	Room10Data.DataType = 19;
+	Room10Data.DisableRf = false;
+	Room10Data.UsbChargeOn = false;
+
 
 	delay(50);                      
 	Serial.begin(115200);
 
 
 	printf("sizeof(tIicCommand) = %d sizeof(tIicCommand) = %d \r\n",sizeof(tIicCommand),sizeof(tIicCommand));
-	//XXXXXXXXData.DataType = 0;
-	Wire.begin(SDA, SCL); /* join i2c bus with SDA=D1 and SCL=D2 of NodeMCU */
+
+	//Wire.begin(SDA, SCL); /* join i2c bus with SDA=D1 and SCL=D2 of NodeMCU */
 
 
 
 	WiFi.disconnect();
 	WiFi.mode(WIFI_STA);//设置模式为STA
-	byte mac[6];
-	WiFi.softAPmacAddress(mac);
-	printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
-	for (byte i=0;i<6;i++)
-	{
-		//XXXXXXXXData.Mac[i] = mac[i];
-	}
+	//byte mac[6];
+	//WiFi.softAPmacAddress(mac);
+	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+	//for (byte i=0;i<6;i++)
+	//{
+	//	Room10Data.Mac[i] = mac[i];
+	//}
 
 	//XXXXXXXXData.Id = 0xFF;
 
@@ -170,10 +197,32 @@ void setup()
 	Serial.println("");
 
 
-	m_WiFiUDP.begin(5050); 
 
+	byte mac[6];
+	WiFi.softAPmacAddress(mac);
+
+	for (byte i=0;i<6;i++)
+	{
+		Room10Data.Mac[i] = mac[i];
+	}
+
+	Room10Data.RoomId = 0xFF;
+	for (unsigned char i = 0;i<ROOM_10_NUMBER;i++)
+	{
+		if (memcmp(&Room10Data.Mac[0],&Room10MacAddress[i][0],sizeof(unsigned long)*6) == 0)
+		{
+			Room10Data.RoomId = i;
+			DebugLogIndex = i + 10;
+			MyPrintf("room10 ID=%d \r\n",i);
+			break;
+		}
+	}
+
+	//printf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	MyPrintf("macAddress 0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X AP:%s\r\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],ssid);
 
+
+	m_WiFiUDP.begin(5050); 
 
 	ArduinoOTA.onStart([]() {
 		String type;
@@ -224,16 +273,20 @@ void loop()
 
 
 
-	//m_WiFiUDP.parsePacket(); 
-	//unsigned int UdpAvailable = m_WiFiUDP.available();
-	//if (UdpAvailable == sizeof(tXXXXXXXXCommand))
-	//{
-	//	//MyPrintf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-	//	//printf("m_WiFiUDP.available() = %d\r\n",UdpAvailable);
-	//	tXXXXXXXXCommand tempXXXXXXXXCommand;
-	//	m_WiFiUDP.read((char *)&tempXXXXXXXXCommand,sizeof(tXXXXXXXXCommand));
-	//	LastServerUpdate = 0;
-	//}
+	m_WiFiUDP.parsePacket(); 
+	unsigned int UdpAvailable = m_WiFiUDP.available();
+	if (UdpAvailable == sizeof(tRoom10Command))
+	{
+		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
+		m_WiFiUDP.read((char *)&Room10Command,sizeof(tRoom10Command));
+		Room10Data.DisableRf = Room10Command.DisableRf;
+		LastAndroidBatteryUpdate = 0;
+		//printf("DisableRf:%d! Percentage:%d Timeout:%d\r\n"
+		//	,Room10Command.DisableRf
+		//	,Room10Command.BatteryPercentage
+		//	,Room10Command.AndroidTimeout
+		//	);
+	}
 }
 
 unsigned long LastMillis = 0;
@@ -252,6 +305,8 @@ void TenthSecondsSinceStartTask()
 
 void OnSecond()
 {
+	static bool LastUsbChargeOn = false;
+
 	time_t now = time(nullptr); //获取当前时间
 	time_str = ctime(&now);
 	H1 = time_str[11];
@@ -280,31 +335,154 @@ void OnSecond()
 
 
 
+	//Usb chager update
+	LastAndroidBatteryUpdate++;
 
-
-
-
-
-	//printf("LastServerUpdate = %d\r\n",LastServerUpdate);
-
-
-	//LastServerUpdate++;
-	//if (LastServerUpdate > 30)
+	//if ((LastAndroidBatteryUpdate>30)||(Room10Command.AndroidTimeout>30))
 	//{
-	//	printf("Re connection routing!\n");  
-	//	WiFi.disconnect();
-	//	WiFi.mode(WIFI_STA);//设置模式为STA
-	//	WiFi.begin(ssid, password); //Wifi接入到网络
-
-	//	//printf("reset!\n");  
-	//	//ESP.reset();
-
-	//	LastServerUpdate = 0;
+	//	if (now%3600 <= 40*60)
+	//	{
+	//		if (!Room10Data.UsbChargeOn)
+	//		{
+	//			MyPrintf("Room10 Usb chager offline ON \r\n");
+	//			Room10Data.UsbChargeOn = true;
+	//		}	
+	//	}
+	//	else
+	//	{
+	//		if (Room10Data.UsbChargeOn)
+	//		{
+	//			Room10Data.UsbChargeOn = false;
+	//			MyPrintf("Room10 Usb chager offline OFF \r\n");
+	//		}
+	//	}
+	//} 
+	//if (Room10Command.AndroidTimeout>2)
+	//{
+	//	if (!Room10Data.UsbChargeOn)
+	//	{
+	//		MyPrintf("Room10 Usb chager ON for active\r\n");
+	//		Room10Data.UsbChargeOn = true;
+	//	}
 	//}
 
-	//m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	//m_WiFiUDP.write((const char*)&XXXXXXXXData, sizeof(tXXXXXXXXData));
-	//m_WiFiUDP.endPacket(); 
+	//if (Room10Command.AndroidTimeout>10)
+	//{
+	//	digitalWrite(BUZZ, LOW);
+	//}
+	//else
+	//{
+	//	digitalWrite(BUZZ, HIGH);
+	//}
+
+	//if ((Hour<23)&&(Hour>7))//8:00:00~22:59:59
+	//{
+	//	if ((!Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage<60))
+	//	{
+
+	//		MyPrintf("Room10 Usb chager online ON \r\n");
+	//		Room10Data.UsbChargeOn = true;
+
+	//	}	
+	//	else if ((Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage>70))
+	//	{
+	//		MyPrintf("Room10 Usb chager online OFF \r\n");
+	//		Room10Data.UsbChargeOn = false;
+	//	}	
+	//}
+	//else
+	//{
+	//	MyPrintf("Room10 Usb chager OFF after 23:00:00 \r\n");
+	//	Room10Data.UsbChargeOn = false;
+	//}
+
+
+
+	static long DarkCounter = 0;
+	Room10Data.Brightness = 100-(analogRead(A0)*100/1024);
+
+	if (Room10Data.Brightness<5)
+	{
+		//if (Room10Data.UsbChargeOn)
+		//{
+		//	Room10Data.UsbChargeOn = false;
+		//}
+		DarkCounter++;
+	}
+	else
+	{
+		DarkCounter = 0;
+	}
+
+
+	if ((DarkCounter == 0)||(DarkCounter>3600))
+	{
+		if ((!Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage<60))
+		{
+
+			MyPrintf("Room10 Usb chager online ON \r\n");
+			Room10Data.UsbChargeOn = true;
+
+		}	
+		else if ((Room10Data.UsbChargeOn)&&(Room10Command.BatteryPercentage>70))
+		{
+			MyPrintf("Room10 Usb chager online OFF \r\n");
+			Room10Data.UsbChargeOn = false;
+		}	
+	}
+	else
+	{
+		if (Room10Data.UsbChargeOn)
+		{
+			MyPrintf("Room10 Usb chager OFF when dark in 1 hour \r\n");
+			Room10Data.UsbChargeOn = false;
+		}
+
+	}
+
+
+	if (Room10Data.UsbChargeOn)
+	{
+		digitalWrite(USB_CHARGE,HIGH);
+	}
+	else
+	{
+		digitalWrite(USB_CHARGE,LOW);
+	}
+
+	//sync screen on when charge on/off. Then the screen can be off.
+	if (LastUsbChargeOn != Room10Data.UsbChargeOn)
+	{
+		LastUsbChargeOn = Room10Data.UsbChargeOn;
+		Room10Data.ScreenOn = true;
+		ScreenOffCounter = 0;
+	}
+
+
+
+	if(dht12.read() == 0)		
+	{
+		Room10Data.Humidity = dht12.LastHumidity*10;
+		Room10Data.RealTemperature = dht12.LastTemperature*10;
+	}
+
+
+	//printf("Humidity:%d %% Temperature:%d *C Brightness:%d%%\r\n"
+	//,Room10Data.Humidity
+	//,Room10Data.RealTemperature
+	//,Room10Data.Brightness
+	//);
+
+
+
+	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+	m_WiFiUDP.write((const char*)&Room10Data, sizeof(tRoom10Data));
+	m_WiFiUDP.endPacket(); 
+
+
+
+
+
 }
 
 void OnTenthSecond()
@@ -312,6 +490,42 @@ void OnTenthSecond()
 	if (TenthSecondsSinceStart%10 == 0)
 	{
 		OnSecond();
+	}
+
+	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
+#define DISTANCE_HIGH 700
+#define DISTANCE_LOW  200
+#define SCREEN_TIMEOUT  50 //0.1s
+	if (Room10Data.ScreenOn)//current on
+	{
+		//if (Room10Data.Brightness > 50)
+		if ((Room10Data.Distance > DISTANCE_HIGH)||(Room10Data.Distance < DISTANCE_LOW))
+		{
+			ScreenOffCounter++;
+			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
+			if (ScreenOffCounter > SCREEN_TIMEOUT)
+			{
+				Room10Data.ScreenOn = false;
+				printf("ScreenOn to false;\r\n");
+				ScreenOffCounter = 0;
+			}
+		}
+		else
+		{
+			ScreenOffCounter = 0;
+			printf("ScreenOffCounter to 0  \r\n");
+		}
+	}
+	else//current off
+	{
+		if ((Room10Data.Distance < DISTANCE_HIGH)&&(Room10Data.Distance > DISTANCE_LOW))
+		{
+			Room10Data.ScreenOn = true;
+			printf("ScreenOn to true;\r\n");
+			m_WiFiUDP.beginPacket("192.168.0.17", 5050);
+			m_WiFiUDP.write((const char*)&Room10Data, sizeof(tRoom10Data));
+			m_WiFiUDP.endPacket(); 
+		}
 	}
 
 

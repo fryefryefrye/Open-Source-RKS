@@ -7,6 +7,9 @@ void DumpDecode_315();
 void DumpDecode_433();
 void Dump_315_Lead();
 void DecodeRf_INT();
+void Dump_realtime();
+
+
 
 
 #include "RCSwitch.h"
@@ -38,10 +41,10 @@ void OnTenthSecond();
 
 //void SendRf();
 
- // #define DUMP_LONG
-//  #define DUMP_DECODE
-  #define DECODE_2622
-
+  //#define DUMP_LONG
+ // #define DUMP_DECODE
+ // #define DECODE_2622
+  #define DUMP_REAL_TIME
 
 #ifdef DUMP_LONG
 	#define  SAMPLE_NUMBER 300
@@ -68,6 +71,11 @@ void setup()
 
 	mySwitch.enableTransmit(4);
 	mySwitch.setRepeatTransmit(10);
+
+#ifdef DUMP_REAL_TIME
+	attachInterrupt(0, Dump_realtime, CHANGE); //pin2
+#endif
+
 
 #ifdef DUMP_LONG
 	attachInterrupt(0, Dump_315, CHANGE); //pin2
@@ -197,7 +205,7 @@ void DecodeRf(unsigned char index)
 				} 
 			}
 
-			if (TimeArray[index][i] > 1000)
+			if (TimeArray[index][i] > 2000)
 			{
 				printf("\r\nAbove line. Pulse No.%02d end with %d  0x%02X 0x%02X 0x%02X 0x%02X 0x%02X|   ", i-LastLong-1,(i%2==0?StartHigh:!StartHigh),RcCommand[0],RcCommand[1],RcCommand[2],RcCommand[3],RcCommand[4]);
 				LastLong = i+1;
@@ -448,6 +456,32 @@ void Dump_433()//中断函数   //debug for rf data simply
 }
 
 
+void Dump_realtime()//中断函数   //debug for rf data simply
+{
+
+	static unsigned long ThisTime_real;
+	static unsigned long DiffTime_real;
+	static unsigned long LastTime_real;
+
+	//printf("%d\n",micros());
+
+
+	ThisTime_real = micros();
+	DiffTime_real = ThisTime_real-LastTime_real;
+	LastTime_real = ThisTime_real;
+	if (DiffTime_real>2500)
+	{
+		Serial.write(0);
+	} 
+	else
+	{
+		Serial.write(DiffTime_real/10);
+	}
+	
+	//printf("%ld\n",DiffTime_real);
+
+}
+
 void Dump_315()//中断函数   //debug for rf data simply
 {
 	unsigned long ThisTime;
@@ -476,6 +510,7 @@ void Dump_315()//中断函数   //debug for rf data simply
 			{
 				TimeArray[0][Counter[0]] = DiffTime;
 				Counter[0]++;
+				//Serial.write(DiffTime/10);
 			}
 			else
 			{
@@ -484,7 +519,7 @@ void Dump_315()//中断函数   //debug for rf data simply
 					Counter[0]++;
 					if (Counter[0] > 32)
 					{
-						StartHigh = digitalRead(2);
+						//StartHigh = digitalRead(2);
 						RfOn = true;
 						Counter[0] = 0;
 						LastTime[0] = 0;
@@ -544,7 +579,7 @@ void DumpDecode_315()
 					}
 					else
 					{
-						if (DiffTime > 7000)
+						if (DiffTime > 5000)
 						{
 							FrameOK[0] = true;
 							FrameStarted = false;
@@ -563,7 +598,7 @@ void DumpDecode_315()
 				} 
 				else
 				{
-					if (DiffTime > 7000)
+					if (DiffTime > 5000)
 					{
 						//time[counter] = DiffTime;
 						Base[0] = DiffTime/16;
@@ -710,10 +745,15 @@ void DumpDecode_433()
 
 void DecodeRf_INT()
 {
+//#define PULSE_NUMBER 48
+//#define MIN_LEN 100
+//#define MAX_LEN 2000
+//#define LEAD_LEN 7000
+
 #define PULSE_NUMBER 48
-#define MIN_LEN 100
-#define MAX_LEN 2000
-#define LEAD_LEN 7000
+#define MIN_LEN 50
+#define MAX_LEN 3000
+#define LEAD_LEN 4000
 
 	unsigned long ThisTime;
 	unsigned long DiffTime;

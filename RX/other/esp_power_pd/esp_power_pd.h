@@ -26,6 +26,8 @@
 #include<time.h>
 #define timezone 8
 
+#define FULL_AH 8
+
 #define IIC_DAT				D2
 #define IIC_CLK				D1
 
@@ -37,7 +39,7 @@ char *time_str;
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 20;
-tPowerBankData PowerBankData;
+//tPowerBankData PowerBankData;
 
 #include <Wire.h>
 
@@ -56,21 +58,128 @@ Adafruit_INA219 ina219(INA219_ADDRESS);
 #define CURRENT_UP_LIMIT 20			//mA
 //#define CURRENT_UP_LIMIT_SECONDS 10	//Seconds
 
+unsigned int RemainVolt[100]=
+{
+	4046,
+	4024,
+	4012,
+	4002,
+	3992,
+	3986,
+	3979,
+	3975,
+	3973,
+	3968,
+	3966,
+	3963,
+	3958,
+	3956,
+	3954,
+	3954,
+	3950,
+	3949,
+	3946,
+	3944,
+	3942,
+	3940,
+	3938,
+	3936,
+	3934,
+	3932,
+	3929,
+	3927,
+	3924,
+	3920,
+	3916,
+	3914,
+	3911,
+	3908,
+	3905,
+	3900,
+	3899,
+	3894,
+	3890,
+	3888,
+	3884,
+	3881,
+	3878,
+	3875,
+	3871,
+	3866,
+	3863,
+	3862,
+	3857,
+	3853,
+	3850,
+	3846,
+	3844,
+	3840,
+	3834,
+	3833,
+	3830,
+	3826,
+	3824,
+	3818,
+	3816,
+	3814,
+	3810,
+	3804,
+	3804,
+	3802,
+	3798,
+	3795,
+	3791,
+	3790,
+	3783,
+	3781,
+	3774,
+	3775,
+	3766,
+	3766,
+	3760,
+	3757,
+	3750,
+	3747,
+	3740,
+	3737,
+	3727,
+	3726,
+	3716,
+	3714,
+	3706,
+	3701,
+	3694,
+	3688,
+	3679,
+	3670,
+	3662,
+	3651,
+	3638,
+	3621,
+	3602,
+	3578,
+	3543,
+	3478
+};
+
 struct {
 	uint32_t crc32;
 	unsigned long SecondsSincePowerOn;
 	unsigned long LastWifiTimeBasePowerOn;
 	//unsigned long GmtTimeDiffToPowerOn;
 	tPowerBankCommand PowerBankCommand;
+	tPowerBankData PowerBankData;
 } rtcData;
 
 unsigned long SecondsSinceStart = 0;
 unsigned long TenthSecondsSinceStart = 0;
-unsigned long CpuSleepTime = 60;
-unsigned long WiFiSleepTime = 3600;
+unsigned long CpuSleepTime = 10;
+unsigned long WiFiSleepTime = 600;
 
-unsigned char CurrentLine[16] = { 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32 };
+unsigned char CurrentLine[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 unsigned char UpdateLine[16] = { 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32 };
+
+//bool Charging = false;
 
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
@@ -82,6 +191,10 @@ void UpdateOled();
 void GotoSleep();
 void MyPrintf(const char *fmt, ...);
 uint32_t calculateCRC32(const uint8_t* data, size_t length);
+
+unsigned char GetRemain(unsigned int volt);
+unsigned char LastRemain = 100;
+
 
 void setup() 
 {       
@@ -108,8 +221,12 @@ void setup()
 			Serial.println("CRC32 in RTC memory doesn't match CRC32 of data. Data is probably Not OK!");
 			rtcData.SecondsSincePowerOn = 0;
 			rtcData.LastWifiTimeBasePowerOn = 0;
-			//rtcData.GmtTimeDiffToPowerOn = 0;
 			rtcData.PowerBankCommand.WiFiAlwaysOn = false;
+			rtcData.PowerBankData.ThisCharge = 0;
+			rtcData.PowerBankData.LastCharge = 0;
+			rtcData.PowerBankData.ThisDisCharge = 0;
+			rtcData.PowerBankData.LastDisCharge = 0;
+			rtcData.PowerBankData.Charging = false;
 		}
 		else {
 			Serial.println("CRC32 check ok, data is probably OK.");
@@ -123,7 +240,7 @@ void setup()
 	GetPowerState();
 
 	//有电流的话，立即亮屏，否则等待WiFi时间太长
-	if (abs(PowerBankData.Current) > CURRENT_UP_LIMIT)
+	if (abs(rtcData.PowerBankData.Current) > CURRENT_UP_LIMIT)
 	{
 		UpdateOled();
 	}
@@ -131,13 +248,14 @@ void setup()
 	//根据各项条件判断是否需要打开WiFi，否则休眠。
 	if ((rtcData.SecondsSincePowerOn == 0)
 		||(rtcData.SecondsSincePowerOn - rtcData.LastWifiTimeBasePowerOn > WiFiSleepTime)
-		|| (abs(PowerBankData.Current) > CURRENT_UP_LIMIT)
+		|| (abs(rtcData.PowerBankData.Current) > CURRENT_UP_LIMIT)
 		)
 	{
 		StartWifi();
 		Displayer.Initial(); // 首次通电肯定启动WiFi
 		delay(10);
 		Displayer.Fill_Screen(0x00);//首次通电清屏 否则首次通电花屏。
+		memset(CurrentLine,0,16);
 	}
 	else 
 	{
@@ -145,7 +263,7 @@ void setup()
 		GotoSleep();
 	}
 
-	if ((abs(PowerBankData.Current) > CURRENT_UP_LIMIT)
+	if ((abs(rtcData.PowerBankData.Current) > CURRENT_UP_LIMIT)
 		||(rtcData.PowerBankCommand.WiFiAlwaysOn)
 		)
 	{
@@ -204,8 +322,8 @@ void OnSecond()
 
 	if (WiFi.status() == WL_CONNECTED)
 	{
-		m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-		m_WiFiUDP.write((const char*)&PowerBankData, sizeof(tPowerBankData));
+		m_WiFiUDP.beginPacket("fryefryefrye.myds.me", 5050);
+		m_WiFiUDP.write((const char*)&rtcData.PowerBankData, sizeof(tPowerBankData));
 		m_WiFiUDP.endPacket();
 	}
 
@@ -216,7 +334,7 @@ void OnSecond()
 		StartWifi();
 	}
 
-	if (abs(PowerBankData.Current) < CURRENT_LOW_LIMIT)
+	if (abs(rtcData.PowerBankData.Current) < CURRENT_LOW_LIMIT)
 	{
 		CurrentUnderCounter++;
 	}
@@ -242,6 +360,34 @@ void OnSecond()
 		GotoSleep();
 	}
 
+	//充电放电状态切换
+	if((rtcData.PowerBankData.Current>200)&&(rtcData.PowerBankData.Charging == false))
+	{
+		rtcData.PowerBankData.Charging = true;
+		rtcData.PowerBankData.LastCharge = rtcData.PowerBankData.ThisCharge;
+		rtcData.PowerBankData.ThisCharge = 0;
+		MyPrintf("PowerBank Start Charging!\r\n");
+	}
+	//一旦停止充电，就认为充电完成，重设电量计数器
+	else if((rtcData.PowerBankData.Current<=0)&&(rtcData.PowerBankData.Charging == true))
+	{
+		rtcData.PowerBankData.Charging = false;
+		rtcData.PowerBankData.LastDisCharge = rtcData.PowerBankData.ThisDisCharge;
+		rtcData.PowerBankData.ThisDisCharge = 0;
+		MyPrintf("PowerBank Start Discharging!\r\n");
+	}
+
+	//电量本地统计
+	if (rtcData.PowerBankData.Charging)
+	{
+		rtcData.PowerBankData.ThisCharge = rtcData.PowerBankData.ThisCharge + rtcData.PowerBankData.Current;
+	} 
+	else
+	{
+		rtcData.PowerBankData.ThisDisCharge = rtcData.PowerBankData.ThisDisCharge + (rtcData.PowerBankData.Current*(-1));
+	}
+	
+
 
 
 }
@@ -257,19 +403,34 @@ void GetPowerState()
 
 	if ((BusVoltage >= 0)&&(BusVoltage<(float)30))
 	{
-		PowerBankData.volt = BusVoltage * 1000;
+		rtcData.PowerBankData.volt = BusVoltage * 1000;
 	}
 
 	if (abs(Current)<(float)5000)
 	{
-		PowerBankData.Current = Current;
-
+		rtcData.PowerBankData.Current = Current*(-1);
 	}
 
-	printf("Current:%d BusVoltage:%d \r\n",PowerBankData.Current,PowerBankData.volt);
 
-	//PowerBankData.Current = PowerBankData.Current - 820;
+	//unsigned char ThisRemain = GetRemain(rtcData.PowerBankData.volt/6);
+	//if (ThisRemain < LastRemain)
+	//{
+	//	MyPrintf("Remain from:%d to:%d \r\n"
+	//		,LastRemain
+	//		,ThisRemain
+	//		);
+	//	rtcData.PowerBankData.Percentage = ThisRemain;
+	//	LastRemain = ThisRemain;
+	//}
 
+	rtcData.PowerBankData.Percentage = GetRemain(rtcData.PowerBankData.volt/6);
+
+
+	//MyPrintf("Current:%d BusVoltage:%d Percentage:%d \r\n"
+	//	,rtcData.PowerBankData.Current
+	//	,rtcData.PowerBankData.volt
+	//	,rtcData.PowerBankData.Percentage
+	//	);
 }
 
 
@@ -322,7 +483,7 @@ void StartOTA()
 void StartWifi()
 {
 
-	PowerBankData.DataType = 24;
+	rtcData.PowerBankData.DataType = 24;
 	rtcData.LastWifiTimeBasePowerOn = rtcData.SecondsSincePowerOn;
 
 	//Static IP address configuration
@@ -393,7 +554,7 @@ void StartWifi()
 
 	//首次联网后，与服务器交换一次信息，主要目的是为了获取是否有常开WiFi的要求。
 	m_WiFiUDP.beginPacket("192.168.0.17", 5050);
-	m_WiFiUDP.write((const char*)&PowerBankData, sizeof(tPowerBankData));
+	m_WiFiUDP.write((const char*)&rtcData.PowerBankData, sizeof(tPowerBankData));
 	m_WiFiUDP.endPacket(); 
 
 	delay(1000);
@@ -411,37 +572,49 @@ void StartWifi()
 void UpdateOled()
 {
 
-	//time_t now = rtcData.SecondsSincePowerOn + rtcData.GmtTimeDiffToPowerOn;
-	time_t now = time(nullptr); //获取当前时间
-	time_str = ctime(&now);
-	//printf("%s\n", time_str);
-	UpdateLine[0] = time_str[11];
-	UpdateLine[1] = time_str[12];
-	UpdateLine[2] = ':';
-	UpdateLine[3] = time_str[14];
-	UpdateLine[4] = time_str[15];
-	UpdateLine[5] = ':';
-	UpdateLine[6] = time_str[17];
-	UpdateLine[7] = time_str[18];
+	//time_t now = time(nullptr); //获取当前时间
+	//time_str = ctime(&now);
+	////printf("%s\n", time_str);
+	//UpdateLine[0] = time_str[11];
+	//UpdateLine[1] = time_str[12];
+	//UpdateLine[2] = ':';
+	//UpdateLine[3] = time_str[14];
+	//UpdateLine[4] = time_str[15];
+	//UpdateLine[5] = ':';
+	//UpdateLine[6] = time_str[17];
+	//UpdateLine[7] = time_str[18];
 
-	UpdateLine[0 + 8] = PowerBankData.volt / 6 / 1000 % 10 + 0x30;
-	UpdateLine[1 + 8] = PowerBankData.volt / 6 / 100 % 10 + 0x3;
-	UpdateLine[2 + 8] = PowerBankData.volt / 6 / 10 % 10 + 0x30;
+	char buf[8];
+	sprintf(buf,"%.2f%.2f",(float)rtcData.PowerBankData.ThisCharge / 3600000,(float)rtcData.PowerBankData.ThisDisCharge / 3600000);
 
-	if (PowerBankData.Current > 0)
-	{
-		UpdateLine[3 + 8] = '+';
-	}
-	else
+
+	UpdateLine[0] = buf[0];
+	UpdateLine[1] = '.';
+	UpdateLine[2] = buf[2];
+	UpdateLine[3] = buf[3];
+	UpdateLine[4] = buf[4];
+	UpdateLine[5] = '.';
+	UpdateLine[6] = buf[6];
+	UpdateLine[7] = buf[7];
+
+	UpdateLine[0 + 8] = rtcData.PowerBankData.volt / 6 / 1000 % 10 + 0x30;
+	UpdateLine[1 + 8] = rtcData.PowerBankData.volt / 6 / 100 % 10 + 0x30;
+	UpdateLine[2 + 8] = rtcData.PowerBankData.volt / 6 / 10 % 10 + 0x30;
+
+	if (rtcData.PowerBankData.Current < 0)
 	{
 		UpdateLine[3 + 8] = '-';
 	}
-	UpdateLine[4 + 8] = abs(PowerBankData.Current) / 1000 % 100 + 0x30;
-	UpdateLine[5 + 8] = abs(PowerBankData.Current) / 100 % 100 + 0x30;
-	UpdateLine[6 + 8] = abs(PowerBankData.Current) / 10 % 100 + 0x30;
-	UpdateLine[7 + 8] = abs(PowerBankData.Current) / 1 % 100 + 0x30;
+	else
+	{
+		UpdateLine[3 + 8] = '+';
+	}
+	UpdateLine[4 + 8] = abs(rtcData.PowerBankData.Current) / 1000 % 10 + 0x30;
+	UpdateLine[5 + 8] = abs(rtcData.PowerBankData.Current) / 100 % 10 + 0x30;
+	UpdateLine[6 + 8] = abs(rtcData.PowerBankData.Current) / 10 % 10 + 0x30;
+	UpdateLine[7 + 8] = abs(rtcData.PowerBankData.Current) / 1 % 10 + 0x30;
 
-	unsigned long MillisBeforeOled = millis();
+	//unsigned long MillisBeforeOled = millis();
 	for (byte i = 0; i < 16; i++)
 	{
 		if (CurrentLine[i] != UpdateLine[i])
@@ -533,4 +706,38 @@ uint32_t calculateCRC32(const uint8_t* data, size_t length)
 		}
 	}
 	return crc;
+}
+
+unsigned char GetRemain(unsigned int volt)
+{
+	//MyPrintf("GetRemain input Voltage:%d \r\n"
+	//	,volt
+	//	);
+	//for (byte i = 0; i < 100; i++)
+	//{
+	//	if (volt > RemainVolt[i])
+	//	{
+	//		return 100 -i;
+	//	}
+	//}
+	//return 0;
+
+	if (rtcData.PowerBankData.Charging)
+	{
+		if (rtcData.PowerBankData.ThisDisCharge > rtcData.PowerBankData.ThisCharge)
+		{
+			return 100 - (rtcData.PowerBankData.ThisDisCharge - rtcData.PowerBankData.ThisCharge) / (36000*FULL_AH);//10Ah
+		} 
+		else
+		{
+			return 100;
+		}
+	}
+	else
+	{
+		return 100 - rtcData.PowerBankData.ThisDisCharge / (36000*FULL_AH);//10Ah
+	}
+
+
+	
 }
