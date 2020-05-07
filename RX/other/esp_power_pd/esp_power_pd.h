@@ -39,134 +39,22 @@ char *time_str;
 
 #include "Z:\bt\web\datastruct.h"
 unsigned char DebugLogIndex = 20;
-//tPowerBankData PowerBankData;
 
 #include <Wire.h>
-
-//#include <U8g2lib.h>
-//U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, IIC_CLK, IIC_DAT); //配置构造函数
-
-
 #include "CN_SSD1306_Wire.h"
 CN_SSD1306_Wire Displayer;//HardWare I2C
 
 #include "Adafruit_INA219.h"
 Adafruit_INA219 ina219(INA219_ADDRESS);
+
 #define CURRENT_LOW_LIMIT 10			//mA
 #define CURRENT_LOW_LIMIT_SECONDS 10	//Seconds
-
 #define CURRENT_UP_LIMIT 20			//mA
-//#define CURRENT_UP_LIMIT_SECONDS 10	//Seconds
-
-unsigned int RemainVolt[100]=
-{
-	4046,
-	4024,
-	4012,
-	4002,
-	3992,
-	3986,
-	3979,
-	3975,
-	3973,
-	3968,
-	3966,
-	3963,
-	3958,
-	3956,
-	3954,
-	3954,
-	3950,
-	3949,
-	3946,
-	3944,
-	3942,
-	3940,
-	3938,
-	3936,
-	3934,
-	3932,
-	3929,
-	3927,
-	3924,
-	3920,
-	3916,
-	3914,
-	3911,
-	3908,
-	3905,
-	3900,
-	3899,
-	3894,
-	3890,
-	3888,
-	3884,
-	3881,
-	3878,
-	3875,
-	3871,
-	3866,
-	3863,
-	3862,
-	3857,
-	3853,
-	3850,
-	3846,
-	3844,
-	3840,
-	3834,
-	3833,
-	3830,
-	3826,
-	3824,
-	3818,
-	3816,
-	3814,
-	3810,
-	3804,
-	3804,
-	3802,
-	3798,
-	3795,
-	3791,
-	3790,
-	3783,
-	3781,
-	3774,
-	3775,
-	3766,
-	3766,
-	3760,
-	3757,
-	3750,
-	3747,
-	3740,
-	3737,
-	3727,
-	3726,
-	3716,
-	3714,
-	3706,
-	3701,
-	3694,
-	3688,
-	3679,
-	3670,
-	3662,
-	3651,
-	3638,
-	3621,
-	3602,
-	3578,
-	3543,
-	3478
-};
 
 struct {
 	uint32_t crc32;
 	unsigned long SecondsSincePowerOn;
 	unsigned long LastWifiTimeBasePowerOn;
-	//unsigned long GmtTimeDiffToPowerOn;
 	tPowerBankCommand PowerBankCommand;
 	tPowerBankData PowerBankData;
 } rtcData;
@@ -178,8 +66,6 @@ unsigned long WiFiSleepTime = 600;
 
 unsigned char CurrentLine[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
 unsigned char UpdateLine[16] = { 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32 };
-
-//bool Charging = false;
 
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
@@ -373,7 +259,17 @@ void OnSecond()
 	{
 		rtcData.PowerBankData.Charging = false;
 		rtcData.PowerBankData.LastDisCharge = rtcData.PowerBankData.ThisDisCharge;
-		rtcData.PowerBankData.ThisDisCharge = 0;
+
+		//如果本次充电小于上次放电，说明没充满，将本次放电量设置为欠充电量。
+		if (rtcData.PowerBankData.ThisCharge > rtcData.PowerBankData.LastDisCharge)
+		{
+			rtcData.PowerBankData.ThisDisCharge = 0;
+		} 
+		else
+		{
+			rtcData.PowerBankData.ThisDisCharge = rtcData.PowerBankData.LastDisCharge - rtcData.PowerBankData.ThisCharge;
+		}
+		
 		MyPrintf("PowerBank Start Discharging!\r\n");
 	}
 
@@ -529,7 +425,7 @@ void StartWifi()
 
 
 	//设置时间格式以及时间服务器的网址
-	configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
+	//configTime(timezone * 3600, 0, "pool.ntp.org", "time.nist.gov");
 	//Serial.println("\nWaiting for time");
 	////while (!time(nullptr)) {
 	////	Serial.print(".");
@@ -710,18 +606,6 @@ uint32_t calculateCRC32(const uint8_t* data, size_t length)
 
 unsigned char GetRemain(unsigned int volt)
 {
-	//MyPrintf("GetRemain input Voltage:%d \r\n"
-	//	,volt
-	//	);
-	//for (byte i = 0; i < 100; i++)
-	//{
-	//	if (volt > RemainVolt[i])
-	//	{
-	//		return 100 -i;
-	//	}
-	//}
-	//return 0;
-
 	if (rtcData.PowerBankData.Charging)
 	{
 		if (rtcData.PowerBankData.ThisDisCharge > rtcData.PowerBankData.ThisCharge)
@@ -737,7 +621,4 @@ unsigned char GetRemain(unsigned int volt)
 	{
 		return 100 - rtcData.PowerBankData.ThisDisCharge / (36000*FULL_AH);//10Ah
 	}
-
-
-	
 }

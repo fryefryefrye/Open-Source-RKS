@@ -53,19 +53,27 @@ void CheckRfCommand(unsigned char * RfCommand);
 #define RF_COMMAND_LEN 3
 #define RF_COMMAND_KEY_COUNTER 5
 #define RF_COMMAND_FUNCTION_COUNTER 4
+//unsigned char PreSetRfCommand[RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
+//={
+//	//床头                 阳台                     台灯     
+//	{{0x6B, 0xE1, 0xA1},{0x71, 0x44, 0x74},{0xF7, 0xB9, 0xE3},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//阳台
+//	,{{0x6B, 0xE1, 0xA2},{0x00, 0x00, 0x00},{0xF7, 0xB9, 0xE4},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//台灯
+//	,{{0x6B, 0xE1, 0xA4},{0x00, 0x00, 0x00},{0xF7, 0xB9, 0xE8},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//顶灯
+//	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+//};
+
 unsigned char PreSetRfCommand[RF_COMMAND_FUNCTION_COUNTER][RF_COMMAND_KEY_COUNTER][RF_COMMAND_LEN]
 ={
-
-	//
-	{{0xbe, 0xA2, 0x24},{0x13, 0x06, 0x64},{0x39, 0x92, 0x24},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
-	//
-	,{{0x00, 0x00, 0x00},{0x13, 0x06, 0x62},{0x39, 0x92, 0x23},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
-	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
+	//厨房纸盒             南房间门口              
+	{{0xB4, 0xC9, 0xA1},{0x7E, 0xCF, 0x18},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//餐厅
+	,{{0xB4, 0xC9, 0xA2},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//厨房
+	,{{0xB4, 0xC9, 0xA4},{0x7E, 0xCF, 0x12},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}//走廊
 	,{{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00},{0x00, 0x00, 0x00}}
 };
 
 
-const char* ssid = "frye";  //Wifi名称
+
+const char* ssid = "frye_iot";  //Wifi名称
 const char* password = "52150337";  //Wifi密码
 WiFiUDP m_WiFiUDP;
 
@@ -80,20 +88,21 @@ unsigned char DebugLogIndex = 0xFF;
 
 tRoom10Data Room10Data;
 tRoom10Command Room10Command;
-unsigned long LastAndroidBatteryUpdate;
+unsigned long LastServerUpdate;
 unsigned char ScreenOffCounter = 0;
 
 #include <Wire.h>     //The DHT12 uses I2C comunication.
 #include "VL53L0X.h"
 #include "DHT12.h"
 DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
-VL53L0X sensor;
+VL53L0X DistanceSensor;
 
 unsigned long TenthSecondsSinceStart = 0;
 void TenthSecondsSinceStartTask();
 void OnTenthSecond();
 void OnSecond();
-
+void SetBit(unsigned char * data,unsigned char bit,bool On);
+bool GetBit(unsigned char data,unsigned char bit);
 
 
 void MyPrintf(const char *fmt, ...);
@@ -108,18 +117,21 @@ void setup()
 
 	Wire.begin(IIC_DAT,IIC_CLK);
 
-	sensor.setTimeout(500);
-	if (!sensor.init())
+	DistanceSensor.setTimeout(500);
+	if (!DistanceSensor.init())
 	{
 		printf("Failed to detect and initialize sensor!\r\n");
 	}
-	sensor.startContinuous();
+	DistanceSensor.startContinuous();
 
 
 
 	Room10Data.DataType = 19;
 	Room10Data.DisableRf = false;
 	Room10Data.UsbChargeOn = false;
+
+	IicCommand.RelayNeedSet = 0;
+
 
 
 	delay(50);                      
@@ -280,12 +292,20 @@ void loop()
 		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
 		m_WiFiUDP.read((char *)&Room10Command,sizeof(tRoom10Command));
 		Room10Data.DisableRf = Room10Command.DisableRf;
-		LastAndroidBatteryUpdate = 0;
-		//printf("DisableRf:%d! Percentage:%d Timeout:%d\r\n"
-		//	,Room10Command.DisableRf
-		//	,Room10Command.BatteryPercentage
-		//	,Room10Command.AndroidTimeout
-		//	);
+		LastServerUpdate = 0;
+		if (Room10Command.LightChangeNotice)
+		{
+			MyPrintf("get LightChangeNotice\r\n");
+			for (unsigned char i = 0;i<ROOM_10_LIGHT_NUMBER;i++)
+			{
+				if (Room10Command.SetLight[i])
+				{
+					SetBit(&IicCommand.RelayState,i,Room10Command.Light[i]);
+					SetBit(&IicCommand.RelayNeedSet,i,true);
+					MyPrintf("Set light:%d to:%d\r\n",i,Room10Command.Light[i]);
+				}
+			}
+		}
 	}
 }
 
@@ -336,7 +356,7 @@ void OnSecond()
 
 
 	//Usb chager update
-	LastAndroidBatteryUpdate++;
+	LastServerUpdate++;
 
 	//if ((LastAndroidBatteryUpdate>30)||(Room10Command.AndroidTimeout>30))
 	//{
@@ -492,8 +512,12 @@ void OnTenthSecond()
 		OnSecond();
 	}
 
-	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
-#define DISTANCE_HIGH 700
+	IicExchange();
+
+	Room10Data.Distance = DistanceSensor.readRangeContinuousMillimeters();
+
+
+#define DISTANCE_HIGH 1300
 #define DISTANCE_LOW  200
 #define SCREEN_TIMEOUT  50 //0.1s
 	if (Room10Data.ScreenOn)//current on
@@ -502,7 +526,7 @@ void OnTenthSecond()
 		if ((Room10Data.Distance > DISTANCE_HIGH)||(Room10Data.Distance < DISTANCE_LOW))
 		{
 			ScreenOffCounter++;
-			printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
+			//printf("ScreenOffCounter = %d \r\n",ScreenOffCounter);
 			if (ScreenOffCounter > SCREEN_TIMEOUT)
 			{
 				Room10Data.ScreenOn = false;
@@ -513,7 +537,7 @@ void OnTenthSecond()
 		else
 		{
 			ScreenOffCounter = 0;
-			printf("ScreenOffCounter to 0  \r\n");
+			//printf("ScreenOffCounter to 0  \r\n");
 		}
 	}
 	else//current off
@@ -529,7 +553,7 @@ void OnTenthSecond()
 	}
 
 
-	IicExchange();
+
 
 
 }
@@ -539,23 +563,14 @@ void IicExchange()
 	//printf("IIC send");
 	for (byte i=0;i<(sizeof(tIicCommand)-4);i++)
 	{
-		((byte *)(&IicCommand))[i] = rand();
+		//((byte *)(&IicCommand))[i] = rand();
 		//printf(" 0x%02X",((byte*)(&IicCommand))[i]);
 	}
 
 
 	IicCommand.Sum = cal_crc((byte *)&IicCommand,sizeof(tIicCommand)-4);
 
-	//printf("IIC send 0x%02X 0x%02X 0x%02X 0x%02X  \r\n"
-	//		,((byte*)(&IicCommand))[0]
-	//		,((byte*)(&IicCommand))[1]
-	//		,((byte*)(&IicCommand))[2]
-	//		,((byte*)(&IicCommand))[3]
-	////		,((byte*)(&IicCommand))[4]
-	////		,((byte*)(&IicCommand))[5]
-	////		,((byte*)(&IicCommand))[6]
-	////		,((byte*)(&IicCommand))[7]
-	//		);
+
 
 	Wire.beginTransmission(8); /* begin with device address 8 */
 	Wire.write((byte*)(&IicCommand),sizeof(tIicCommand));
@@ -572,21 +587,33 @@ void IicExchange()
 		}
 	}
 
-	//printf("IIC recv 0x%02X 0x%02X 0x%02X 0x%02X \r\n"
-	//	,((byte*)(&IicData))[0]
-	//,((byte*)(&IicData))[1]
-	//,((byte*)(&IicData))[2]
-	//,((byte*)(&IicData))[3]
-	////		,((byte*)(&IicData))[4]
-	////		,((byte*)(&IicData))[5]
-	////		,((byte*)(&IicData))[6]
-	////		,((byte*)(&IicData))[7]
-	//);
-
 	unsigned long crc_should = cal_crc((byte *)&IicData,sizeof(tIicData)-4);
 	if (IicData.Sum == crc_should)
 	{
 		//printf("crc check passed. \n");
+
+		//Copy and update the TagState
+		Room10Data.TagState = IicData.TagState;
+
+		//Copy and update the light State
+		for (unsigned char i = 0; i < ROOM_10_LIGHT_NUMBER; i++)
+		{
+			bool LightState = GetBit(IicData.RelayState,i);
+			Room10Data.Light[i] = LightState;
+		}
+
+		for (unsigned char i = 0; i < ROOM_10_LIGHT_NUMBER; i++)
+		{
+			//check if there any need set tag. clear if already set.
+			if (GetBit(IicCommand.RelayNeedSet,i))
+			{
+				if (GetBit(IicCommand.RelayState,i) == GetBit(IicData.RelayState,i))
+				{
+					printf("set light %d need to false \n",i);
+					SetBit(&IicCommand.RelayNeedSet,i,0);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -630,22 +657,16 @@ void MyPrintf(const char *fmt, ...)
 
 void CheckRf()
 {
-	//static unsigned char LastRf[3];
+	static unsigned char RfComamndZero[3] = {0,0,0};
 	if (DecodeFrameOK)
 	{
 
-		printf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
-		CheckRfCommand(RcCommand);
-
-		//if (memcmp(LastRf,RcCommand,3) == 0)
-		//{
-		//	//MyPrintf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
-		//CheckRfCommand(RcCommand);
-		//} 
-		//else
-		//{
-		//	memcpy(LastRf,RcCommand,3);
-		//}
+		
+		if (memcmp(RfComamndZero,RcCommand,3) != 0)
+		{
+			//MyPrintf("0x%02X, 0x%02X, 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
+			CheckRfCommand(RcCommand);
+		}
 		DecodeFrameOK = false;
 	}
 }
@@ -671,6 +692,9 @@ void CheckRfCommand(unsigned char * RfCommand)
 			{
 
 				printf("rc Command %d \r\n",j);
+				SetBit(&IicCommand.RelayState,j,!GetBit(IicData.RelayState,j));
+				SetBit(&IicCommand.RelayNeedSet,j,true);
+				printf("Set light :%d by RC \r\n",j);
 				LastKeyTime = TenthSecondsSinceStart;
 			}
 

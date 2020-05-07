@@ -352,7 +352,7 @@ UsedLibrary="D:/tools/EAGLE-7.6.0/lbr/zilog.lbr"
 [Win_1]
 Type="Control Panel"
 Loc="0 0 1919 1032"
-State=2
+State=0
 Number=0
 
 [Desktop]

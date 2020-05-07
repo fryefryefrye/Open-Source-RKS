@@ -16,6 +16,9 @@ void DecodeRf_315_INT();
 void DecodeRf_433_INT();
 void CheckRf();
 void SecondsSinceStartTask();
+void TrySendAllAddress();
+void TrySend();
+void TrySendLastRx();
 
 bool DecodeFrameOK_315 = false;
 unsigned char RcCommand_315[3] = {0,0,0};
@@ -43,8 +46,88 @@ void setup()
 	Serial.println(F("rf_rx_oled"));
 	printf_begin();
 
+	
+
+	//TrySend();
+	//delay(1000);
+
+
+
+	Displayer.Fill_Screen(0x00,0x00);
+
+	attachInterrupt(0, DecodeRf_315_INT, CHANGE);//pin2
+	//attachInterrupt(1, DecodeRf_433_INT, CHANGE);//pin3
+
+	//显示接收
+	Displayer.ShowCN3232(0,0,0);
+	Displayer.ShowCN3232(32,0,1);
+
+}
+
+void loop()
+{
+	//TrySend();
+	CheckRf();
+	//ShowState();
+
+	//SecondsSinceStartTask();
+
+} // Loop
+
+void TrySend()
+{
+
+
+	//显示发射
+	Displayer.ShowCN3232(0,0,2);
+	Displayer.ShowCN3232(32,0,3);
+
 	mySwitch.enableTransmit(4);
-	mySwitch.setRepeatTransmit(10);
+	mySwitch.setRepeatTransmit(35);
+
+	//mySwitch.setRepeatTransmit(350);
+
+
+	RcCommand[2] = 0xD5;
+	RcCommand[1] = 0x8f;
+	RcCommand[0] = 0x10;
+
+	printf("try send:0x%02X 0x%02X 0x%02X\r\n"
+		,RcCommand[0],RcCommand[1],RcCommand[2]);
+
+	//mySwitch.setPulseLength(EEPROM.read(4)*10);
+	mySwitch.setPulseLength(230);
+	mySwitch.send(RcCommand, 24);
+
+
+
+
+	//显示接收
+	Displayer.ShowCN3232(0,0,0);
+	Displayer.ShowCN3232(32,0,1);
+
+
+
+
+	//sprintf(str_buf,"%02X%02X%02X",,RcCommand[2],RcCommand[1],RcCommand[0]);
+
+	//for (byte i=0;i<6;i++)
+	//{
+	//	Displayer.ShowASCII1632((i)*16,4,str_buf[i]-0x30);
+	//}
+
+	//sprintf(str_buf,"%d",230);
+	//Displayer.ShowASCII1632(64,0,str_buf[0]-0x30);
+	//Displayer.ShowASCII1632(64+16,0,str_buf[1]-0x30);
+	//Displayer.ShowASCII1632(64+16*2,0,str_buf[2]-0x30);
+
+
+}
+
+void TrySendLastRx()
+{
+	mySwitch.enableTransmit(4);
+	mySwitch.setRepeatTransmit(20);
 
 	if(EEPROM.read(0) == 3)
 	{
@@ -54,13 +137,17 @@ void setup()
 		RcCommand[2] = EEPROM.read(1);
 		RcCommand[1] = EEPROM.read(2);
 		RcCommand[0] = EEPROM.read(3);
+
+
 		printf("read:0x%02X 0x%02X 0x%02X\r\n"
 			,RcCommand[0],RcCommand[1],RcCommand[2]);
 
 		mySwitch.setPulseLength(EEPROM.read(4)*10);
+
 		mySwitch.send(RcCommand, 24);
 	}
 
+	//显示发射
 	Displayer.ShowCN3232(0,0,2);
 	Displayer.ShowCN3232(32,0,3);
 
@@ -71,37 +158,75 @@ void setup()
 		Displayer.ShowASCII1632((i)*16,4,str_buf[i]-0x30);
 	}
 
-	sprintf(str_buf,"%d",EEPROM.read(4)*10);
+	sprintf(str_buf,"%d",230);
 	Displayer.ShowASCII1632(64,0,str_buf[0]-0x30);
 	Displayer.ShowASCII1632(64+16,0,str_buf[1]-0x30);
 	Displayer.ShowASCII1632(64+16*2,0,str_buf[2]-0x30);
+}
 
 
-	delay(3000);
+void TrySendAllAddress()
+{
+	//bool key1 = 0;
+	//bool key1 = 0;
+	//bool key1 = 0;
+	//bool key1 = 0;
+	unsigned char key = 0;
+	long address = 0;//max 1048575
+
+	mySwitch.setPulseLength(230);
+	mySwitch.enableTransmit(4);
+	mySwitch.setRepeatTransmit(4);
+
+	Displayer.ShowCN3232(0,0,2);
+	Displayer.ShowCN3232(32,0,3);
+
+	while(1)
+	{
+		//RcCommand[0] = (address>>12)&0xFF;
+		//RcCommand[1] = (address>>4)&0xFF;
+		//RcCommand[2] = (address&0xF)<<4;
+		//RcCommand[2] = RcCommand[2] + key;
+
+		RcCommand[2] = (address>>12)&0xFF;
+		RcCommand[1] = (address>>4)&0xFF;
+		RcCommand[0] = (address&0xF)<<4;
+		RcCommand[0] = RcCommand[0] + key;
+
+		mySwitch.send(RcCommand, 24);
+
+		address++;
+
+
+		if (address%0x10 == 0)
+		{
+		
+			printf("read:0x%02X 0x%02X 0x%02X\r\n"
+				,RcCommand[2],RcCommand[1],RcCommand[0]);
+
+			sprintf(str_buf,"%02X%02X%02X",RcCommand[2],RcCommand[1],RcCommand[0]);
 
 
 
-	Displayer.Fill_Screen(0x00,0x00);
+			for (byte i=0;i<6;i++)
+			{
+				Displayer.ShowASCII1632((i)*16,4,str_buf[i]-0x30);
+			}
 
-	attachInterrupt(0, DecodeRf_315_INT, CHANGE);//pin2
-	//attachInterrupt(1, DecodeRf_433_INT, CHANGE);//pin3
+			sprintf(str_buf,"%02d",address*100/1048575);
 
-	Displayer.ShowCN3232(0,0,0);
-	Displayer.ShowCN3232(32,0,1);
+			printf("%s%%",str_buf);
+			Displayer.ShowASCII1632(64,0,str_buf[0]-0x30);
+			Displayer.ShowASCII1632(64+16,0,str_buf[1]-0x30);
+		}
 
+
+
+	}
 
 
 
 }
-
-void loop()
-{
-	CheckRf();
-	ShowState();
-
-	SecondsSinceStartTask();
-
-} // Loop
 
 unsigned long LastMillis = 0;
 unsigned long SecondsSinceStart = 0;
@@ -154,22 +279,34 @@ void CheckRf()
 		printf("315Mhz:0x%02X 0x%02X 0x%02X Base = %d\r\n",RcCommand_315[0],RcCommand_315[1],RcCommand_315[2],LastBase);
 		sprintf(str_buf,"%dG%02X%02X%02X",3,RcCommand_315[0],RcCommand_315[1],RcCommand_315[2]);
 
-		for (byte i=0;i<8;i++)
+
+		if ((RcCommand_315[0] == 0xd5)
+			&&(RcCommand_315[1] == 0xd5)
+			&&(RcCommand_315[2] == 0x03)
+			)
 		{
-			Displayer.ShowASCII1632((i)*16,4,str_buf[i]-0x30);
+			TrySend();
+		} 
+		else
+		{
+			for (byte i=0;i<8;i++)
+			{
+				Displayer.ShowASCII1632((i)*16,4,str_buf[i]-0x30);
+			}
+
+			sprintf(str_buf,"%d",LastBase);
+			Displayer.ShowASCII1632(64,0,str_buf[0]-0x30);
+			Displayer.ShowASCII1632(64+16,0,str_buf[1]-0x30);
+			Displayer.ShowASCII1632(64+16*2,0,str_buf[2]-0x30);
+
+			EEPROM.write(0,3);
+			EEPROM.write(1,RcCommand_315[0]);
+			EEPROM.write(2,RcCommand_315[1]);
+			EEPROM.write(3,RcCommand_315[2]);
+
+			EEPROM.write(4,LastBase/10);
 		}
 
-		sprintf(str_buf,"%d",LastBase);
-		Displayer.ShowASCII1632(64,0,str_buf[0]-0x30);
-		Displayer.ShowASCII1632(64+16,0,str_buf[1]-0x30);
-		Displayer.ShowASCII1632(64+16*2,0,str_buf[2]-0x30);
-
-		EEPROM.write(0,3);
-		EEPROM.write(1,RcCommand_315[0]);
-		EEPROM.write(2,RcCommand_315[1]);
-		EEPROM.write(3,RcCommand_315[2]);
-
-		EEPROM.write(4,LastBase/10);
 
 		DecodeFrameOK_315 = false;
 	}

@@ -43,14 +43,14 @@ char H1,H2,M1,M2,S1,S2;
 unsigned char DebugLogIndex = 0xFF;
 tRoom10Data Room10Data;
 tRoom10Command Room10Command;
-unsigned long LastAndroidBatteryUpdate;
+unsigned long LastServerUpdate;
 unsigned char ScreenOffCounter = 0;
 
 #include <Wire.h>     //The DHT12 uses I2C comunication.
 #include "VL53L0X.h"
 #include "DHT12.h"
 DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
-VL53L0X sensor;
+VL53L0X DistanceSensor;
 
 
 unsigned long TenthSecondsSinceStart = 0;
@@ -130,12 +130,12 @@ void setup()
 
 	Wire.begin(IIC_DAT,IIC_CLK);
 
-	sensor.setTimeout(500);
-	if (!sensor.init())
+	DistanceSensor.setTimeout(500);
+	if (!DistanceSensor.init())
 	{
 		printf("Failed to detect and initialize sensor!\r\n");
 	}
-	sensor.startContinuous();
+	DistanceSensor.startContinuous();
 
 	
 
@@ -259,7 +259,7 @@ void loop()
 		//MyPrintf(" m_WiFiUDP.available() = %d\r\n",UdpAvailable);
 		m_WiFiUDP.read((char *)&Room10Command,sizeof(tRoom10Command));
 		Room10Data.DisableRf = Room10Command.DisableRf;
-		LastAndroidBatteryUpdate = 0;
+		LastServerUpdate = 0;
 		//printf("DisableRf:%d! Percentage:%d Timeout:%d\r\n"
 		//	,Room10Command.DisableRf
 		//	,Room10Command.BatteryPercentage
@@ -321,7 +321,7 @@ void OnSecond()
 
 
 	//Usb chager update
-	LastAndroidBatteryUpdate++;
+	LastServerUpdate++;
 
 	//if ((LastAndroidBatteryUpdate>30)||(Room10Command.AndroidTimeout>30))
 	//{
@@ -475,7 +475,7 @@ void OnTenthSecond()
 		OnSecond();
 	}
 
-	Room10Data.Distance = sensor.readRangeContinuousMillimeters();
+	Room10Data.Distance = DistanceSensor.readRangeContinuousMillimeters();
 	//printf("distance = %d\r\n",Room10Data.Distance);
 
 #define DISTANCE_HIGH 700

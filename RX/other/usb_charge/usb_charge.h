@@ -47,7 +47,7 @@ char H1,H2,M1,M2,S1,S2;
 unsigned char DebugLogIndex = 0xFF;
 tUsbChargeData UsbChargeData;
 tUsbChargeCommand UsbChargeCommand;
-unsigned long LastAndroidBatteryUpdate;
+unsigned long LastServerUpdate;
 
 
 
@@ -69,7 +69,7 @@ void setup()
 	pinMode(RADAR, INPUT);
 
 	UsbChargeData.DataType = 12;
-	UsbChargeData.isOn = false;
+	UsbChargeData.UsbChargeOn = false;
 	
 
 
@@ -199,7 +199,7 @@ void loop()
 		tUsbChargeCommand tempUsbChargeCommand;
 		m_WiFiUDP.read((char *)&UsbChargeCommand,sizeof(tUsbChargeCommand));
 
-		LastAndroidBatteryUpdate = 0;
+		LastServerUpdate = 0;
 	}
 }
 
@@ -236,7 +236,7 @@ void OnSecond()
 	unsigned char Hour = timenow->tm_hour;
 	unsigned char Minute = timenow->tm_min;
 
-	LastAndroidBatteryUpdate++;
+	LastServerUpdate++;
 
 
 
@@ -269,36 +269,36 @@ void OnSecond()
 	
 	*/
 
-	if ((LastAndroidBatteryUpdate>120)||(UsbChargeCommand.AndroidTimeout>120))
+	if ((LastServerUpdate>120)||(UsbChargeCommand.AndroidTimeout>120))
 	{
 		if (now%3600 <= 40*60)
 		{
-			if (!UsbChargeData.isOn)
+			if (!UsbChargeData.UsbChargeOn)
 			{
 				MyPrintf("Usb chager offline ON \r\n");
-				UsbChargeData.isOn = true;
+				UsbChargeData.UsbChargeOn = true;
 			}	
 		}
 		else
 		{
-			if (UsbChargeData.isOn)
+			if (UsbChargeData.UsbChargeOn)
 			{
-				UsbChargeData.isOn = false;
+				UsbChargeData.UsbChargeOn = false;
 				MyPrintf("Usb chager offline OFF \r\n");
 			}
 		}
 	} 
 	else
 	{
-		if ((!UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage<60))
+		if ((!UsbChargeData.UsbChargeOn)&&(UsbChargeCommand.BatteryPercentage<60))
 		{
 			MyPrintf("Usb chager online ON \r\n");
-			UsbChargeData.isOn = true;
+			UsbChargeData.UsbChargeOn = true;
 		}	
-		else if ((UsbChargeData.isOn)&&(UsbChargeCommand.BatteryPercentage>70))
+		else if ((UsbChargeData.UsbChargeOn)&&(UsbChargeCommand.BatteryPercentage>70))
 		{
 			MyPrintf("Usb chager online OFF \r\n");
-			UsbChargeData.isOn = false;
+			UsbChargeData.UsbChargeOn = false;
 		}	
 	}
 
@@ -307,7 +307,7 @@ void OnSecond()
 
 
 
-	if (UsbChargeData.isOn)
+	if (UsbChargeData.UsbChargeOn)
 	{
 		digitalWrite(RELAY,HIGH);
 	}

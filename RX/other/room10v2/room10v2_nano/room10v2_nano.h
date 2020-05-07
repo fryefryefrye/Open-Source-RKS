@@ -5,18 +5,16 @@ unsigned char HopCH[3] = { 105, 76, 108 }; //Which RF channel to communicate on,
 #define RF_COMMAND_INTERVAL 10   //s
 #define DATA_LENGTH 4					//use fixed data length 1-32
 #define DEGBUG_OUTPUT
+#define MAX_TAG_NUMBER 8
+#define TIME_OUT_KEY 100  //0.1s
 /*****************************************************/
 
 #include <SPI.h>
 #include "RF24.h"
 #include <printf.h>
-//#include <avr/wdt.h>
+
 
 #include <Wire.h>
-//#define IIC_BYTE 8
-//unsigned char IicSlaveSend[IIC_BYTE];
-//unsigned char IicSlaveRecv[IIC_BYTE];
-//unsigned char IicSlaveRecvCounter;
 unsigned long IicRecvTimeOutTenthSecond = 0;
 
 #include "D:\GitHub\Open-Source-RKS\RX\other\room10v2\struct.h"
@@ -28,27 +26,32 @@ RF24 radio(7, 8);
 /**********************************************************/
 //#define xxx 2//				INT 0
 //#define xxx 3//				INT 1
-//#define xxx 4//Loacal1
-//#define xxx 5//Loacal2
-//#define xxx 6//Loacal3
+#define LOCAL_1 4//Loacal1
+#define LOCAL_2 5//Loacal2
+#define LOCAL_3 6//Loacal3
 ////D7,D8 for RF24
 //#define xxx 9
 //#define xxx 10
 ////D11,D12,D13 for RF24
-//#define xxx A0//relay1
-//#define xxx A1//relay2
-//#define xxx A2//relay3
-//#define xxx A3//relay4
+#define RELAY_4 A0//relay1
+#define RELAY_3 A1//relay2
+#define RELAY_2 A2//relay3
+#define RELAY_1 A3//relay4
 //#define xxx A4//IIC_D
 //#define xxx A5//IIC_C
 //#define xxx A6//             input only
 //#define xxx A7//             input only
 
+#define RELAY_NUMBER 4
+#define LOCAL_NUMBER 3
+unsigned char RelayArray[RELAY_NUMBER];
+unsigned char LocalArray[LOCAL_NUMBER];
 
 unsigned long PackageCounter = 0;
 unsigned char CurrCH = 0;
 unsigned long CurrTime = 0;
 unsigned long LastChangeCHTime = 0;
+unsigned long LastTagGetTime[MAX_TAG_NUMBER];
 
 unsigned long LastCommandSendTime = 0;   //unit: s
 
@@ -56,6 +59,8 @@ unsigned long LastCommandSendTime = 0;   //unit: s
 unsigned char GotData[DATA_LENGTH];
 unsigned long Volt;   //unit: mV,
 unsigned long TenthSecondsSinceStart;
+
+bool LastLocalControl[3];
 
 
 //void DecodeRf_INT();
@@ -73,8 +78,53 @@ void RF_task();
 void receiveEvent(int howMany);
 void requestEvent();
 
+
+void SetRelay(unsigned char index, bool On);
+
+
 void setup()
 {
+
+	pinMode(RELAY_1, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_1, LOW);
+
+
+	pinMode(RELAY_2, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_2, LOW);
+	pinMode(RELAY_3, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_3, LOW);
+	pinMode(RELAY_4, OUTPUT);//set the pin to be OUTPUT pin.
+	digitalWrite(RELAY_4, LOW);
+
+	pinMode(LOCAL_1, INPUT_PULLUP);
+	LastLocalControl[0] = digitalRead(LOCAL_1);
+	pinMode(LOCAL_2, INPUT_PULLUP);
+	LastLocalControl[1] = digitalRead(LOCAL_2);
+	pinMode(LOCAL_3, INPUT_PULLUP);
+	LastLocalControl[2] = digitalRead(LOCAL_3);
+
+	LocalArray[0] = LOCAL_1;
+	LocalArray[1] = LOCAL_2;
+	LocalArray[2] = LOCAL_3;
+
+
+	//pinMode(RELAY_1, OUTPUT);//set the pin to be OUTPUT pin.
+	//digitalWrite(RELAY_1, HIGH);
+	//pinMode(RELAY_2, OUTPUT);//set the pin to be OUTPUT pin.
+	//digitalWrite(RELAY_2, HIGH);
+	//pinMode(RELAY_3, OUTPUT);//set the pin to be OUTPUT pin.
+	//digitalWrite(RELAY_3, HIGH);
+	//pinMode(RELAY_4, OUTPUT);//set the pin to be OUTPUT pin.
+	//digitalWrite(RELAY_4, HIGH);
+
+
+
+	RelayArray[0] = RELAY_1;
+	RelayArray[1] = RELAY_2;
+	RelayArray[2] = RELAY_3;
+	RelayArray[3] = RELAY_4;
+
+	IicData.RelayState = 0;
 
 	Wire.begin(8);                /* join i2c bus with address 8 */
 	Wire.onReceive(receiveEvent); /* register receive event */
@@ -127,14 +177,8 @@ void loop()
 {
 
 	TenthSecondsSinceStartTask();
-	nRFTask();
-	ChHopTask();
-
-
-	//CheckRf();
-
-
-
+	//nRFTask();
+	//ChHopTask();
 } // Loop
 
 void receiveEvent(int howMany) 
@@ -165,25 +209,24 @@ void receiveEvent(int howMany)
 	else
 	{
 		printf("crc check failed. should:0x%04X recv:0x%04X \n",crc_should,IicCommand.Sum);
+		return;
 	}
 
-	//attachInterrupt(0, DecodeRf_INT, CHANGE); //pin2
-	//printf("IIC slave get %d bytes %d,%d,%d,%d,%d,%d,%d,%d, \r\n"
-	//	,IicSlaveRecvCounter
-	//	,IicSlaveRecv[0]
-	//,IicSlaveRecv[1]
-	//,IicSlaveRecv[2]
-	//,IicSlaveRecv[3]
-	//,IicSlaveRecv[4]
-	//,IicSlaveRecv[5]
-	//,IicSlaveRecv[6]
-	//,IicSlaveRecv[7]
-	//);
+	for (unsigned char i = 0;i<4;i++)
+	{
+		//if a Relay Need to be Set
+		//if ((IicCommand.RelayNeedSet>>i)&1>0)
+		if (GetBit(IicCommand.RelayNeedSet,i))
+		{
+			//SetRelayData(i,(IicCommand.RelayState>>i)&1);
+			SetRelay(i,GetBit(IicCommand.RelayState,i));
+		}
+	}
 }
 
 void requestEvent() 
 {
-	IicData.RelayState = 0x55;
+
 	IicData.Sum = cal_crc((byte *)&IicData,sizeof(tIicData)-4);
 
 	//printf("IIC send");
@@ -214,7 +257,10 @@ void nRFTask()
 
 		if (GotData[0] == 0)
 		{
-
+			if (GotData[1]<MAX_TAG_NUMBER)
+			{
+				LastTagGetTime[GotData[1]] = TenthSecondsSinceStart;
+			}
 		}
 
 
@@ -263,6 +309,16 @@ void TenthSecondsSinceStartTask()
 }
 void OnSecond()
 {
+	unsigned char TagState = 0;
+	for (unsigned char i = 0; i < MAX_TAG_NUMBER; i++)
+	{
+		if (TenthSecondsSinceStart - LastTagGetTime[i] < TIME_OUT_KEY)
+		{
+			TagState = TagState + (0x01<<i);
+		}
+	}
+	IicData.TagState = TagState;
+
 	//printf("OnSecond \r\n");
 }
 void OnTenthSecond()
@@ -272,165 +328,48 @@ void OnTenthSecond()
 		OnSecond();
 	}
 
-
-	//printf("OnTenthSecond \r\n");
-	//wdt_reset();
+	for (byte i=0;i<LOCAL_NUMBER;i++)
+	{
+		bool LocalControl = digitalRead(LocalArray[i]);
+		if (LastLocalControl[i] != LocalControl)
+		{
+			LastLocalControl[i] = LocalControl;
+			printf("LocalControl[%d] to %d \r\n",i,LocalControl);
+			//SetBit(&IicData.RelayState,i,!GetBit(IicData.RelayState,i));
+			SetRelay(i,!GetBit(IicData.RelayState,i));
+		} 
+	}
 }
 
-//
-//void CheckRf()
-//{
-//	//static unsigned char LastRf[3];
-//	//if (DecodeFrameOK)
-//	//{
-//
-//	//	printf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
-//
-//	//	//if (memcmp(LastRf,RcCommand,3) == 0)
-//	//	//{
-//	//	//	//MyPrintf("0x%02X 0x%02X 0x%02X\r\n",RcCommand[0],RcCommand[1],RcCommand[2]);
-//	//	//CheckRfCommand(RcCommand);
-//	//	//} 
-//	//	//else
-//	//	//{
-//	//	//	memcpy(LastRf,RcCommand,3);
-//	//	//}
-//	//	memset(RcCommand,0,3);
-//	//	DecodeFrameOK = false;
-//	//}
-//}
-//
-//void DecodeRf_INT()
-//{
-//#define PULSE_NUMBER 48
-//#define MIN_LEN 100
-//#define MAX_LEN 2000
-//#define LEAD_LEN 7000
-//
-//	unsigned long ThisTime;
-//	unsigned long DiffTime;
-//	static unsigned long FirstTime;
-//	static unsigned long LastRfTime = 0;
-//	static bool FrameStarted = false;
-//	static bool RfOn = false;
-//	static unsigned char PulseIndex = 0;
-//	static unsigned int Base;
-//	static unsigned int Min_Base;
-//	static unsigned int Max_Base;
-//
-//	if (DecodeFrameOK)
-//	{
-//		return;
-//	}
-//
-//	if (PulseIndex<PULSE_NUMBER)
-//	{
-//		if (LastRfTime == 0)
-//		{
-//			LastRfTime = micros();
-//		} 
-//		else
-//		{
-//			ThisTime = micros();
-//			DiffTime = ThisTime-LastRfTime;
-//			LastRfTime = ThisTime;
-//
-//			if (RfOn)
-//			{
-//				if (FrameStarted)
-//				{
-//					if ((DiffTime > Min_Base)&&(DiffTime < Max_Base))
-//					{
-//						if (PulseIndex%2==0)
-//						{
-//							FirstTime = DiffTime;
-//						} 
-//						else
-//						{
-//							unsigned char CommandIndex = (PulseIndex-1)/2/8;
-//							RcCommand[CommandIndex] = RcCommand[CommandIndex]<<1;
-//							if ((FirstTime>Base)&&(DiffTime<Base))//bit 1
-//							{
-//								RcCommand[CommandIndex]++;
-//							} 
-//							else
-//							{
-//								if ((FirstTime<Base)&&(DiffTime>Base))//bit 0
-//								{
-//
-//								}
-//								else//如果编码规则出错
-//								{
-//									LastRfTime = 0;
-//									PulseIndex = 0;
-//									FrameStarted = false;
-//									RfOn = false;
-//									RcCommand[0] = 0;
-//									RcCommand[1] = 0;
-//									RcCommand[2] = 0;
-//								}
-//							}
-//						}
-//						PulseIndex++;
-//						if (PulseIndex >= PULSE_NUMBER)//收集到48个位
-//						{
-//							DecodeFrameOK = true;
-//							LastRfTime = 0;
-//							PulseIndex = 0;
-//							FrameStarted = false;
-//							RfOn = false;
-//						}
-//					}
-//					else//如果时间长度出错
-//					{	
-//						LastRfTime = 0;
-//						PulseIndex = 0;
-//						FrameStarted = false;
-//						RfOn = false;
-//						RcCommand[0] = 0;
-//						RcCommand[1] = 0;
-//						RcCommand[2] = 0;
-//					}
-//				} 
-//				else
-//				{
-//					if (DiffTime > LEAD_LEN)//收到引导码
-//					{
-//						Base = DiffTime/16;
-//						Min_Base = DiffTime/62;
-//						Max_Base = DiffTime/8;
-//						FrameStarted = true;
-//					}
-//				}
-//			}
-//			else
-//			{
-//				if ((DiffTime > MIN_LEN)&&(DiffTime < MAX_LEN))
-//				{
-//					PulseIndex++;
-//					if (PulseIndex > 32)//连续正确的时间长度
-//					{
-//						RfOn = true;
-//						RcCommand[0] = 0;
-//						RcCommand[1] = 0;
-//						RcCommand[2] = 0;
-//						PulseIndex = 0;
-//						LastRfTime = 0;
-//					}
-//				}
-//				else//时间长度异常
-//				{	
-//					LastRfTime = 0;
-//					PulseIndex = 0;
-//				}
-//			}
-//		}
-//	}
-//	else
-//	{
-//		LastRfTime = 0;
-//		PulseIndex = 0;
-//		FrameStarted = false;
-//		RfOn = false;
-//	}
-//}
+void SetRelay(unsigned char index, bool On)
+{
+	SetBit(&IicData.RelayState,index,On);
+
+	if (On)
+	{
+		printf("set relay:%d to HIGH \r\n",index);
+		digitalWrite(RelayArray[index],HIGH);
+	} 
+	else
+	{
+		printf("set relay:%d to LOW \r\n",index);
+		digitalWrite(RelayArray[index],LOW);
+	}
+
+	//for (byte i=0;i<4;i++)
+	//{
+	//	
+		//if (GetBit(IicData.RelayState,i))
+		//{
+		//	printf("set relay:%d to HIGH \r\n",i);
+		//	digitalWrite(RelayArray[i],HIGH);
+		//} 
+		//else
+		//{
+		//	printf("set relay:%d to LOW \r\n",i);
+		//	digitalWrite(RelayArray[i],LOW);
+		//}
+	//	
+	//}
+}
+
