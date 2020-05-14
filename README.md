@@ -20,28 +20,20 @@ With my another project, you can decode the random address and determined if thi
 https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
 ### Android:
 Use "nRF Connect" APP, you can send BLE advertising with custom data.A name can be set in the advertising.<br>
-<br>
-### Receiver：
-With the help of the following project, we can Monitor BLE advertising in the air with very cheap nRF24L01 module
-https://github.com/Pranavgulati/RF24BLE<br>
-So my old version Controller/Receiver is Hardware compatible, Only software update is needed.
 
 ## Hardware used:
 
-### iPhone
-### ESP32 Board
-### Arduino Board
-### nRF24L01 module
+iPhone      ESP32 Board      Arduino Board    nRF24L01 module
 
 ## Get IRK of your iPhone
 If the IRK of an IOS device is known, the random Bluetooth address can be determined if it belongs to this device. <br>
-Use an ESP32 board and download with “iPhone/get_irk” project. It will start a BLE service. <br>
+### Use an ESP32 board and download with “iPhone/get_irk” project. It will start a BLE service. <br>
 Pay attention on following settings.<br>
 ![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/arduino_setting.jpg) <br>
-Use your iPhone install with “LightBlue” APP, find the “ESP_BLE_SECURITY” service, and connect it, the IRK will be print out. <br>
+### Use your iPhone install with “LightBlue” APP, find the “ESP_BLE_SECURITY” service, and connect it, the IRK will be print out. <br>
 ![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/get_irk.jpg) <br>
 
-## Monitor BLE advertising with nRF24L01
+## Receiver / Monitor BLE advertising with nRF24L01
 With the help of the following project, we can Monitor BLE advertising with very cheap nRF24L01 module<br>
 https://github.com/Pranavgulati/RF24BLE<br>
 https://github.com/nRF24/RF24<br>
