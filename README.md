@@ -34,7 +34,8 @@ So my old version Controller/Receiver is Hardware compatible, Only software upda
 ### nRF24L01 module
 
 ## Get IRK of your iPhone
-Use an ESP32 board and download with “get_irk” project. It will start a BLE service. <br>
+If the IRK of an IOS device is known, the random Bluetooth address can be determined if it belongs to this device. <br>
+Use an ESP32 board and download with “iPhone/get_irk” project. It will start a BLE service. <br>
 Pay attention on following settings.<br>
 ![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/arduino_setting.jpg) <br>
 Use your iPhone install with “LightBlue” APP, find the “ESP_BLE_SECURITY” service, and connect it, the IRK will be print out. <br>
@@ -45,6 +46,7 @@ With the help of the following project, we can Monitor BLE advertising with very
 https://github.com/Pranavgulati/RF24BLE<br>
 https://github.com/nRF24/RF24<br>
 Install above two library into Arduino.<br>
+Fill the IRK into the “iPhone/ReceiverController” project..<br>
 Download “iPhone/ReceiverController” project into a Arduino nano board, you can Monitor BLE advertising and determine if the MAC address in the air is belong to your iPhone.<br><br>
 These is only one key function you need to call to check MAC address. Everything needed for this function is in key.h file.You can use it in your other project.<br>
 BOOLEAN btm_ble_addr_resolvable(BD_ADDR rpa, esp_bt_octet16_t irk)<br><br>
@@ -55,7 +57,8 @@ You can build the Arduino based BLE Monitor Just connect nRF24L01 module with Ar
 
 ![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/ResolveAddress.jpg) <br>
 
-When you are OK to this stage, if you walk to your reciver with your iPhone, the arduino will knwo you are coming ,and you can write your applaction code. Like close a relay to open a door.<br>
+When you are OK to this stage, if you are walking to your reciver with your iPhone, the arduino will know you are coming.<br>
+And you can write your applaction code. Like close a relay to open a door.<br>
 
 ## Old version: Released on 2016. Use Independent Wireless Tag.
 
