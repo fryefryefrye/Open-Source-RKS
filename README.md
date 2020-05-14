@@ -23,7 +23,7 @@ Use "nRF Connect" APP, you can send BLE advertising with custom data.A name can 
 
 ## Hardware used:
 
-iPhone      ESP32 Board      Arduino Board    nRF24L01 module
+iPhone; ESP32 Board; Arduino Board; nRF24L01 module
 
 ## Get IRK of your iPhone
 If the IRK of an IOS device is known, the random Bluetooth address can be determined if it belongs to this device. <br>
