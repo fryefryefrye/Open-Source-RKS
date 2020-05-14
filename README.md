@@ -1,18 +1,4 @@
 # Open-Source-RKS
-## New update: Use your iPhone/Android as a Tag. Under Processing....
-### iPhone:
-When IOS is enabling with continuity service, it will always sending BLE advertising to let other IOS device to know. But the Bluetooth MAC Address is random and changed every 15 minutes. <br>
-With my another project, you can decode the random address and determined if this random address belongs to your phone.<br>
-https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
-### Android:
-Use "nRF Connect" APP, you can send BLE advertising with custom data.<br>
-That will be much easy then iPhone<br>
-### Receiver：
-With the help of the following project, we can Monitor BLE advertising in the air with very cheap nRF24L01 module
-https://github.com/Pranavgulati/RF24BLE<br>
-So my old version Controller/Receiver is Hardware compatible, Only software update is needed.
-
-## Old version: Released on 2016. Use Independent Wireless Tag.
 ### What is a RKS system
 RKS as the Remote keyless system. It's a proximity system that is triggered if a key is within a certain distance. <br> 
 Widely used in modern vehicles. It's very convenient to Entry your car when you have RKS system. <br> 
@@ -23,9 +9,56 @@ You do not need take out of your key, just walk to your car with the key in your
   
 <br> But do you want open the door of your home without take out your keys? Or equipment RKS to your old car?<br> 
 I've found a solution that every electronic fans can make a RKS system at home in a very cheap price.<br> 
-Cost of materials are Less than € 10 for a key and € 25 for the Controller in my area.<br> 
+An iPhone without any app can be used as a wireless tag<br> 
 Arduino based Controller can make you to use this system in any application if you like.<br>  
 You can submit a issue or mail to me if you have any question.<br> 
+<br>
+## New update: Use your iPhone as a Tag.
+### iPhone:
+When IOS is enabling with continuity service, it will always sending BLE advertising to let other IOS device to know. But the Bluetooth MAC Address is random and changed every 15 minutes. <br>
+With my another project, you can decode the random address and determined if this random address belongs to your phone.<br>
+https://github.com/fryefryefrye/Decoding-Random-Bluetooth-Address/<br>
+### Android:
+Use "nRF Connect" APP, you can send BLE advertising with custom data.A name can be set in the advertising.<br>
+<br>
+### Receiver：
+With the help of the following project, we can Monitor BLE advertising in the air with very cheap nRF24L01 module
+https://github.com/Pranavgulati/RF24BLE<br>
+So my old version Controller/Receiver is Hardware compatible, Only software update is needed.
+
+## Hardware used:
+
+### iPhone
+### ESP32 Board
+### Arduino Board
+### nRF24L01 module
+
+## Get IRK of your iPhone
+Use an ESP32 board and download with “get_irk” project. It will start a BLE service. <br>
+Pay attention on following settings.<br>
+![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/arduino_setting.jpg) <br>
+Use your iPhone install with “LightBlue” APP, find the “ESP_BLE_SECURITY” service, and connect it, the IRK will be print out. <br>
+![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/get_irk.jpg) <br>
+
+## Monitor BLE advertising with nRF24L01
+With the help of the following project, we can Monitor BLE advertising with very cheap nRF24L01 module<br>
+https://github.com/Pranavgulati/RF24BLE<br>
+https://github.com/nRF24/RF24<br>
+Install above two library into Arduino.<br>
+Download “iPhone/ReceiverController” project into a Arduino nano board, you can Monitor BLE advertising and determine if the MAC address in the air is belong to your iPhone.<br><br>
+These is only one key function you need to call to check MAC address. Everything needed for this function is in key.h file.You can use it in your other project.<br>
+BOOLEAN btm_ble_addr_resolvable(BD_ADDR rpa, esp_bt_octet16_t irk)<br><br>
+
+You can build the Arduino based BLE Monitor Just connect nRF24L01 module with Arduino follow the table.<br>
+
+![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/uno_nrf.jpg) <br>
+
+![](https://github.com/fryefryefrye/Bluetooth-keyless-system/raw/master/img/ResolveAddress.jpg) <br>
+
+When you are OK to this stage, if you walk to your reciver with your iPhone, the arduino will knwo you are coming ,and you can write your applaction code. Like close a relay to open a door.<br>
+
+## Old version: Released on 2016. Use Independent Wireless Tag.
+
 
 ### A very simple wireless Key. 
 
