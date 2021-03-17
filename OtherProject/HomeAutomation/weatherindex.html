@@ -1,0 +1,104 @@
+﻿<html lang="zh-cn">
+<head>
+<title>天气预报</title>
+<style type="text/css">
+     body,p{margin: 0;}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=700, initial-scale=1">
+<script>
+function loadXMLDoc(path,element)
+{
+    var xmlhttp;
+    if (window.XMLHttpRequest)
+    {
+        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+    }
+    else
+    {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange=function()
+    {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200)
+        {
+            document.getElementById(element).innerHTML=xmlhttp.responseText;
+        }
+    }
+    xmlhttp.open("GET",path,true);
+    xmlhttp.send();
+}
+</script>
+<script>
+function UpdateBike()
+{
+    var xmlhttp;
+    if (window.XMLHttpRequest)
+    {
+        //  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+    }
+    else
+    {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    xmlhttp.onreadystatechange=function()
+    {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200)
+        {
+            var arr=xmlhttp.responseText.split(",");
+            
+            document.getElementById('TimeDiv').innerHTML=arr[0]; 
+            //document.getElementById('date1').innerHTML=arr[1];  
+            document.getElementById('weather1').innerHTML=arr[2];  
+            document.getElementById('temp1').innerHTML=arr[3];  
+            //document.getElementById('date2').innerHTML=arr[4];  
+            document.getElementById('weather2').innerHTML=arr[5];  
+            document.getElementById('temp2').innerHTML=arr[6];   
+            //document.getElementById('date3').innerHTML=arr[7];  
+            //document.getElementById('weather3').innerHTML=arr[8];  
+            //document.getElementById('temp3').innerHTML=arr[9];   
+        }
+    }
+    xmlhttp.open("GET",'/weaup',true);
+    xmlhttp.send();
+}
+</script>
+<script>
+    function MyAutoRun()
+    { 
+        UpdateBike();
+        //loadXMLDoc('/time','TimeDiv');
+    } 
+    setInterval("MyAutoRun()",1000);
+</script>
+</head>
+<body style="background-color:black;color:white;margin:0;padding:0">
+<!--<font size = 6><div id="TimeDiv">datetime</div></font>-->
+<div style="font-size:30px" id="TimeDiv">datetime</div>
+<table border="3">
+  <!--<tr>-->
+    <!--<td><div style="font-size:50px" id="date1">null</div></th>-->
+    <!--<td><div style="font-size:50px" id="date2">null</div></th>-->
+    <!--<td><div style="font-size:50px" id="date3">null</div></th>-->
+  <!--</tr>-->
+  <tr>
+    <th><div style="font-size:70px" id="temp1">null</div></th>
+    <th><div style="font-size:70px" id="temp2">null</div></th>
+    <!--<th><div style="font-size:50px" id="temp3">null</div></th>-->
+ </tr>
+  <tr>
+    <td width="300" align="center"><div style="font-size:150px" id="weather1">null</div></th>
+    <td width="300" align="center"><div style="font-size:150px" id="weather2">null</div></th>
+    <!--<td><div style="font-size:70px" id="weather3">null</div></th>-->
+  </tr>
+
+
+</table>
+
+
+</body>
+</html>
